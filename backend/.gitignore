@@ -1,3 +1,10 @@
+logs/
+
+.env*
+.secret.env*
+!.env.example
+!.secret.env.example
+
 HELP.md
 .gradle
 build/
