@@ -119,36 +119,18 @@ CREATE TABLE inbound_receipt (
 CREATE TABLE inventory_transaction_history (
     transaction_id INT AUTO_INCREMENT COMMENT '수불 이력 고유 ID (PK)',
     item_id INT NOT NULL COMMENT '품목 고유 ID (FK)',
-    from_location_id INT COMMENT '출발지 로케이션 고유 ID (FK, 입고시 NULL)',
-    to_location_id INT COMMENT '도착지 로케이션 고유 ID (FK, 출고시 NULL)',
-    transaction_type ENUM('INBOUND', 'OUTBOUND', 'PRODUCTION_ISSUE', 'MOVE', 'ADJUSTMENT') NOT NULL 
-        COMMENT '수불 유형 (INBOUND:입고, OUTBOUND:최종출하, PRODUCTION_ISSUE:생산불출, MOVE:창고이동, ADJUSTMENT:실사조정)',
+    location_id INT NOT NULL COMMENT '위치 고유 ID (FK)',
+    transaction_type ENUM('INBOUND', 'OUTBOUND', 'PRODUCTION_ISSUE') NOT NULL 
+        COMMENT '수불 유형 (INBOUND:입고, OUTBOUND:최종출하, PRODUCTION_ISSUE:생산불출)',
     quantity INT NOT NULL COMMENT '변동 수량 (항상 양수)',
     reason_desc VARCHAR(255) COMMENT '이동 및 조정 사유 상세내역',
     worker_id INT COMMENT '처리 작업자 사용자 고유 ID (FK)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '수불 발생 일시',
     PRIMARY KEY (transaction_id),
     FOREIGN KEY (item_id) REFERENCES item_master(item_id),
-    FOREIGN KEY (from_location_id) REFERENCES warehouse_location(location_id),
-    FOREIGN KEY (to_location_id) REFERENCES warehouse_location(location_id),
-    FOREIGN KEY (worker_id) REFERENCES users(user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='창고 및 로케이션간 재고 수불 이동 이력(History) 테이블';
-
-CREATE TABLE inventory_stocktake (
-    stocktake_id INT AUTO_INCREMENT COMMENT '재고 실사 고유 ID (PK)',
-    item_id INT NOT NULL COMMENT '품목 고유 ID (FK)',
-    location_id INT NOT NULL COMMENT '실사 위치 고유 ID (FK)',
-    system_qty INT NOT NULL COMMENT '실사 전 전산상 현재고 수량',
-    physical_qty INT NOT NULL COMMENT '실제 눈으로 조사한 물리적 수량',
-    adjusted_qty INT NOT NULL COMMENT '강제 조정 수량 (지산수량 - 전산수량)',
-    adjustment_reason_code ENUM('LOSS', 'DAMAGE', 'TYPO', 'ETC') NOT NULL COMMENT '조정 사유 코드 (LOSS:손실, DAMAGE:파손, TYPO:오기입, ETC:기타)',
-    worker_id INT COMMENT '실사 담당 작업자 사용자 고유 ID (FK)',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '실사 및 전산 조정 일시',
-    PRIMARY KEY (stocktake_id),
-    FOREIGN KEY (item_id) REFERENCES item_master(item_id),
     FOREIGN KEY (location_id) REFERENCES warehouse_location(location_id),
     FOREIGN KEY (worker_id) REFERENCES users(user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='정기 재고 실사 및 전산 조정 이력 테이블';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='창고 및 로케이션간 재고 수불 이동 이력(History) 테이블';
 
 -- ===================================================================
 -- 4. 생산 및 제조 관리 도메인 (MES / PRODUCTION)
@@ -184,67 +166,7 @@ CREATE TABLE production_execution (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='공정별 생산 작업 실적 및 자재 투입량 실시간 등록 테이블';
 
 -- ===================================================================
--- 5. 설비 관리 도메인 (EQUIPMENT)
--- ===================================================================
-
-CREATE TABLE equipment_master (
-    eq_id INT AUTO_INCREMENT COMMENT '설비 고유 ID (PK)',
-    eq_code VARCHAR(50) NOT NULL COMMENT '제조 설비 고유 코드',
-    eq_name VARCHAR(100) NOT NULL COMMENT '설비명',
-    routing_id INT COMMENT '설비가 배치된 라인/공정 매핑 (FK)',
-    spec_info VARCHAR(255) COMMENT '설비 세부 기술 스펙 정보',
-    status ENUM('RUN', 'STOP', 'PM') NOT NULL DEFAULT 'STOP' COMMENT '실시간 설비 가동 상태 (RUN:가동, STOP:비가동, PM:계획정비)',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '상태 토글 일시',
-    PRIMARY KEY (eq_id),
-    UNIQUE KEY idx_eq_code_unique (eq_code),
-    FOREIGN KEY (routing_id) REFERENCES factory_routing(routing_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='공장 제조 설비 마스터 테이블';
-
-CREATE TABLE equipment_downtime_history (
-    downtime_id INT AUTO_INCREMENT COMMENT '장애 이력 고유 ID (PK)',
-    eq_id INT NOT NULL COMMENT '장애 발생 설비 고유 ID (FK)',
-    breakdown_start TIMESTAMP NOT NULL COMMENT '고장 발생 및 라인 멈춤 시각',
-    breakdown_end TIMESTAMP COMMENT '정비 완료 및 재가동 시각',
-    downtime_minutes INT GENERATED ALWAYS AS (TIMESTAMPDIFF(MINUTE, breakdown_start, breakdown_end)) VIRTUAL COMMENT '라인 멈춤 다운타임 시간 자동 계산 (분)',
-    failure_reason_code ENUM('MECHANICAL', 'ELECTRICAL', 'SOFTWARE', 'USER_ERROR') NOT NULL COMMENT '고장 원인 분류 코드',
-    action_desc TEXT COMMENT '정비 조치 내역 상세 기록',
-    worker_id INT COMMENT '정비 등록 작업자 사용자 고유 ID (FK)',
-    PRIMARY KEY (downtime_id),
-    FOREIGN KEY (eq_id) REFERENCES equipment_master(eq_id),
-    FOREIGN KEY (worker_id) REFERENCES users(user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='설비 고장 이력 및 라인 다운타임 누적 기록 테이블';
-
--- ===================================================================
--- 6. 품질 관리 도메인 (QUALITY CONTROL)
--- ===================================================================
-
-CREATE TABLE quality_inspection (
-    inspection_no INT AUTO_INCREMENT COMMENT '품질 검사 고유 번호 (PK)',
-    inspection_stage ENUM('INCOMING', 'PROCESS', 'SHIPPING') NOT NULL COMMENT '검사 단계 (INCOMING:원자재수입검사, PROCESS:공정중간검사, SHIPPING:완제품출하검사)',
-    item_id INT NOT NULL COMMENT '검사 대상 품목 고유 ID (FK)',
-    reference_no VARCHAR(50) NOT NULL COMMENT '연동 참조 번호 (입고ID 또는 작업지시번호 등)',
-    sample_size INT NOT NULL COMMENT '샘플링 검사 수량',
-    inspection_value DECIMAL(10,2) COMMENT '실제 측정 데이터 값',
-    result_status ENUM('OK', 'NG') NOT NULL DEFAULT 'OK' COMMENT '최종 검사 판정 결과 (OK:합격, NG:불합격)',
-    inspector_id INT COMMENT '품질 담당 검사자 사용자 고유 ID (FK)',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '검사 결과 등록 일시',
-    PRIMARY KEY (inspection_no),
-    FOREIGN KEY (item_id) REFERENCES item_master(item_id),
-    FOREIGN KEY (inspector_id) REFERENCES users(user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='단계별 품질 샘플링 검사 결과 등록 테이블';
-
-CREATE TABLE quality_defect_log (
-    defect_id INT AUTO_INCREMENT COMMENT '불량 로그 고유 ID (PK)',
-    inspection_no INT NOT NULL COMMENT '연동된 품질 검사 번호 (FK)',
-    defect_type_code ENUM('DIMENSION', 'CONTAMINATION', 'SCRATCH', 'ASSEMBLY', 'ETC') NOT NULL COMMENT '불량 유형 분류 코드 (DIMENSION:치수, CONTAMINATION:오염, SCRATCH:스크래치, ASSEMBLY:조립불량)',
-    defect_qty INT NOT NULL DEFAULT 0 COMMENT '폐기 또는 재작업 대상 불량 수량',
-    cause_desc TEXT COMMENT '품질 부서 분석 발생 원인 상세 내역',
-    PRIMARY KEY (defect_id),
-    FOREIGN KEY (inspection_no) REFERENCES quality_inspection(inspection_no)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='품질 검사 불합격(NG) 품목의 불량 유형 및 원인 분류 데이터셋 테이블';
-
--- ===================================================================
--- 7. 완제품 출고 도메인 (WMS / OUTBOUND)
+-- 5. 완제품 출고 도메인 (WMS / OUTBOUND)
 -- ===================================================================
 
 CREATE TABLE outbound_shipping (
@@ -268,7 +190,7 @@ CREATE TABLE outbound_shipping (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='완제품 출하 지시 및 피킹/상차 최종 출고 관리 테이블';
 
 -- ===================================================================
--- 8. AI 플랫폼 및 업무 자동화 관리 도메인 (AI & BATCH SYSTEM)
+-- 6. AI 플랫폼 및 업무 자동화 관리 도메인 (AI SYSTEM)
 -- ===================================================================
 
 CREATE TABLE ai_query_history (
