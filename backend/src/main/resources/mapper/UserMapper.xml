@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.demo_app.domain.user.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.ssafy.demo_app.domain.user.model.User">
+        <id property="userId" column="user_id"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="userName" column="user_name"/>
+        <result property="department" column="department"/>
+        <result property="password" column="password"/>
+        <result property="role" column="role"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="UserColumns">
+        user_id, employee_no, user_name, department, password, role, created_at, updated_at
+    </sql>
+
+    <insert id="insertUser"
+            parameterType="com.ssafy.demo_app.domain.user.model.User"
+            useGeneratedKeys="true"
+            keyProperty="userId"
+            keyColumn="user_id">
+        INSERT INTO users (
+            employee_no,
+            user_name,
+            department,
+            password,
+            role
+        ) VALUES (
+            #{employeeNo},
+            #{userName},
+            #{department},
+            #{password},
+            #{role}
+        )
+    </insert>
+
+    <select id="findByUserId" parameterType="int" resultMap="UserResultMap">
+        SELECT <include refid="UserColumns"/>
+        FROM users
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByEmployeeNo" parameterType="string" resultMap="UserResultMap">
+        SELECT <include refid="UserColumns"/>
+        FROM users
+        WHERE employee_no = #{employeeNo}
+    </select>
+
+    <select id="existsByEmployeeNo" parameterType="string" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM users
+        WHERE employee_no = #{employeeNo}
+    </select>
+
+    <select id="findAll" resultMap="UserResultMap">
+        SELECT <include refid="UserColumns"/>
+        FROM users
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateUser" parameterType="com.ssafy.demo_app.domain.user.model.User">
+        UPDATE users
+        <set>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName},
+            </if>
+            <if test="department != null and department != ''">
+                department = #{department},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+        </set>
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateRole">
+        UPDATE users
+        SET role = #{role}
+        WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteByUserId" parameterType="int">
+        DELETE FROM users
+        WHERE user_id = #{userId}
+    </delete>
+</mapper>
