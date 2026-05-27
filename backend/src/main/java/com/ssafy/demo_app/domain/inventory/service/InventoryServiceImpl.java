@@ -69,4 +69,16 @@ public class InventoryServiceImpl implements InventoryService {
 
         return InboundReceiptResponse.from(inboundReceiptRepository.save(receipt));
     }
+
+    @Override
+    @Transactional
+    public InboundReceiptResponse completeInbound(Integer inboundId) {
+        InboundReceipt receipt = inboundReceiptRepository.findById(inboundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INBOUND_NOT_FOUND));
+        if (receipt.getStatus() != InboundReceipt.InboundStatus.READY) {
+            throw new BusinessException(ErrorCode.INBOUND_STATUS_INVALID);
+        }
+        receipt.setStatus(InboundReceipt.InboundStatus.COMPLETED);
+        return InboundReceiptResponse.from(inboundReceiptRepository.save(receipt));
+    }
 }

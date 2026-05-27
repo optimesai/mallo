@@ -38,4 +38,10 @@ public class InventoryController {
         InboundReceiptResponse response = inventoryService.registerInbound(userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("입고 예정 정보가 등록되었습니다.", response));
     }
+
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<ApiResponse<InboundReceiptResponse>> completeInbound(@PathVariable Integer id) {
+        InboundReceiptResponse response = inventoryService.completeInbound(id);
+        return ResponseEntity.ok(ApiResponse.success("입고 처리가 완료되었습니다.", response));
+    }
 }

@@ -12,4 +12,6 @@ public interface InventoryService {
     InboundReceiptResponse getInbound(Integer inboundId);
 
     InboundReceiptResponse registerInbound(Integer workerId, InboundCreateRequest request);
+
+    InboundReceiptResponse completeInbound(Integer inboundId);
 }
