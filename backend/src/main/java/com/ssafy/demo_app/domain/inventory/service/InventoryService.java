@@ -17,4 +17,6 @@ public interface InventoryService {
     InboundReceiptResponse completeInbound(Integer inboundId);
 
     void stackInventory(Integer workerId, Integer inboundId, InventoryStackRequest request);
+
+    void deleteInbound(Integer inboundId);
 }

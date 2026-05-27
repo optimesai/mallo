@@ -55,4 +55,10 @@ public class InventoryController {
         inventoryService.stackInventory(userDetails.getUserId(), id, request);
         return ResponseEntity.ok(ApiResponse.success("재고 적재가 완료되었습니다."));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteInbound(@PathVariable Integer id) {
+        inventoryService.deleteInbound(id);
+        return ResponseEntity.ok(ApiResponse.success("입고 정보가 삭제되었습니다."));
+    }
 }

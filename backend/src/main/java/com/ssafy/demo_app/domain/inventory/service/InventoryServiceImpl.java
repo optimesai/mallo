@@ -134,4 +134,15 @@ public class InventoryServiceImpl implements InventoryService {
         history.setWorker(worker);
         transactionHistoryRepository.save(history);
     }
+
+    @Override
+    @Transactional
+    public void deleteInbound(Integer inboundId) {
+        InboundReceipt receipt = inboundReceiptRepository.findById(inboundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INBOUND_NOT_FOUND));
+        if (receipt.getStatus() != InboundReceipt.InboundStatus.READY) {
+            throw new BusinessException(ErrorCode.INBOUND_CANNOT_DELETE);
+        }
+        inboundReceiptRepository.delete(receipt);
+    }
 }
