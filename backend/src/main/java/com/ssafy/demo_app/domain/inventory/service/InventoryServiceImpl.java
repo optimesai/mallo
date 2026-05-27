@@ -5,6 +5,8 @@ import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
+import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
+import com.ssafy.demo_app.api.inventory.dto.LocationResponse;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
@@ -167,5 +169,59 @@ public class InventoryServiceImpl implements InventoryService {
         return transactionHistoryRepository.findAll().stream()
                 .map(TransactionHistoryResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<LocationResponse> getLocations() {
+        return warehouseLocationRepository.findAll().stream()
+                .map(LocationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public LocationResponse getLocation(Integer locationId) {
+        WarehouseLocation location = warehouseLocationRepository.findById(locationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+        return LocationResponse.from(location);
+    }
+
+    @Override
+    @Transactional
+    public LocationResponse createLocation(LocationRequest request) {
+        if (warehouseLocationRepository.existsByLocationCode(request.getLocationCode())) {
+            throw new BusinessException(ErrorCode.LOCATION_CODE_DUPLICATE);
+        }
+        WarehouseLocation location = new WarehouseLocation();
+        location.setLocationCode(request.getLocationCode());
+        location.setWarehouseName(request.getWarehouseName());
+        location.setRackRow(request.getRackRow());
+        location.setRackColumn(request.getRackColumn());
+        return LocationResponse.from(warehouseLocationRepository.save(location));
+    }
+
+    @Override
+    @Transactional
+    public LocationResponse updateLocation(Integer locationId, LocationRequest request) {
+        WarehouseLocation location = warehouseLocationRepository.findById(locationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+        if (warehouseLocationRepository.existsByLocationCodeAndLocationIdNot(request.getLocationCode(), locationId)) {
+            throw new BusinessException(ErrorCode.LOCATION_CODE_DUPLICATE);
+        }
+        location.setLocationCode(request.getLocationCode());
+        location.setWarehouseName(request.getWarehouseName());
+        location.setRackRow(request.getRackRow());
+        location.setRackColumn(request.getRackColumn());
+        return LocationResponse.from(warehouseLocationRepository.save(location));
+    }
+
+    @Override
+    @Transactional
+    public void deleteLocation(Integer locationId) {
+        WarehouseLocation location = warehouseLocationRepository.findById(locationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+        if (currentInventoryRepository.existsByLocation(location)) {
+            throw new BusinessException(ErrorCode.LOCATION_HAS_INVENTORY);
+        }
+        warehouseLocationRepository.delete(location);
     }
 }

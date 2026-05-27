@@ -11,4 +11,5 @@ import java.util.Optional;
 @Repository
 public interface CurrentInventoryRepository extends JpaRepository<CurrentInventory, Integer> {
     Optional<CurrentInventory> findByItemAndLocation(ItemMaster item, WarehouseLocation location);
+    boolean existsByLocation(WarehouseLocation location);
 }

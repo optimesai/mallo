@@ -5,6 +5,8 @@ import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
+import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
+import com.ssafy.demo_app.api.inventory.dto.LocationResponse;
 
 import java.util.List;
 
@@ -27,4 +29,14 @@ public interface InventoryService {
     CurrentInventoryResponse getInventory(Integer inventoryId);
 
     List<TransactionHistoryResponse> getTransactionHistories();
+
+    List<LocationResponse> getLocations();
+
+    LocationResponse getLocation(Integer locationId);
+
+    LocationResponse createLocation(LocationRequest request);
+
+    LocationResponse updateLocation(Integer locationId, LocationRequest request);
+
+    void deleteLocation(Integer locationId);
 }

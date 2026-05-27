@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface WarehouseLocationRepository extends JpaRepository<WarehouseLocation, Integer> {
     Optional<WarehouseLocation> findByLocationCode(String locationCode);
+    boolean existsByLocationCode(String locationCode);
+    boolean existsByLocationCodeAndLocationIdNot(String locationCode, Integer locationId);
 }
