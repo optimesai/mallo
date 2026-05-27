@@ -6,31 +6,27 @@ import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/inventory")
 @RequiredArgsConstructor
-public class CurrentInventoryController {
+public class CurrentInventoryController implements CurrentInventoryApi {
 
     private final InventoryService inventoryService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<ApiResponse<List<CurrentInventoryResponse>>> getInventories() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInventories()));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CurrentInventoryResponse>> getInventory(@PathVariable Integer id) {
+    @Override
+    public ResponseEntity<ApiResponse<CurrentInventoryResponse>> getInventory(Integer id) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInventory(id)));
     }
 
-    @GetMapping("/history")
+    @Override
     public ResponseEntity<ApiResponse<List<TransactionHistoryResponse>>> getTransactionHistories() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getTransactionHistories()));
     }

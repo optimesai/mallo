@@ -6,58 +6,55 @@ import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/inbounds")
 @RequiredArgsConstructor
-public class InventoryController {
+public class InventoryController implements InventoryApi {
 
     private final InventoryService inventoryService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<ApiResponse<List<InboundReceiptResponse>>> getInbounds() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbounds()));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<InboundReceiptResponse>> getInbound(@PathVariable Integer id) {
+    @Override
+    public ResponseEntity<ApiResponse<InboundReceiptResponse>> getInbound(Integer id) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbound(id)));
     }
 
-    @PostMapping
+    @Override
     public ResponseEntity<ApiResponse<InboundReceiptResponse>> registerInbound(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody InboundCreateRequest request
+            CustomUserDetails userDetails,
+            InboundCreateRequest request
     ) {
         InboundReceiptResponse response = inventoryService.registerInbound(userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("입고 예정 정보가 등록되었습니다.", response));
     }
 
-    @PutMapping("/{id}/complete")
-    public ResponseEntity<ApiResponse<InboundReceiptResponse>> completeInbound(@PathVariable Integer id) {
+    @Override
+    public ResponseEntity<ApiResponse<InboundReceiptResponse>> completeInbound(Integer id) {
         InboundReceiptResponse response = inventoryService.completeInbound(id);
         return ResponseEntity.ok(ApiResponse.success("입고 처리가 완료되었습니다.", response));
     }
 
-    @PostMapping("/{id}/stack")
+    @Override
     public ResponseEntity<ApiResponse<Void>> stackInventory(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Integer id,
-            @Valid @RequestBody InventoryStackRequest request
+            CustomUserDetails userDetails,
+            Integer id,
+            InventoryStackRequest request
     ) {
         inventoryService.stackInventory(userDetails.getUserId(), id, request);
         return ResponseEntity.ok(ApiResponse.success("재고 적재가 완료되었습니다."));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteInbound(@PathVariable Integer id) {
+    @Override
+    public ResponseEntity<ApiResponse<Void>> deleteInbound(Integer id) {
         inventoryService.deleteInbound(id);
         return ResponseEntity.ok(ApiResponse.success("입고 정보가 삭제되었습니다."));
     }
