@@ -6,6 +6,7 @@ import com.ssafy.demo_app.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,5 +22,10 @@ public class InventoryController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<InboundReceiptResponse>>> getInbounds() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbounds()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<InboundReceiptResponse>> getInbound(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbound(id)));
     }
 }

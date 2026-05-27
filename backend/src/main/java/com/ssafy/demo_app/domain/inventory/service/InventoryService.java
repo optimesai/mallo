@@ -7,4 +7,6 @@ import java.util.List;
 public interface InventoryService {
 
     List<InboundReceiptResponse> getInbounds();
+
+    InboundReceiptResponse getInbound(Integer inboundId);
 }

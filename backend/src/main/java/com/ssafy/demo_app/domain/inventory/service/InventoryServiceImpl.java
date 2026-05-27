@@ -1,7 +1,10 @@
 package com.ssafy.demo_app.domain.inventory.service;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
 import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
+import com.ssafy.demo_app.global.exception.BusinessException;
+import com.ssafy.demo_app.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,5 +24,12 @@ public class InventoryServiceImpl implements InventoryService {
         return inboundReceiptRepository.findAll().stream()
                 .map(InboundReceiptResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public InboundReceiptResponse getInbound(Integer inboundId) {
+        InboundReceipt inboundReceipt = inboundReceiptRepository.findById(inboundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INBOUND_NOT_FOUND));
+        return InboundReceiptResponse.from(inboundReceipt);
     }
 }
