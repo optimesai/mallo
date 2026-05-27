@@ -117,4 +117,29 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         history.setWorker(worker);
         transactionHistoryRepository.save(history);
     }
+
+    @Override
+    @Transactional
+    public ShippingResponse assignPicking(Integer shippingId, com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.READY) {
+            throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
+        }
+
+        // Find location with enough inventory for target item
+        List<CurrentInventory> inventories = currentInventoryRepository.findByItem(shipping.getItem());
+        CurrentInventory targetInventory = inventories.stream()
+                .filter(inv -> inv.getCurrentQty() >= shipping.getRequestQty())
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.INSUFFICIENT_STOCK));
+
+        shipping.setPickingLocation(targetInventory.getLocation());
+        shipping.setVehicleNo(request.getVehicleNo());
+        shipping.setStatus(OutboundShipping.ShippingStatus.PICKING);
+
+        OutboundShipping savedShipping = outboundShippingRepository.save(shipping);
+        return ShippingResponse.from(savedShipping);
+    }
 }

@@ -156,6 +156,80 @@ class OutboundShippingServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
     }
 
+    @Test
+    @DisplayName("피킹 지시 및 차량 배정 성공 검증")
+    void assignPicking_success() {
+        // Given
+        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("SH-ITEM-04", "완제품D", ItemMaster.ItemType.FG);
+
+        // 재고 설정 (현재고 80개)
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(80);
+        em.persist(inventory);
+
+        // 출하 지시 생성 (READY 상태, 요청량 50개)
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingNo("SH-2026-TEST-666");
+        shipping.setPartner(partner);
+        shipping.setItem(item);
+        shipping.setRequestQty(50);
+        shipping.setStatus(OutboundShipping.ShippingStatus.READY);
+        em.persist(shipping);
+
+        em.flush();
+        em.clear();
+
+        com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request = new com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest("서울 88 가 9999");
+
+        // When
+        ShippingResponse response = outboundShippingService.assignPicking(shipping.getShippingId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getVehicleNo()).isEqualTo("서울 88 가 9999");
+        assertThat(response.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.PICKING.name());
+        assertThat(response.getPickingLocationCode()).isEqualTo(location.getLocationCode());
+    }
+
+    @Test
+    @DisplayName("피킹 지시 및 차량 배정 실패 - 가용 재고 부족 시 예외 발생")
+    void assignPicking_insufficientStock() {
+        // Given
+        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("SH-ITEM-05", "완제품E", ItemMaster.ItemType.FG);
+
+        // 재고 설정 (현재고 20개)
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(20);
+        em.persist(inventory);
+
+        // 출하 지시 생성 (READY 상태, 요청량 50개) -> 재고 부족
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingNo("SH-2026-TEST-555");
+        shipping.setPartner(partner);
+        shipping.setItem(item);
+        shipping.setRequestQty(50);
+        shipping.setStatus(OutboundShipping.ShippingStatus.READY);
+        em.persist(shipping);
+
+        em.flush();
+        em.clear();
+
+        com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request = new com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest("서울 88 가 9999");
+
+        // When & Then
+        assertThatThrownBy(() -> outboundShippingService.assignPicking(shipping.getShippingId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
+    }
+
     private ItemMaster createItem(String code, String name, ItemMaster.ItemType type) {
         ItemMaster item = new ItemMaster();
         item.setItemCode(code);
