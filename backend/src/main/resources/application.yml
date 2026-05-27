@@ -15,11 +15,19 @@ spring:
     ansi:
       enabled: always
 
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.ssafy.**.model
-  configuration:
-    map-underscore-to-camel-case: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  sql:
+    init:
+      mode: always
 
 jwt:
   secret: ${JWT_SECRET}

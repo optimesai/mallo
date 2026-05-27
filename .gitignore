@@ -1,3 +1,5 @@
+ref/
+
 # Java / Maven
 target/
 *.class

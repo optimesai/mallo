@@ -5,8 +5,8 @@ import com.ssafy.demo_app.api.auth.dto.LoginResponse;
 import com.ssafy.demo_app.api.auth.dto.SignupRequest;
 import com.ssafy.demo_app.api.auth.dto.TokenResponse;
 import com.ssafy.demo_app.api.user.dto.UserResponse;
-import com.ssafy.demo_app.domain.user.mapper.UserMapper;
-import com.ssafy.demo_app.domain.user.model.User;
+import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.domain.user.repository.UserRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.infrastructure.security.jwt.JwtTokenProvider;
@@ -21,16 +21,16 @@ public class AuthServiceImpl implements AuthService {
 
     private static final String TOKEN_TYPE = "Bearer";
 
-    private final UserMapper userMapper;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
     public AuthServiceImpl(
-            UserMapper userMapper,
+            UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtTokenProvider
     ) {
-        this.userMapper = userMapper;
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
@@ -38,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserResponse signup(SignupRequest request) {
-        if (userMapper.existsByEmployeeNo(request.getEmployeeNo())) {
+        if (userRepository.existsByEmployeeNo(request.getEmployeeNo())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMPLOYEE_NO);
         }
 
@@ -49,16 +49,13 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(User.Role.WORKER);
 
-        userMapper.insertUser(user);
-
-        User savedUser = userMapper.findByEmployeeNo(user.getEmployeeNo())
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User savedUser = userRepository.save(user);
         return UserResponse.from(savedUser);
     }
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        User user = userMapper.findByEmployeeNo(request.getEmployeeNo())
+        User user = userRepository.findByEmployeeNo(request.getEmployeeNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
