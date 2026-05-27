@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,5 +47,19 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
         OutboundShipping savedShipping = outboundShippingRepository.save(shipping);
         return ShippingResponse.from(savedShipping);
+    }
+
+    @Override
+    public List<ShippingResponse> getShippings() {
+        return outboundShippingRepository.findAll().stream()
+                .map(ShippingResponse::from)
+                .toList();
+    }
+
+    @Override
+    public ShippingResponse getShipping(Integer shippingId) {
+        return outboundShippingRepository.findById(shippingId)
+                .map(ShippingResponse::from)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
     }
 }
