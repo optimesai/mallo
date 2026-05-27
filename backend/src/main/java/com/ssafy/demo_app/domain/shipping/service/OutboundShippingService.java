@@ -1,5 +1,6 @@
 package com.ssafy.demo_app.domain.shipping.service;
 
+import com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
 
@@ -10,5 +11,6 @@ public interface OutboundShippingService {
     List<ShippingResponse> getShippings();
     ShippingResponse getShipping(Integer shippingId);
     void completeShipping(Integer shippingId, Integer workerId);
+    ShippingResponse assignPicking(Integer shippingId, PickingAssignRequest request);
 }
 
