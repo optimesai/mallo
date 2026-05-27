@@ -1,9 +1,12 @@
 package com.ssafy.demo_app.domain.production.service;
 
+import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
+import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 import com.ssafy.demo_app.domain.bom.entity.BomStructure;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
 import com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation;
+import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
@@ -33,7 +36,72 @@ class WorkOrderServiceTest {
     private WorkOrderService workOrderService;
 
     @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
     private EntityManager em;
+
+    @Test
+    @DisplayName("재고 목록 조회 API 검증 - 등록된 창고 및 렉 위치별 품목 재고 수량이 정상 조회되는지 확인")
+    void getInventories_success() {
+        // Given
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("TEST-INV-GET", "테스트품목", ItemMaster.ItemType.RAW);
+
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(150);
+        em.persist(inventory);
+
+        em.flush();
+        em.clear();
+
+        // When
+        List<CurrentInventoryResponse> inventories = inventoryService.getInventories();
+
+        // Then
+        assertThat(inventories).isNotEmpty();
+        CurrentInventoryResponse target = inventories.stream()
+                .filter(i -> i.getItemCode().equals("TEST-INV-GET"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(target.getCurrentQty()).isEqualTo(150);
+        assertThat(target.getLocationCode()).isEqualTo(location.getLocationCode());
+    }
+
+    @Test
+    @DisplayName("수불 이력 조회 API 검증 - 변동 이력(수량, 작업 유형 등) 데이터가 올바르게 반환되는지 확인")
+    void getTransactionHistories_success() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("TEST-INV-HIST", "테스트품목HIST", ItemMaster.ItemType.RAW);
+
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(item);
+        history.setLocation(location);
+        history.setTransactionType(InventoryTransactionHistory.TransactionType.INBOUND);
+        history.setQuantity(300);
+        history.setReasonDesc("Test Inbound Audit");
+        history.setWorker(worker);
+        em.persist(history);
+
+        em.flush();
+        em.clear();
+
+        // When
+        List<TransactionHistoryResponse> histories = inventoryService.getTransactionHistories();
+
+        // Then
+        assertThat(histories).isNotEmpty();
+        TransactionHistoryResponse target = histories.stream()
+                .filter(h -> h.getItemCode().equals("TEST-INV-HIST"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(target.getQuantity()).isEqualTo(300);
+        assertThat(target.getTransactionType()).isEqualTo(InventoryTransactionHistory.TransactionType.INBOUND.name());
+    }
 
     @Test
     @DisplayName("BOM 기반 생산 자재 출고 성공 - 단순 재고 차감 및 수불 이력 생성 검증")
