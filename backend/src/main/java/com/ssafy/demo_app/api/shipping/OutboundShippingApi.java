@@ -38,4 +38,11 @@ public interface OutboundShippingApi {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
             @Parameter(description = "출하 ID", required = true) @PathVariable Integer id
     );
+
+    @Operation(summary = "차량 배정 및 피킹 지시", description = "출하 지시에 배송 차량 번호를 지정하고 최적의 피킹 로케이션을 자동 배정합니다.")
+    @PutMapping("/{id}/assign-picking")
+    ResponseEntity<ApiResponse<ShippingResponse>> assignPicking(
+            @Parameter(description = "출하 ID", required = true) @PathVariable Integer id,
+            @Valid @RequestBody com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request
+    );
 }

@@ -45,4 +45,13 @@ public class OutboundShippingController implements OutboundShippingApi {
         outboundShippingService.completeShipping(id, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("출하 완료 및 전산 재고 차감이 처리되었습니다."));
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<ShippingResponse>> assignPicking(
+            Integer id,
+            com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request
+    ) {
+        ShippingResponse response = outboundShippingService.assignPicking(id, request);
+        return ResponseEntity.ok(ApiResponse.success("차량 및 피킹 로케이션 배정이 완료되었습니다.", response));
+    }
 }
