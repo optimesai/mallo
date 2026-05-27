@@ -26,7 +26,7 @@ public class WebCorsConfig {
     private final WebProperties webProperties;
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilter() {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         
