@@ -2,9 +2,14 @@ package com.ssafy.demo_app.domain.inventory.service;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
+import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
+import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
 import com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation;
+import com.ssafy.demo_app.domain.inventory.repository.CurrentInventoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
+import com.ssafy.demo_app.domain.inventory.repository.InventoryTransactionHistoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.WarehouseLocationRepository;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.item.repository.ItemMasterRepository;
@@ -26,11 +31,15 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class InventoryServiceImpl implements InventoryService {
 
+    private static final int MAX_LOCATION_CAPACITY = 1000;
+
     private final InboundReceiptRepository inboundReceiptRepository;
     private final ItemMasterRepository itemMasterRepository;
     private final PartnerMasterRepository partnerMasterRepository;
     private final WarehouseLocationRepository warehouseLocationRepository;
     private final UserRepository userRepository;
+    private final CurrentInventoryRepository currentInventoryRepository;
+    private final InventoryTransactionHistoryRepository transactionHistoryRepository;
 
     @Override
     public List<InboundReceiptResponse> getInbounds() {
@@ -80,5 +89,49 @@ public class InventoryServiceImpl implements InventoryService {
         }
         receipt.setStatus(InboundReceipt.InboundStatus.COMPLETED);
         return InboundReceiptResponse.from(inboundReceiptRepository.save(receipt));
+    }
+
+    @Override
+    @Transactional
+    public void stackInventory(Integer workerId, Integer inboundId, InventoryStackRequest request) {
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        InboundReceipt receipt = inboundReceiptRepository.findById(inboundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INBOUND_NOT_FOUND));
+        if (receipt.getStatus() != InboundReceipt.InboundStatus.COMPLETED) {
+            throw new BusinessException(ErrorCode.INBOUND_STATUS_INVALID);
+        }
+        WarehouseLocation targetLocation = warehouseLocationRepository.findByLocationCode(request.getTargetLocationCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+
+        ItemMaster item = receipt.getItem();
+
+        CurrentInventory inventory = currentInventoryRepository.findByItemAndLocation(item, targetLocation)
+                .orElseGet(() -> {
+                    CurrentInventory ci = new CurrentInventory();
+                    ci.setItem(item);
+                    ci.setLocation(targetLocation);
+                    ci.setCurrentQty(0);
+                    return ci;
+                });
+
+        if (inventory.getCurrentQty() + receipt.getInboundQty() > MAX_LOCATION_CAPACITY) {
+            throw new BusinessException(ErrorCode.LOCATION_CAPACITY_EXCEEDED);
+        }
+
+        inventory.setCurrentQty(inventory.getCurrentQty() + receipt.getInboundQty());
+        currentInventoryRepository.save(inventory);
+
+        receipt.setLocation(targetLocation);
+        inboundReceiptRepository.save(receipt);
+
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(item);
+        history.setLocation(targetLocation);
+        history.setTransactionType(InventoryTransactionHistory.TransactionType.INBOUND);
+        history.setQuantity(receipt.getInboundQty());
+        history.setReasonDesc("Inbound receipt stacked to rack");
+        history.setWorker(worker);
+        transactionHistoryRepository.save(history);
     }
 }

@@ -2,6 +2,7 @@ package com.ssafy.demo_app.domain.inventory.service;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 
 import java.util.List;
 
@@ -14,4 +15,6 @@ public interface InventoryService {
     InboundReceiptResponse registerInbound(Integer workerId, InboundCreateRequest request);
 
     InboundReceiptResponse completeInbound(Integer inboundId);
+
+    void stackInventory(Integer workerId, Integer inboundId, InventoryStackRequest request);
 }

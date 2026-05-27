@@ -2,6 +2,7 @@ package com.ssafy.demo_app.api.inventory;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
@@ -43,5 +44,15 @@ public class InventoryController {
     public ResponseEntity<ApiResponse<InboundReceiptResponse>> completeInbound(@PathVariable Integer id) {
         InboundReceiptResponse response = inventoryService.completeInbound(id);
         return ResponseEntity.ok(ApiResponse.success("입고 처리가 완료되었습니다.", response));
+    }
+
+    @PostMapping("/{id}/stack")
+    public ResponseEntity<ApiResponse<Void>> stackInventory(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer id,
+            @Valid @RequestBody InventoryStackRequest request
+    ) {
+        inventoryService.stackInventory(userDetails.getUserId(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("재고 적재가 완료되었습니다."));
     }
 }
