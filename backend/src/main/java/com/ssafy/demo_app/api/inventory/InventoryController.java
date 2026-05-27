@@ -1,14 +1,15 @@
 package com.ssafy.demo_app.api.inventory;
 
+import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,5 +28,14 @@ public class InventoryController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<InboundReceiptResponse>> getInbound(@PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbound(id)));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<InboundReceiptResponse>> registerInbound(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody InboundCreateRequest request
+    ) {
+        InboundReceiptResponse response = inventoryService.registerInbound(userDetails.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success("입고 예정 정보가 등록되었습니다.", response));
     }
 }

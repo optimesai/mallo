@@ -42,6 +42,15 @@ public class InboundReceipt {
     @JoinColumn(name = "worker_id")
     private User worker;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private InboundStatus status = InboundStatus.READY;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public enum InboundStatus {
+        READY,
+        COMPLETED
+    }
 }

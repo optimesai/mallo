@@ -19,6 +19,7 @@ public class InboundReceiptResponse {
     private String locationCode;
     private Integer inboundQty;
     private LocalDate inboundDate;
+    private String status;
     private String workerName;
     private LocalDateTime createdAt;
 
@@ -32,6 +33,9 @@ public class InboundReceiptResponse {
         response.setLocationCode(inboundReceipt.getLocation().getLocationCode());
         response.setInboundQty(inboundReceipt.getInboundQty());
         response.setInboundDate(inboundReceipt.getInboundDate());
+        if (inboundReceipt.getStatus() != null) {
+            response.setStatus(inboundReceipt.getStatus().name());
+        }
         if (inboundReceipt.getWorker() != null) {
             response.setWorkerName(inboundReceipt.getWorker().getUserName());
         }
