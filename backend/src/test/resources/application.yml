@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:ssafy_pjt;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE;INIT=CREATE SCHEMA IF NOT EXISTS ssafy_pjt
+    url: jdbc:h2:mem:ssafy_pjt;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE
     username: sa
     password:
     driver-class-name: org.h2.Driver
