@@ -31,4 +31,11 @@ public interface OutboundShippingApi {
     ResponseEntity<ApiResponse<ShippingResponse>> getShipping(
             @Parameter(description = "출하 ID", required = true) @PathVariable Integer id
     );
+
+    @Operation(summary = "출하 완료 처리 및 재고 차감", description = "피킹이 완료된 완제품 출하 지시 건을 최종 출하 완료 처리하고 전산 재고를 차감합니다.")
+    @PutMapping("/{id}/complete")
+    ResponseEntity<ApiResponse<Void>> completeShipping(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            @Parameter(description = "출하 ID", required = true) @PathVariable Integer id
+    );
 }

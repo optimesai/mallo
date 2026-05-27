@@ -36,4 +36,13 @@ public class OutboundShippingController implements OutboundShippingApi {
     public ResponseEntity<ApiResponse<ShippingResponse>> getShipping(Integer id) {
         return ResponseEntity.ok(ApiResponse.success(outboundShippingService.getShipping(id)));
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> completeShipping(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id
+    ) {
+        outboundShippingService.completeShipping(id, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("출하 완료 및 전산 재고 차감이 처리되었습니다."));
+    }
 }

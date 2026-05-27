@@ -22,6 +22,7 @@ public enum ErrorCode {
     LOCATION_HAS_INVENTORY(HttpStatus.BAD_REQUEST, "재고가 존재하는 로케이션은 삭제할 수 없습니다."),
     SHIPPING_NOT_FOUND(HttpStatus.NOT_FOUND, "출하 지시 정보를 찾을 수 없습니다."),
     SHIPPING_NO_DUPLICATE(HttpStatus.CONFLICT, "이미 등록된 출하 지시 번호입니다."),
+    SHIPPING_STATUS_INVALID(HttpStatus.BAD_REQUEST, "출하 상태가 올바르지 않습니다."),
     WORK_ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "작업 지시를 찾을 수 없습니다."),
     WORK_ORDER_STATUS_INVALID(HttpStatus.BAD_REQUEST, "작업 지시 상태가 올바르지 않습니다."),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "자재 창고의 재고가 부족합니다."),

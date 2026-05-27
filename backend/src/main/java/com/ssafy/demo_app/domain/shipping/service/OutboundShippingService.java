@@ -9,5 +9,6 @@ public interface OutboundShippingService {
     ShippingResponse registerShipping(ShippingCreateRequest request);
     List<ShippingResponse> getShippings();
     ShippingResponse getShipping(Integer shippingId);
+    void completeShipping(Integer shippingId, Integer workerId);
 }
 
