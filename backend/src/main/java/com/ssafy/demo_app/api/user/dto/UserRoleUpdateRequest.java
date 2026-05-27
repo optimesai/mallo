@@ -1,6 +1,6 @@
 package com.ssafy.demo_app.api.user.dto;
 
-import com.ssafy.demo_app.domain.user.model.User;
+import com.ssafy.demo_app.domain.user.entity.User;
 import jakarta.validation.constraints.NotNull;
 
 public class UserRoleUpdateRequest {

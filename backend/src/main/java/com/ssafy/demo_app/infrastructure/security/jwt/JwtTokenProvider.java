@@ -1,6 +1,6 @@
 package com.ssafy.demo_app.infrastructure.security.jwt;
 
-import com.ssafy.demo_app.domain.user.model.User;
+import com.ssafy.demo_app.domain.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

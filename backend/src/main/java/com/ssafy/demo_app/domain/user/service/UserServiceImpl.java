@@ -6,7 +6,7 @@ import com.ssafy.demo_app.api.user.dto.UserUpdateRequest;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
-import com.ssafy.demo_app.domain.user.model.User;
+import com.ssafy.demo_app.domain.user.entity.User;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

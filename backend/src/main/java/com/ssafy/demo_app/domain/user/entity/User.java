@@ -1,4 +1,4 @@
-package com.ssafy.demo_app.domain.user.model;
+package com.ssafy.demo_app.domain.user.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

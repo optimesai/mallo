@@ -1,6 +1,6 @@
 package com.ssafy.demo_app.infrastructure.security.details;
 
-import com.ssafy.demo_app.domain.user.model.User;
+import com.ssafy.demo_app.domain.user.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
