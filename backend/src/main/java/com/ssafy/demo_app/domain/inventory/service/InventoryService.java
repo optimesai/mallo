@@ -3,6 +3,8 @@ package com.ssafy.demo_app.domain.inventory.service;
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
+import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
+import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 
 import java.util.List;
 
@@ -19,4 +21,10 @@ public interface InventoryService {
     void stackInventory(Integer workerId, Integer inboundId, InventoryStackRequest request);
 
     void deleteInbound(Integer inboundId);
+
+    List<CurrentInventoryResponse> getInventories();
+
+    CurrentInventoryResponse getInventory(Integer inventoryId);
+
+    List<TransactionHistoryResponse> getTransactionHistories();
 }

@@ -3,6 +3,8 @@ package com.ssafy.demo_app.domain.inventory.service;
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
+import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
+import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
@@ -144,5 +146,26 @@ public class InventoryServiceImpl implements InventoryService {
             throw new BusinessException(ErrorCode.INBOUND_CANNOT_DELETE);
         }
         inboundReceiptRepository.delete(receipt);
+    }
+
+    @Override
+    public List<CurrentInventoryResponse> getInventories() {
+        return currentInventoryRepository.findAll().stream()
+                .map(CurrentInventoryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CurrentInventoryResponse getInventory(Integer inventoryId) {
+        CurrentInventory inventory = currentInventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+        return CurrentInventoryResponse.from(inventory);
+    }
+
+    @Override
+    public List<TransactionHistoryResponse> getTransactionHistories() {
+        return transactionHistoryRepository.findAll().stream()
+                .map(TransactionHistoryResponse::from)
+                .collect(Collectors.toList());
     }
 }
