@@ -144,6 +144,82 @@ class InventoryServiceTest {
     }
 
     @Test
+    @DisplayName("원부자재 입고 예정 등록 실패 - 거래처를 찾을 수 없음")
+    void registerInbound_PartnerNotFound() {
+        // given
+        InboundCreateRequest request = new InboundCreateRequest();
+        request.setItemCode("ITEM-001");
+        request.setPartnerCode("PART-INVALID");
+
+        given(userRepository.findById(1)).willReturn(Optional.of(worker));
+        given(itemMasterRepository.findByItemCode("ITEM-001")).willReturn(Optional.of(item));
+        given(partnerMasterRepository.findByPartnerCode("PART-INVALID")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.registerInbound(1, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("원부자재 입고 예정 등록 실패 - 로케이션을 찾을 수 없음")
+    void registerInbound_LocationNotFound() {
+        // given
+        InboundCreateRequest request = new InboundCreateRequest();
+        request.setItemCode("ITEM-001");
+        request.setPartnerCode("PART-001");
+        request.setLocationCode("LOC-INVALID");
+
+        given(userRepository.findById(1)).willReturn(Optional.of(worker));
+        given(itemMasterRepository.findByItemCode("ITEM-001")).willReturn(Optional.of(item));
+        given(partnerMasterRepository.findByPartnerCode("PART-001")).willReturn(Optional.of(partner));
+        given(warehouseLocationRepository.findByLocationCode("LOC-INVALID")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.registerInbound(1, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LOCATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("입고 완료 처리 성공")
+    void completeInbound_Success() {
+        // given
+        InboundReceipt receipt = new InboundReceipt();
+        receipt.setInboundId(10);
+        receipt.setItem(item);
+        receipt.setPartner(partner);
+        receipt.setLocation(location);
+        receipt.setStatus(InboundReceipt.InboundStatus.READY);
+
+        given(inboundReceiptRepository.findById(10)).willReturn(Optional.of(receipt));
+        given(inboundReceiptRepository.save(any(InboundReceipt.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        InboundReceiptResponse response = inventoryService.completeInbound(10);
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(InboundReceipt.InboundStatus.COMPLETED.name());
+        verify(inboundReceiptRepository, times(1)).save(receipt);
+    }
+
+    @Test
+    @DisplayName("입고 완료 처리 실패 - 이미 완료된 입고")
+    void completeInbound_AlreadyCompleted() {
+        // given
+        InboundReceipt receipt = new InboundReceipt();
+        receipt.setInboundId(10);
+        receipt.setStatus(InboundReceipt.InboundStatus.COMPLETED);
+
+        given(inboundReceiptRepository.findById(10)).willReturn(Optional.of(receipt));
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.completeInbound(10))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INBOUND_STATUS_INVALID);
+    }
+
+    @Test
     @DisplayName("입고 완료 및 재고 적재 성공")
     void stackInventory_Success() {
         // given
@@ -192,6 +268,66 @@ class InventoryServiceTest {
     }
 
     @Test
+    @DisplayName("재고 적재 실패 - 적재 용량 초과")
+    void stackInventory_CapacityExceeded() {
+        // given
+        InboundReceipt receipt = new InboundReceipt();
+        receipt.setInboundId(10);
+        receipt.setItem(item);
+        receipt.setInboundQty(600);
+        receipt.setStatus(InboundReceipt.InboundStatus.COMPLETED);
+
+        InventoryStackRequest request = new InventoryStackRequest();
+        request.setTargetLocationCode("LOC-A-01");
+
+        CurrentInventory existingInventory = new CurrentInventory();
+        existingInventory.setCurrentQty(500); // 500 + 600 > 1000 (맥스용량)
+
+        given(userRepository.findById(1)).willReturn(Optional.of(worker));
+        given(inboundReceiptRepository.findById(10)).willReturn(Optional.of(receipt));
+        given(warehouseLocationRepository.findByLocationCode("LOC-A-01")).willReturn(Optional.of(location));
+        given(currentInventoryRepository.findByItemAndLocation(item, location)).willReturn(Optional.of(existingInventory));
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.stackInventory(1, 10, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LOCATION_CAPACITY_EXCEEDED);
+    }
+
+    @Test
+    @DisplayName("입고 정보 삭제 성공 - READY 상태")
+    void deleteInbound_Success() {
+        // given
+        InboundReceipt receipt = new InboundReceipt();
+        receipt.setInboundId(10);
+        receipt.setStatus(InboundReceipt.InboundStatus.READY);
+
+        given(inboundReceiptRepository.findById(10)).willReturn(Optional.of(receipt));
+
+        // when
+        inventoryService.deleteInbound(10);
+
+        // then
+        verify(inboundReceiptRepository, times(1)).delete(receipt);
+    }
+
+    @Test
+    @DisplayName("입고 정보 삭제 실패 - COMPLETED 상태")
+    void deleteInbound_FailedCompleted() {
+        // given
+        InboundReceipt receipt = new InboundReceipt();
+        receipt.setInboundId(10);
+        receipt.setStatus(InboundReceipt.InboundStatus.COMPLETED);
+
+        given(inboundReceiptRepository.findById(10)).willReturn(Optional.of(receipt));
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.deleteInbound(10))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INBOUND_CANNOT_DELETE);
+    }
+
+    @Test
     @DisplayName("로케이션 등록 성공 - 코드 중복이 없을 때")
     void createLocation_Success() {
         // given
@@ -227,5 +363,18 @@ class InventoryServiceTest {
         assertThatThrownBy(() -> inventoryService.createLocation(request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LOCATION_CODE_DUPLICATE);
+    }
+
+    @Test
+    @DisplayName("로케이션 삭제 실패 - 재고 보유 중")
+    void deleteLocation_HasInventory() {
+        // given
+        given(warehouseLocationRepository.findById(1)).willReturn(Optional.of(location));
+        given(currentInventoryRepository.existsByLocation(location)).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> inventoryService.deleteLocation(1))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LOCATION_HAS_INVENTORY);
     }
 }
