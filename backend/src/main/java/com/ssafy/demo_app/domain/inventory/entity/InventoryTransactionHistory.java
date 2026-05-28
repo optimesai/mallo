@@ -2,16 +2,16 @@ package com.ssafy.demo_app.domain.inventory.entity;
 
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventory_transaction_history")
 @Getter
 @Setter
-public class InventoryTransactionHistory {
+public class InventoryTransactionHistory extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,9 +39,6 @@ public class InventoryTransactionHistory {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id")
     private User worker;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum TransactionType {
         INBOUND,

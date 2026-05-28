@@ -2,17 +2,17 @@ package com.ssafy.demo_app.domain.production.entity;
 
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.routing.entity.FactoryRouting;
+import com.ssafy.demo_app.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "work_order")
 @Getter
 @Setter
-public class WorkOrder {
+public class WorkOrder extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,12 +39,6 @@ public class WorkOrder {
 
     @Column(name = "plan_date", nullable = false)
     private LocalDate planDate;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", insertable = false, updatable = false)
-    private LocalDateTime updatedAt;
 
     public enum OrderStatus {
         READY,

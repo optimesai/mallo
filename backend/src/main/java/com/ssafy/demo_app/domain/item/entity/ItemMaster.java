@@ -3,13 +3,14 @@ package com.ssafy.demo_app.domain.item.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
+
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 
 @Entity
 @Table(name = "item_master")
 @Getter
 @Setter
-public class ItemMaster {
+public class ItemMaster extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,9 +36,6 @@ public class ItemMaster {
 
     @Column(name = "safety_stock", nullable = false)
     private Integer safetyStock = 0;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum Unit {
         ea, kg, box, L

@@ -3,13 +3,14 @@ package com.ssafy.demo_app.domain.user.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
+
+import com.ssafy.demo_app.global.common.BaseTimeEntity;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-public class User {
+public class User extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,15 +29,9 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
     private Role role;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", insertable = false, updatable = false)
-    private LocalDateTime updatedAt;
 
     public enum Role {
         WORKER,

@@ -1,6 +1,7 @@
 package com.ssafy.demo_app.domain.ai.entity;
 
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(name = "dynamic_batch_schedule")
 @Getter
 @Setter
-public class DynamicBatchSchedule {
+public class DynamicBatchSchedule extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,9 +41,6 @@ public class DynamicBatchSchedule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id")
     private User worker;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum LastRunStatus {
         SUCCESS,
