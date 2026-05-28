@@ -81,7 +81,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         User worker = userRepository.findById(workerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (shipping.getStatus() == OutboundShipping.ShippingStatus.SHIPPED) {
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.PICKING) {
             throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
         }
 
