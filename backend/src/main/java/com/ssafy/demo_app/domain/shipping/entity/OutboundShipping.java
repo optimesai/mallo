@@ -4,6 +4,7 @@ import com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "outbound_shipping")
 @Getter
 @Setter
-public class OutboundShipping {
+public class OutboundShipping extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,9 +52,6 @@ public class OutboundShipping {
 
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum ShippingStatus {
         READY,

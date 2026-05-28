@@ -1,15 +1,15 @@
 package com.ssafy.demo_app.domain.partner.entity;
 
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "partner_master")
 @Getter
 @Setter
-public class PartnerMaster {
+public class PartnerMaster extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,9 +34,6 @@ public class PartnerMaster {
 
     @Column(name = "contact_phone")
     private String contactPhone;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum PartnerType {
         SUPPLIER,

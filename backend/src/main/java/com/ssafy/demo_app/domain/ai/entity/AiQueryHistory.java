@@ -1,16 +1,16 @@
 package com.ssafy.demo_app.domain.ai.entity;
 
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ai_query_history")
 @Getter
 @Setter
-public class AiQueryHistory {
+public class AiQueryHistory extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,9 +36,6 @@ public class AiQueryHistory {
     @Lob
     @Column(name = "error_log", columnDefinition = "TEXT")
     private String errorLog;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum ExecutionStatus {
         SUCCESS,

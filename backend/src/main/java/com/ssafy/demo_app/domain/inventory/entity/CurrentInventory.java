@@ -4,6 +4,8 @@ import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 })
 @Getter
 @Setter
+@EntityListeners(AuditingEntityListener.class)
 public class CurrentInventory {
 
     @Id
@@ -30,6 +33,7 @@ public class CurrentInventory {
     @Column(name = "current_qty", nullable = false)
     private Integer currentQty = 0;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
+    @LastModifiedDate
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

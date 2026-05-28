@@ -1,11 +1,11 @@
 package com.ssafy.demo_app.domain.bom.entity;
 
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bom_structure", uniqueConstraints = {
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 })
 @Getter
 @Setter
-public class BomStructure {
+public class BomStructure extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,7 +33,4 @@ public class BomStructure {
 
     @Column(name = "bom_version", nullable = false)
     private String bomVersion = "v1.0";
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 }

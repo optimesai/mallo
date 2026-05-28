@@ -1,16 +1,16 @@
 package com.ssafy.demo_app.domain.production.entity;
 
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "production_execution")
 @Getter
 @Setter
-public class ProductionExecution {
+public class ProductionExecution extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,7 +33,4 @@ public class ProductionExecution {
 
     @Column(name = "man_hours_minutes", nullable = false)
     private Integer manHoursMinutes;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 }

@@ -3,17 +3,17 @@ package com.ssafy.demo_app.domain.inventory.entity;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inbound_receipt")
 @Getter
 @Setter
-public class InboundReceipt {
+public class InboundReceipt extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,9 +45,6 @@ public class InboundReceipt {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private InboundStatus status = InboundStatus.READY;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public enum InboundStatus {
         READY,

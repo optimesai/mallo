@@ -1,9 +1,9 @@
 package com.ssafy.demo_app.domain.routing.entity;
 
+import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "factory_routing", uniqueConstraints = {
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 })
 @Getter
 @Setter
-public class FactoryRouting {
+public class FactoryRouting extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,4 @@ public class FactoryRouting {
 
     @Column(name = "operation_name", nullable = false)
     private String operationName;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
 }
