@@ -87,7 +87,7 @@ class OutboundShippingServiceTest {
         shipping.setItem(item);
         shipping.setRequestQty(40);
         shipping.setPickingLocation(location);
-        shipping.setStatus(OutboundShipping.ShippingStatus.READY);
+        shipping.setStatus(OutboundShipping.ShippingStatus.PICKING);
         em.persist(shipping);
 
         em.flush();
@@ -137,9 +137,44 @@ class OutboundShippingServiceTest {
         inventory.setCurrentQty(10);
         em.persist(inventory);
 
-        // 출하 지시 생성 및 피킹 위치 배정 (READY 상태, 요청량 30개)
+        // 출하 지시 생성 및 피킹 위치 배정 (PICKING 상태, 요청량 30개)
         OutboundShipping shipping = new OutboundShipping();
         shipping.setShippingNo("SH-2026-TEST-888");
+        shipping.setPartner(partner);
+        shipping.setItem(item);
+        shipping.setRequestQty(30);
+        shipping.setPickingLocation(location);
+        shipping.setStatus(OutboundShipping.ShippingStatus.PICKING);
+        em.persist(shipping);
+
+        em.flush();
+        em.clear();
+
+        // When & Then
+        assertThatThrownBy(() -> outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
+    }
+
+    @Test
+    @DisplayName("출하 완료 실패 - READY 상태인 경우 SHIPPING_STATUS_INVALID 예외 발생")
+    void completeShipping_readyStatus_fail() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("SH-ITEM-03-R", "완제품CR", ItemMaster.ItemType.FG);
+
+        // 재고 설정 (현재고 100개)
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(100);
+        em.persist(inventory);
+
+        // 출하 지시 생성 및 피킹 위치 배정 (READY 상태)
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingNo("SH-2026-TEST-888-R");
         shipping.setPartner(partner);
         shipping.setItem(item);
         shipping.setRequestQty(30);
@@ -153,7 +188,42 @@ class OutboundShippingServiceTest {
         // When & Then
         assertThatThrownBy(() -> outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId()))
                 .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHIPPING_STATUS_INVALID);
+    }
+
+    @Test
+    @DisplayName("출하 완료 실패 - 이미 SHIPPED 상태인 경우 SHIPPING_STATUS_INVALID 예외 발생")
+    void completeShipping_shippedStatus_fail() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("SH-ITEM-03-S", "완제품CS", ItemMaster.ItemType.FG);
+
+        // 재고 설정 (현재고 100개)
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(100);
+        em.persist(inventory);
+
+        // 출하 지시 생성 및 피킹 위치 배정 (SHIPPED 상태)
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingNo("SH-2026-TEST-888-S");
+        shipping.setPartner(partner);
+        shipping.setItem(item);
+        shipping.setRequestQty(30);
+        shipping.setPickingLocation(location);
+        shipping.setStatus(OutboundShipping.ShippingStatus.SHIPPED);
+        em.persist(shipping);
+
+        em.flush();
+        em.clear();
+
+        // When & Then
+        assertThatThrownBy(() -> outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHIPPING_STATUS_INVALID);
     }
 
     @Test
