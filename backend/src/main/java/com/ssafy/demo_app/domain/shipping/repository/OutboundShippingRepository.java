@@ -1,11 +1,13 @@
 package com.ssafy.demo_app.domain.shipping.repository;
 
 import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
+import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OutboundShippingRepository extends JpaRepository<OutboundShipping, Integer> {
     boolean existsByShippingNo(String shippingNo);
+    boolean existsByItem(ItemMaster item);
+    void deleteByItem(ItemMaster item);
 }
-
