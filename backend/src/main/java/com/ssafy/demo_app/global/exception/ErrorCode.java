@@ -15,6 +15,8 @@ public enum ErrorCode {
     ITEM_CODE_DUPLICATE(HttpStatus.CONFLICT, "이미 사용 중인 품목 코드입니다."),
     ITEM_HAS_REFERENCES(HttpStatus.CONFLICT, "다른 기능에서 참조 중인 품목입니다. 삭제 확인 후 force=true로 다시 요청하세요."),
     PARTNER_NOT_FOUND(HttpStatus.NOT_FOUND, "거래처를 찾을 수 없습니다."),
+    PARTNER_CODE_DUPLICATE(HttpStatus.CONFLICT, "이미 사용 중인 거래처 코드입니다."),
+    PARTNER_HAS_REFERENCES(HttpStatus.CONFLICT, "입고 또는 출하 이력에서 참조 중인 거래처입니다."),
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "로케이션을 찾을 수 없습니다."),
     INBOUND_NOT_FOUND(HttpStatus.NOT_FOUND, "입고 정보를 찾을 수 없습니다."),
     INBOUND_STATUS_INVALID(HttpStatus.BAD_REQUEST, "입고 상태가 올바르지 않습니다."),
