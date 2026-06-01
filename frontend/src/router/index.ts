@@ -1,21 +1,60 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { useAuthStore } from '@/state/authStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+      meta: {
+        guestOnly: true
+      }
+    },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: () => import('../views/SignupView.vue'),
+      meta: {
+        guestOnly: true
+      }
+    },
+    {
       path: '/',
       component: () => import('../layouts/DefaultLayout.vue'),
+      meta: {
+        requiresAuth: true
+      },
       children: [
         {
           path: '',
           name: 'home',
           component: HomeView
+        },
+        {
+          path: 'me',
+          name: 'my-info',
+          component: () => import('../views/MyInfoView.vue')
         }
       ]
     }
   ]
+})
+
+router.beforeEach((to) => {
+  const authStore = useAuthStore()
+
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    return { name: 'login' }
+  }
+
+  if (to.meta.guestOnly && authStore.isLoggedIn) {
+    return { name: 'home' }
+  }
+
+  return true
 })
 
 export default router
