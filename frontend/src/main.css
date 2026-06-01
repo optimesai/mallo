@@ -1,1 +1,229 @@
 @import "tailwindcss";
+
+:root {
+  --auth-color-page: #f4f4f5;
+  --auth-color-surface: #ffffff;
+  --auth-color-border: #9ca3af;
+  --auth-color-divider: #d1d5db;
+  --auth-color-text-primary: #202124;
+  --auth-color-text-secondary: #4b5563;
+  --auth-color-text-muted: #6b7280;
+  --auth-color-primary: #1428A0;
+  --auth-color-primary-hover: #102180;
+  --auth-color-danger: #dc2626;
+  --auth-font-weight-title: 700;
+  --auth-font-weight-label: 600;
+  --auth-font-weight-button: 700;
+  --profile-color-surface: #ffffff;
+  --profile-color-border: #e2e8f0;
+  --profile-color-text-primary: #1e293b;
+  --profile-color-text-secondary: #64748b;
+  --profile-color-primary: #1428A0;
+  --profile-color-primary-hover: #102180;
+  --profile-color-danger: #dc2626;
+  --profile-color-success: #047857;
+  --profile-font-weight-title: 700;
+  --profile-font-weight-label: 600;
+  --profile-font-weight-button: 700;
+}
+
+@layer components {
+  .auth-page {
+    @apply min-h-screen flex items-center justify-center px-4;
+    background-color: var(--auth-color-page);
+  }
+
+  .auth-panel {
+    @apply w-full max-w-md px-9 py-10;
+    background-color: var(--auth-color-surface);
+    border: 2px solid var(--auth-color-border);
+  }
+
+  .auth-panel-signup {
+    @apply max-w-lg;
+  }
+
+  .auth-logo-box {
+    @apply mx-auto mb-6 flex h-24 w-24 items-center justify-center text-xs;
+    border: 1px solid var(--auth-color-divider);
+    color: var(--auth-color-text-secondary);
+  }
+
+  .auth-title {
+    @apply text-center text-base;
+    color: var(--auth-color-text-primary);
+    font-weight: var(--auth-font-weight-title);
+  }
+
+  .auth-divider {
+    @apply my-7;
+    border-top: 1px solid var(--auth-color-divider);
+  }
+
+  .auth-form {
+    @apply space-y-3;
+  }
+
+  .auth-field {
+    @apply space-y-1;
+  }
+
+  .auth-label {
+    @apply block text-xs;
+    color: var(--auth-color-text-primary);
+    font-weight: var(--auth-font-weight-label);
+  }
+
+  .auth-input {
+    @apply h-10 w-full px-3 text-sm outline-none transition;
+    border: 2px solid var(--auth-color-border);
+    color: var(--auth-color-text-primary);
+  }
+
+  .auth-input::placeholder {
+    color: var(--auth-color-text-muted);
+  }
+
+  .auth-input:focus {
+    border-color: var(--auth-color-primary);
+  }
+
+  .auth-error {
+    @apply min-h-5 text-xs;
+    color: var(--auth-color-danger);
+  }
+
+  .auth-help {
+    @apply text-xs;
+    color: var(--auth-color-text-muted);
+  }
+
+  .auth-submit {
+    @apply mt-1 h-10 w-full text-sm transition;
+    background-color: var(--auth-color-primary);
+    color: var(--auth-color-surface);
+    font-weight: var(--auth-font-weight-button);
+  }
+
+  .auth-submit:hover {
+    background-color: var(--auth-color-primary-hover);
+  }
+
+  .auth-submit:disabled {
+    @apply cursor-not-allowed opacity-70;
+  }
+
+  .auth-link {
+    @apply mt-2 block text-center text-xs underline underline-offset-2;
+    color: var(--auth-color-text-muted);
+  }
+
+  .auth-info-box {
+    @apply mt-5 p-4 text-xs leading-5;
+    border: 1px solid var(--auth-color-divider);
+    color: var(--auth-color-text-muted);
+  }
+
+  .auth-divider-compact {
+    @apply my-5;
+  }
+
+  .profile-page {
+    @apply space-y-6;
+  }
+
+  .profile-heading {
+    @apply flex items-center justify-between;
+  }
+
+  .profile-title {
+    @apply text-2xl;
+    color: var(--profile-color-text-primary);
+    font-weight: var(--profile-font-weight-title);
+  }
+
+  .profile-subtitle {
+    @apply mt-2 text-sm;
+    color: var(--profile-color-text-secondary);
+  }
+
+  .profile-panel {
+    @apply max-w-3xl p-6 shadow-sm;
+    background-color: var(--profile-color-surface);
+    border: 1px solid var(--profile-color-border);
+    border-radius: 8px;
+  }
+
+  .profile-state {
+    @apply text-sm;
+    color: var(--profile-color-text-secondary);
+  }
+
+  .profile-form {
+    @apply space-y-5;
+  }
+
+  .profile-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+  }
+
+  .profile-field {
+    @apply space-y-1.5;
+  }
+
+  .profile-label {
+    @apply block text-xs;
+    color: var(--profile-color-text-primary);
+    font-weight: var(--profile-font-weight-label);
+  }
+
+  .profile-input {
+    @apply h-10 w-full px-3 text-sm outline-none transition;
+    border: 1px solid var(--profile-color-border);
+    color: var(--profile-color-text-primary);
+  }
+
+  .profile-input:focus {
+    border-color: var(--profile-color-primary);
+  }
+
+  .profile-input:disabled {
+    @apply cursor-not-allowed;
+    color: var(--profile-color-text-secondary);
+    background-color: #f8fafc;
+  }
+
+  .profile-help {
+    @apply text-xs;
+    color: var(--profile-color-text-secondary);
+  }
+
+  .profile-error {
+    @apply min-h-5 text-sm;
+    color: var(--profile-color-danger);
+  }
+
+  .profile-success {
+    @apply min-h-5 text-sm;
+    color: var(--profile-color-success);
+  }
+
+  .profile-actions {
+    @apply flex justify-end;
+  }
+
+  .profile-submit {
+    @apply h-10 min-w-28 px-5 text-sm transition;
+    background-color: var(--profile-color-primary);
+    color: var(--profile-color-surface);
+    font-weight: var(--profile-font-weight-button);
+  }
+
+  .profile-submit:hover {
+    background-color: var(--profile-color-primary-hover);
+  }
+
+  .profile-submit:disabled {
+    @apply cursor-not-allowed opacity-70;
+  }
+}
