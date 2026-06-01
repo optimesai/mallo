@@ -4,9 +4,22 @@ import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface PartnerMasterRepository extends JpaRepository<PartnerMaster, Integer> {
     Optional<PartnerMaster> findByPartnerCode(String partnerCode);
+    boolean existsByPartnerCode(String partnerCode);
+    boolean existsByPartnerCodeAndPartnerIdNot(String partnerCode, Integer partnerId);
+    List<PartnerMaster> findByPartnerTypeOrderByPartnerIdAsc(PartnerMaster.PartnerType partnerType);
+    List<PartnerMaster> findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(
+            String partnerName,
+            String partnerCode
+    );
+    List<PartnerMaster> findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrBusinessNoContainingIgnoreCaseOrderByPartnerIdAsc(
+            String partnerName,
+            String partnerCode,
+            String businessNo
+    );
 }
