@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface BomStructureRepository extends JpaRepository<BomStructure, Integer> {
     List<BomStructure> findByParentItem(ItemMaster parentItem);
+    boolean existsByParentItemOrChildItem(ItemMaster parentItem, ItemMaster childItem);
+    void deleteByParentItemOrChildItem(ItemMaster parentItem, ItemMaster childItem);
 }

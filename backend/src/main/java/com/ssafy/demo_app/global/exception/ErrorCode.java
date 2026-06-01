@@ -12,6 +12,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "품목을 찾을 수 없습니다."),
+    ITEM_CODE_DUPLICATE(HttpStatus.CONFLICT, "이미 사용 중인 품목 코드입니다."),
+    ITEM_HAS_REFERENCES(HttpStatus.CONFLICT, "다른 기능에서 참조 중인 품목입니다. 삭제 확인 후 force=true로 다시 요청하세요."),
     PARTNER_NOT_FOUND(HttpStatus.NOT_FOUND, "거래처를 찾을 수 없습니다."),
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "로케이션을 찾을 수 없습니다."),
     INBOUND_NOT_FOUND(HttpStatus.NOT_FOUND, "입고 정보를 찾을 수 없습니다."),
