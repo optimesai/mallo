@@ -47,6 +47,21 @@ const router = createRouter({
           path: 'inbound/stack',
           name: 'inbound-stack',
           component: () => import('../views/InboundStackView.vue')
+        },
+        {
+          path: 'inventory/status',
+          name: 'inventory-status',
+          component: () => import('../views/InventoryStatusView.vue')
+        },
+        {
+          path: 'inventory/history',
+          name: 'inventory-history',
+          component: () => import('../views/InventoryHistoryView.vue')
+        },
+        {
+          path: 'production/issue',
+          name: 'production-issue',
+          component: () => import('../views/MaterialIssueView.vue')
         }
       ]
     }
