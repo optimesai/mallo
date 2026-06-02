@@ -1,6 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import {
+  FileText,
+  Clock,
+  CheckCircle2,
+  Search,
+  ChevronDown,
+  CheckSquare,
+  Trash2,
+  Plus,
+  Loader2,
+  ArrowRight,
+  FileSpreadsheet,
+  RefreshCw
+} from '@lucide/vue'
 import { useInboundStore } from '@/state/inboundStore'
 import type { InboundCreateRequest } from '@/api/inboundApi'
 
@@ -369,9 +383,7 @@ function formatDateTime(dateTimeStr: string) {
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
         <div class="p-3 bg-slate-100 rounded-lg text-slate-600">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
+          <FileText class="w-6 h-6" />
         </div>
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">전체 입고 오더</p>
@@ -380,9 +392,7 @@ function formatDateTime(dateTimeStr: string) {
       </div>
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
         <div class="p-3 bg-indigo-50 rounded-lg text-[#1428A0]">
-          <svg class="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Clock class="w-6 h-6 animate-pulse" />
         </div>
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">입고 대기 (READY)</p>
@@ -391,9 +401,7 @@ function formatDateTime(dateTimeStr: string) {
       </div>
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
         <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <CheckCircle2 class="w-6 h-6" />
         </div>
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">검수 완료 (COMPLETED)</p>
@@ -406,25 +414,17 @@ function formatDateTime(dateTimeStr: string) {
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="px-5 py-3.5 border-b border-slate-250 bg-slate-50 flex items-center justify-between">
         <span class="text-xs font-bold text-slate-700 flex items-center gap-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
+          <Search class="w-4 h-4 text-slate-400" />
           조회 검색 조건
         </span>
         <button
           @click="isSearchExpanded = !isSearchExpanded"
           class="p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors"
         >
-          <svg
+          <ChevronDown
             class="w-4 h-4 transform transition-transform duration-200"
             :class="{ 'rotate-180': !isSearchExpanded }"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          />
         </button>
       </div>
 
@@ -502,9 +502,7 @@ function formatDateTime(dateTimeStr: string) {
             :disabled="selectedIds.length === 0"
             class="h-9 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckSquare class="w-4 h-4" />
             선택 검수완료
           </button>
           <button
@@ -512,9 +510,7 @@ function formatDateTime(dateTimeStr: string) {
             :disabled="selectedIds.length === 0"
             class="h-9 px-4 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <Trash2 class="w-4 h-4" />
             선택 삭제
           </button>
           <span class="text-xs text-slate-500 ml-2 font-bold bg-slate-100 px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
@@ -527,18 +523,14 @@ function formatDateTime(dateTimeStr: string) {
             @click="fetchPageData"
             class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2" />
-            </svg>
+            <RefreshCw class="w-4 h-4" />
             새로고침
           </button>
           <button
             @click="openRegisterModal"
             class="h-9 px-4 bg-[#1428A0] hover:bg-[#102180] text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+            <Plus class="w-4 h-4" />
             입고 예정 등록
           </button>
         </div>
@@ -574,10 +566,7 @@ function formatDateTime(dateTimeStr: string) {
             <tr v-if="inboundStore.isLoading">
               <td colspan="12" class="px-4 py-12 text-center text-slate-400">
                 <div class="flex items-center justify-center gap-2">
-                  <svg class="animate-spin h-5 w-5 text-[#1428A0]" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <Loader2 class="animate-spin h-5 w-5 text-[#1428A0]" />
                   <span>데이터를 가져오고 있습니다...</span>
                 </div>
               </td>
@@ -651,9 +640,7 @@ function formatDateTime(dateTimeStr: string) {
                       class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-[#1428A0] border border-indigo-200 rounded font-bold transition text-[10px] inline-flex items-center gap-1"
                     >
                       창고 적재
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                      </svg>
+                      <ArrowRight class="w-3 h-3" />
                     </button>
                   </template>
                 </div>
@@ -684,9 +671,7 @@ function formatDateTime(dateTimeStr: string) {
       <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
           <span class="flex items-center gap-1.5 text-[#1428A0] uppercase tracking-wider">
-            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
-            </svg>
+            <FileSpreadsheet class="w-4.5 h-4.5" />
             선택 오더 세부 내역
           </span>
           <div class="flex border-l border-slate-300 pl-4 space-x-1.5">
@@ -715,9 +700,7 @@ function formatDateTime(dateTimeStr: string) {
       <div class="p-6 text-xs bg-white min-h-[140px]">
         <div v-if="!selectedInbound" class="py-8 flex items-center justify-center text-slate-400 font-medium">
           <div class="text-center">
-            <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-            </svg>
+            <FileSpreadsheet class="w-8 h-8 text-slate-300 mx-auto mb-2" />
             <span>상단 그리드 목록에서 오더 행을 선택하시면 품목별 세부 속성 및 로케이션 렉 상세 정보가 동기화됩니다.</span>
           </div>
         </div>
@@ -903,7 +886,7 @@ function formatDateTime(dateTimeStr: string) {
                 :disabled="isRegisterSubmitting"
                 class="h-9 px-5 text-white bg-[#1428A0] hover:bg-[#102180] disabled:opacity-70 rounded-lg font-bold transition flex items-center justify-center gap-2"
               >
-                <span v-if="isRegisterSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                <Loader2 v-if="isRegisterSubmitting" class="animate-spin h-3.5 w-3.5 text-white" />
                 입고오더 등록
               </button>
             </div>
