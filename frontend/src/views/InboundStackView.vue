@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useInboundStore } from '@/state/inboundStore'
 
 const inboundStore = useInboundStore()
+const router = useRouter()
+
+// 이미 적치(렉 적재) 완료된 inbound ID 목록 (프론트엔드 실시간 필터링용)
+const stackedIds = ref<number[]>([])
 
 // 에러 & 성공 토스트 메시지
 const pageError = ref<string | null>(null)
@@ -52,7 +57,7 @@ const selectedLocationDetail = computed(() => {
 // 적재 가능한 입고 완료(COMPLETED) 건만 필터링
 const completedInbounds = computed(() => {
   return inboundStore.inbounds.filter(item => {
-    if (item.status !== 'COMPLETED') {
+    if (item.status !== 'COMPLETED' || stackedIds.value.includes(item.inboundId)) {
       return false
     }
     // 품목 검색
@@ -172,6 +177,7 @@ async function handleStack() {
     // 리스트 및 세부정보 상태 업데이트
     selectedInbound.value = null
     selectedIds.value = selectedIds.value.filter(id => id !== inboundId)
+    stackedIds.value.push(inboundId)
     await inboundStore.loadInbounds()
   } catch (err) {
     stackError.value = err instanceof Error ? err.message : '로케이션 적재 처리에 실패했습니다.'
@@ -221,6 +227,7 @@ async function handleBatchStack() {
     closeBatchStackModal()
 
     // 상태 초기화
+    selectedItems.forEach(item => stackedIds.value.push(item.inboundId))
     selectedIds.value = []
     selectedInbound.value = null
     await inboundStore.loadInbounds()
@@ -359,15 +366,26 @@ function formatDateTime(dateTimeStr: string) {
           </span>
         </div>
 
-        <button
-          @click="fetchPageData"
-          class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2" />
-          </svg>
-          새로고침
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            @click="fetchPageData"
+            class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2" />
+            </svg>
+            새로고침
+          </button>
+          <button
+            @click="router.push('/inbound/receipt?register=true')"
+            class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            입고 예정 등록
+          </button>
+        </div>
       </div>
 
       <!-- 그리드 테이블 -->

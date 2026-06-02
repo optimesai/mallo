@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useInboundStore } from '@/state/inboundStore'
 import type { InboundCreateRequest } from '@/api/inboundApi'
 
@@ -98,8 +98,13 @@ const totalInboundQty = computed(() => {
   return filteredInbounds.value.reduce((acc, curr) => acc + (curr.inboundQty || 0), 0)
 })
 
+const route = useRoute()
+
 onMounted(async () => {
   await fetchPageData()
+  if (route.query.register === 'true') {
+    openRegisterModal()
+  }
 })
 
 async function fetchPageData() {
@@ -518,6 +523,15 @@ function formatDateTime(dateTimeStr: string) {
         </div>
 
         <div class="flex items-center gap-2">
+          <button
+            @click="fetchPageData"
+            class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2" />
+            </svg>
+            새로고침
+          </button>
           <button
             @click="openRegisterModal"
             class="h-9 px-4 bg-[#1428A0] hover:bg-[#102180] text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-2"
