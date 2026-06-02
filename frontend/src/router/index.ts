@@ -37,6 +37,16 @@ const router = createRouter({
           path: 'me',
           name: 'my-info',
           component: () => import('../views/MyInfoView.vue')
+        },
+        {
+          path: 'inbound/receipt',
+          name: 'inbound-receipt',
+          component: () => import('../views/InboundReceiptView.vue')
+        },
+        {
+          path: 'inbound/stack',
+          name: 'inbound-stack',
+          component: () => import('../views/InboundStackView.vue')
         }
       ]
     }
