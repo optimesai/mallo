@@ -532,9 +532,9 @@ function formatDateTime(dateTimeStr: string) {
 
       <!-- 고밀도 데이터 테이블 영역 (Spacious border & alignment) -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-650 border-collapse">
+        <table class="w-full min-w-[1200px] text-left text-xs text-slate-650 border-collapse">
           <thead class="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
-            <tr>
+            <tr class="whitespace-nowrap">
               <th class="px-4 py-3 text-center w-12 border-r border-slate-200 bg-slate-100/70">
                 <input
                   type="checkbox"
@@ -577,7 +577,7 @@ function formatDateTime(dateTimeStr: string) {
               v-for="(item, idx) in filteredInbounds"
               :key="item.inboundId"
               @click="selectRow(item)"
-              class="hover:bg-slate-50/80 cursor-pointer transition-colors"
+              class="hover:bg-slate-50/80 cursor-pointer transition-colors whitespace-nowrap"
               :class="{
                 'bg-blue-50/70': selectedInbound?.inboundId === item.inboundId,
                 'bg-slate-50/20': idx % 2 === 1 && selectedInbound?.inboundId !== item.inboundId
@@ -649,7 +649,7 @@ function formatDateTime(dateTimeStr: string) {
 
           <!-- 테이블 합계 행 (Summary Row) -->
           <tfoot class="bg-blue-50/50 text-slate-800 font-bold border-t border-slate-200">
-            <tr>
+            <tr class="whitespace-nowrap">
               <td class="px-4 py-3 border-r border-slate-150 text-center">합계</td>
               <td colspan="5" class="px-4 py-3 border-r border-slate-150 text-left text-slate-400 font-normal">
                 현재 검색 목록: 총 <span class="font-bold text-slate-800">{{ filteredInbounds.length }}</span>건의 입고
