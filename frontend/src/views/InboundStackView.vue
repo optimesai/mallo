@@ -152,10 +152,6 @@ function openStackModal(item: any) {
   isStackModalOpen.value = true
 }
 
-function closeStackModal() {
-  isStackModalOpen.value = false
-}
-
 // 단일 적재 실행
 async function handleStack() {
   stackError.value = null
@@ -182,6 +178,10 @@ async function handleStack() {
   } finally {
     isStackSubmitting.value = false
   }
+}
+
+function closeStackModal() {
+  isStackModalOpen.value = false
 }
 
 // 일괄 적재 모달 제어
@@ -246,32 +246,32 @@ function formatDateTime(dateTimeStr: string) {
 </script>
 
 <template>
-  <div class="flex flex-col space-y-5 h-full">
+  <div class="space-y-6 pb-12 font-sans">
     <!-- 헤더 영역 -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
-        <h1 class="text-xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
           <span class="w-1.5 h-6 bg-[#1428A0] rounded-sm"></span>
           창고 적재 및 로케이션 배치
         </h1>
-        <p class="text-xs text-slate-500 mt-0.5 font-medium">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다.</p>
+        <p class="text-xs text-slate-500 mt-1.5 font-medium">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다.</p>
       </div>
       <!-- 성공 토스트 -->
-      <div v-if="successToast" class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm animate-fade-in">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+      <div v-if="successToast" class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm animate-fade-in">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
         {{ successToast }}
       </div>
     </div>
 
     <!-- 에러 배너 -->
-    <div v-if="pageError" class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 rounded-lg text-xs flex items-center justify-between shrink-0">
+    <div v-if="pageError" class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 rounded-lg text-xs flex items-center justify-between">
       <span>{{ pageError }}</span>
       <button @click="pageError = null" class="text-rose-500 hover:text-rose-700 font-bold">×</button>
     </div>
 
     <!-- 접이식 검색 조건 패널 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
-      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-slate-250 bg-slate-50 flex items-center justify-between">
         <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
           <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -283,7 +283,7 @@ function formatDateTime(dateTimeStr: string) {
           class="p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors"
         >
           <svg
-            class="w-4 h-4 transform transition-transform duration-250"
+            class="w-4 h-4 transform transition-transform duration-200"
             :class="{ 'rotate-180': !isSearchExpanded }"
             fill="none"
             viewBox="0 0 24 24"
@@ -296,13 +296,13 @@ function formatDateTime(dateTimeStr: string) {
       </div>
 
       <!-- 확장 시 필터 폼 -->
-      <div v-show="isSearchExpanded" class="p-5 border-t border-slate-150 bg-white grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      <div v-show="isSearchExpanded" class="p-5 border-t border-slate-200 bg-white grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
         <div class="space-y-1.5">
           <label class="block font-bold text-slate-600">원자재 품목</label>
           <input
             v-model="filterItem"
             placeholder="품목명 또는 품목 코드 입력"
-            class="w-full h-8 px-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#1428A0] focus:bg-white transition"
+            class="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-[#1428A0] focus:ring-1 focus:ring-[#1428A0] transition shadow-sm"
           >
         </div>
         <div class="space-y-1.5">
@@ -310,7 +310,7 @@ function formatDateTime(dateTimeStr: string) {
           <input
             v-model="filterPartner"
             placeholder="거래처명 또는 거래처 코드 입력"
-            class="w-full h-8 px-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#1428A0] focus:bg-white transition"
+            class="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-[#1428A0] focus:ring-1 focus:ring-[#1428A0] transition shadow-sm"
           >
         </div>
         <div class="space-y-1.5">
@@ -318,20 +318,20 @@ function formatDateTime(dateTimeStr: string) {
           <input
             v-model="filterCurrentLocation"
             placeholder="현재 임시 지정된 로케이션 코드"
-            class="w-full h-8 px-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#1428A0] focus:bg-white transition"
+            class="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-[#1428A0] focus:ring-1 focus:ring-[#1428A0] transition shadow-sm"
           >
         </div>
 
-        <div class="md:col-span-3 flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <div class="col-span-1 sm:col-span-3 flex justify-end gap-2 pt-3 border-t border-slate-100">
           <button
             @click="resetFilters"
-            class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded transition"
+            class="h-9 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg transition"
           >
             초기화
           </button>
           <button
             @click="fetchPageData"
-            class="h-8 px-4 bg-[#1428A0] hover:bg-[#102180] text-white font-bold rounded shadow-sm transition"
+            class="h-9 px-5 bg-[#1428A0] hover:bg-[#102180] text-white font-bold rounded-lg shadow-sm transition"
           >
             조회
           </button>
@@ -340,30 +340,30 @@ function formatDateTime(dateTimeStr: string) {
     </div>
 
     <!-- 메인 그리드 및 액션 툴바 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-grow min-h-[300px] overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <!-- 액션 버튼 툴바 -->
-      <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+      <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <button
             @click="openBatchStackModal"
             :disabled="selectedIds.length === 0"
-            class="h-8 px-3.5 text-xs bg-[#1428A0] hover:bg-[#102180] text-white font-bold rounded shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            class="h-9 px-4 text-xs bg-[#1428A0] hover:bg-[#102180] text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             선택 일괄 적재
           </button>
-          <span class="text-xs text-slate-400 ml-1 font-semibold" v-if="selectedIds.length > 0">
-            총 {{ selectedIds.length }}개 적재 대상 선택됨
+          <span class="text-xs text-slate-500 ml-2 font-bold bg-slate-100 px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
+            선택: <span class="text-[#1428A0]">{{ selectedIds.length }}</span>개
           </span>
         </div>
 
         <button
           @click="fetchPageData"
-          class="h-8 px-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250 font-bold rounded transition flex items-center gap-1.5"
+          class="h-9 px-4 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg shadow-sm transition flex items-center gap-2"
         >
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2" />
           </svg>
           새로고침
@@ -371,95 +371,82 @@ function formatDateTime(dateTimeStr: string) {
       </div>
 
       <!-- 그리드 테이블 -->
-      <div class="flex-grow overflow-y-auto">
-        <table class="w-full text-left text-xs text-slate-600 border-collapse">
-          <thead class="bg-slate-100 text-slate-500 font-bold uppercase border-b border-slate-200 sticky top-0 z-10">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-650 border-collapse">
+          <thead class="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
             <tr>
-              <th class="px-4 py-2.5 text-center w-12 bg-slate-100 border-r border-slate-200">
+              <th class="px-4 py-3 text-center w-12 border-r border-slate-200 bg-slate-100/70">
                 <input
                   type="checkbox"
                   :checked="isAllSelected"
                   @change="toggleSelectAll"
-                  class="rounded text-[#1428A0] focus:ring-[#1428A0] w-3.5 h-3.5 cursor-pointer"
+                  class="rounded text-[#1428A0] focus:ring-[#1428A0] w-4 h-4 cursor-pointer"
                 >
               </th>
-              <th class="px-4 py-2.5 text-center w-12 border-r border-slate-200">No</th>
-              <th class="px-4 py-2.5 w-32 border-r border-slate-200">품목코드</th>
-              <th class="px-4 py-2.5 w-56 border-r border-slate-200">품목명</th>
-              <th class="px-4 py-2.5 w-44 border-r border-slate-200">공급처명</th>
-              <th class="px-4 py-2.5 text-center w-36 border-r border-slate-200">현재 대기 로케이션</th>
-              <th class="px-4 py-2.5 text-right w-24 border-r border-slate-200">입고 수량</th>
-              <th class="px-4 py-2.5 text-center w-36 border-r border-slate-200">검수 완료일시</th>
-              <th class="px-4 py-2.5 text-center w-24 border-r border-slate-200">담당자</th>
-              <th class="px-4 py-2.5 text-center">액션</th>
+              <th class="px-4 py-3 text-center w-12 border-r border-slate-200">No</th>
+              <th class="px-4 py-3 w-32 border-r border-slate-200 font-bold">품목코드</th>
+              <th class="px-4 py-3 w-64 border-r border-slate-200">품목명</th>
+              <th class="px-4 py-3 w-56 border-r border-slate-200">공급처명</th>
+              <th class="px-4 py-3 text-center w-36 border-r border-slate-200">현재 대기 로케이션</th>
+              <th class="px-4 py-3 text-right w-24 border-r border-slate-200">입고 수량</th>
+              <th class="px-4 py-3 text-center w-36 border-r border-slate-200">검수 완료일시</th>
+              <th class="px-4 py-3 text-center w-24 border-r border-slate-200">담당자</th>
+              <th class="px-4 py-3 text-center">액션</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200">
-            <!-- 로딩 -->
             <tr v-if="inboundStore.isLoading">
               <td colspan="10" class="px-4 py-12 text-center text-slate-400">
                 <div class="flex items-center justify-center gap-2">
-                  <svg class="animate-spin h-4 w-4 text-[#1428A0]" fill="none" viewBox="0 0 24 24">
+                  <svg class="animate-spin h-5 w-5 text-[#1428A0]" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>창고 로케이션 정보를 로드하고 있습니다...</span>
+                  <span>데이터를 가져오고 있습니다...</span>
                 </div>
               </td>
             </tr>
-            <!-- 빈 데이터 -->
             <tr v-else-if="completedInbounds.length === 0">
-              <td colspan="10" class="px-4 py-12 text-center text-slate-400 font-medium">
-                적재 대기 중인 입고 완료 자재가 존재하지 않습니다.
+              <td colspan="10" class="px-4 py-12 text-center text-slate-400">
+                적재 대기 중인 입고 완료 자재가 없습니다.
               </td>
             </tr>
-            <!-- 데이터 리스트 -->
             <tr
               v-for="(item, idx) in completedInbounds"
               :key="item.inboundId"
               @click="selectRow(item)"
-              class="hover:bg-slate-50 cursor-pointer transition-colors"
+              class="hover:bg-slate-50/80 cursor-pointer transition-colors"
               :class="{
-                'bg-slate-50 border-l-4 border-l-[#1428A0]': selectedInbound?.inboundId === item.inboundId,
-                'bg-slate-50/40': idx % 2 === 1 && selectedInbound?.inboundId !== item.inboundId
+                'bg-blue-50/70': selectedInbound?.inboundId === item.inboundId,
+                'bg-slate-50/20': idx % 2 === 1 && selectedInbound?.inboundId !== item.inboundId
               }"
             >
-              <!-- 체크박스 -->
-              <td class="px-4 py-2 text-center border-r border-slate-200" @click.stop>
+              <td class="px-4 py-3 text-center border-r border-slate-100" @click.stop>
                 <input
                   type="checkbox"
                   :checked="selectedIds.includes(item.inboundId)"
                   @change="toggleSelect(item.inboundId)"
-                  class="rounded text-[#1428A0] focus:ring-[#1428A0] w-3.5 h-3.5 cursor-pointer"
+                  class="rounded text-[#1428A0] focus:ring-[#1428A0] w-4 h-4 cursor-pointer"
                 >
               </td>
-              <!-- 번호 -->
-              <td class="px-4 py-2 text-center font-medium text-slate-400 border-r border-slate-200">{{ idx + 1 }}</td>
-              <!-- 품목코드 -->
-              <td class="px-4 py-2 font-mono text-slate-800 font-semibold border-r border-slate-200">{{ item.itemCode }}</td>
-              <!-- 품목명 -->
-              <td class="px-4 py-2 text-slate-700 border-r border-slate-200 truncate max-w-[220px]" :title="item.itemName">{{ item.itemName }}</td>
-              <!-- 공급처명 -->
-              <td class="px-4 py-2 text-slate-700 border-r border-slate-200 truncate max-w-[170px]" :title="item.partnerName">{{ item.partnerName }}</td>
-              <!-- 현재 대기 로케이션 -->
-              <td class="px-4 py-2 text-center border-r border-slate-200">
-                <span class="font-mono text-[11px] px-2 py-0.5 bg-slate-100 rounded text-slate-500 border border-slate-200">
+              <td class="px-4 py-3 text-center font-medium text-slate-400 border-r border-slate-100">{{ idx + 1 }}</td>
+              <td class="px-4 py-3 font-mono text-slate-800 font-bold border-r border-slate-100">{{ item.itemCode }}</td>
+              <td class="px-4 py-3 text-slate-700 border-r border-slate-100 font-medium">{{ item.itemName }}</td>
+              <td class="px-4 py-3 text-slate-700 border-r border-slate-100 font-medium">{{ item.partnerName }}</td>
+              <td class="px-4 py-3 text-center border-r border-slate-100">
+                <span class="font-mono text-[11px] px-2.5 py-0.5 bg-slate-100 rounded text-slate-500 border border-slate-200">
                   {{ item.locationCode }}
                 </span>
               </td>
-              <!-- 수량 -->
-              <td class="px-4 py-2 text-right border-r border-slate-200 font-extrabold text-slate-800">{{ item.inboundQty.toLocaleString() }}</td>
-              <!-- 검수 완료 시각 -->
-              <td class="px-4 py-2 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px]">{{ formatDateTime(item.createdAt) }}</td>
-              <!-- 담당자 -->
-              <td class="px-4 py-2 text-center border-r border-slate-200 text-slate-600 font-medium">{{ item.workerName || '-' }}</td>
-              <!-- 단일 액션 -->
-              <td class="px-4 py-2 text-center" @click.stop>
+              <td class="px-4 py-3 text-right border-r border-slate-100 font-extrabold text-slate-800">{{ item.inboundQty.toLocaleString() }}</td>
+              <td class="px-4 py-3 text-center border-r border-slate-100 text-slate-400 font-mono text-[11px]">{{ formatDateTime(item.createdAt) }}</td>
+              <td class="px-4 py-3 text-center border-r border-slate-100 font-semibold text-slate-600">{{ item.workerName || '-' }}</td>
+              <td class="px-4 py-3 text-center" @click.stop>
                 <button
                   @click="openStackModal(item)"
-                  class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold shadow-sm transition inline-flex items-center gap-1"
+                  class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold transition shadow-xs text-[10px] inline-flex items-center gap-1"
                 >
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                   렉 적재
@@ -469,16 +456,16 @@ function formatDateTime(dateTimeStr: string) {
           </tbody>
 
           <!-- 테이블 합계 행 (Summary Row) -->
-          <tfoot class="bg-blue-50/50 text-slate-800 font-bold border-t border-slate-200 sticky bottom-0 z-10">
+          <tfoot class="bg-blue-50/50 text-slate-800 font-bold border-t border-slate-200">
             <tr>
-              <td class="px-4 py-2.5 border-r border-slate-200 text-center">합계</td>
-              <td colspan="5" class="px-4 py-2.5 border-r border-slate-200 text-left text-slate-400 font-normal">
-                현재 목록: 총 <span class="font-bold text-slate-800">{{ completedInbounds.length }}</span>건의 적재 대기 오더
+              <td class="px-4 py-3 border-r border-slate-150 text-center">합계</td>
+              <td colspan="5" class="px-4 py-3 border-r border-slate-150 text-left text-slate-400 font-normal">
+                현재 적재 대기 목록: 총 <span class="font-bold text-slate-800">{{ completedInbounds.length }}</span>건의 자재
               </td>
-              <td class="px-4 py-2.5 text-right border-r border-slate-200 text-[#1428A0] font-extrabold text-[13px]">
+              <td class="px-4 py-3 text-right border-r border-slate-150 text-[#1428A0] font-extrabold text-sm">
                 {{ totalStackQty.toLocaleString() }}
               </td>
-              <td colspan="3" class="px-4 py-2.5"></td>
+              <td colspan="3" class="px-4 py-3"></td>
             </tr>
           </tfoot>
         </table>
@@ -486,41 +473,41 @@ function formatDateTime(dateTimeStr: string) {
     </div>
 
     <!-- 하단 상세정보 마스터-디테일 패널 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-60 shrink-0 overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <!-- 탭 헤더 -->
-      <div class="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
-          <span class="flex items-center gap-1.5 text-[#1428A0]">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <span class="flex items-center gap-1.5 text-[#1428A0] uppercase tracking-wider">
+            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             적재 자재 정보 상세
           </span>
-          <div class="flex border-l border-slate-300 pl-4 space-x-1">
+          <div class="flex border-l border-slate-300 pl-4 space-x-1.5">
             <button
               @click="activeTab = 'item-partner'"
-              class="px-3 py-1 rounded text-xs transition"
-              :class="activeTab === 'item-partner' ? 'bg-[#1428A0] text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
+              class="px-3 py-1.5 rounded-md text-xs font-bold transition"
+              :class="activeTab === 'item-partner' ? 'bg-[#1428A0] text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
             >
               자재 마스터 스펙
             </button>
             <button
               @click="activeTab = 'location'"
-              class="px-3 py-1 rounded text-xs transition"
-              :class="activeTab === 'location' ? 'bg-[#1428A0] text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
+              class="px-3 py-1.5 rounded-md text-xs font-bold transition"
+              :class="activeTab === 'location' ? 'bg-[#1428A0] text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
             >
               대기 위치 상세
             </button>
           </div>
         </div>
-        <div class="text-[10px] text-slate-400" v-if="selectedInbound">
-          선택 오더 ID: <span class="font-bold text-slate-600 font-mono">{{ selectedInbound.inboundId }}</span>
+        <div class="text-[11px] font-mono text-slate-400" v-if="selectedInbound">
+          오더 ID: <span class="font-bold text-[#1428A0]">{{ selectedInbound.inboundId }}</span>
         </div>
       </div>
 
-      <!-- 탭 바디 -->
-      <div class="flex-grow p-5 overflow-y-auto text-xs">
-        <div v-if="!selectedInbound" class="h-full flex items-center justify-center text-slate-400">
+      <!-- 탭 바디 (자연스럽게 늘어남) -->
+      <div class="p-6 text-xs bg-white min-h-[140px]">
+        <div v-if="!selectedInbound" class="py-8 flex items-center justify-center text-slate-400 font-medium">
           <div class="text-center">
             <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -530,54 +517,57 @@ function formatDateTime(dateTimeStr: string) {
         </div>
 
         <!-- 자재 마스터 정보 -->
-        <div v-else-if="activeTab === 'item-partner'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-3">
-            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-              <span class="w-1 h-3 bg-blue-500 rounded-sm"></span>
+        <div v-else-if="activeTab === 'item-partner'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="space-y-3.5">
+            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2 text-xs">
+              <span class="w-1.5 h-3.5 bg-blue-600 rounded-sm"></span>
               자재 규격 상세
             </h4>
-            <div class="grid grid-cols-3 gap-y-2 gap-x-1">
-              <span class="text-slate-400">자재 코드</span>
-              <span class="col-span-2 font-mono text-slate-700 font-bold">{{ selectedItemDetail?.itemCode || selectedInbound.itemCode }}</span>
-              <span class="text-slate-400">자재 명칭</span>
-              <span class="col-span-2 text-slate-700 font-semibold">{{ selectedItemDetail?.itemName || selectedInbound.itemName }}</span>
-              <span class="text-slate-400">규격 (Spec)</span>
+            <div class="grid grid-cols-3 gap-y-2.5 gap-x-2">
+              <span class="text-slate-450 font-medium">자재 코드</span>
+              <span class="col-span-2 font-mono text-slate-700 font-extrabold">{{ selectedItemDetail?.itemCode || selectedInbound.itemCode }}</span>
+              <span class="text-slate-450 font-medium">자재 명칭</span>
+              <span class="col-span-2 text-slate-700 font-bold">{{ selectedItemDetail?.itemName || selectedInbound.itemName }}</span>
+              <span class="text-slate-450 font-medium">규격 (Spec)</span>
               <span class="col-span-2 text-slate-600 font-mono">{{ selectedItemDetail?.spec || '미지정' }}</span>
-              <span class="text-slate-400">단위 / 품목 분류</span>
-              <span class="col-span-2 text-slate-700 font-medium">{{ selectedItemDetail?.unit }} / {{ selectedItemDetail?.itemType }}</span>
+              <span class="text-slate-450 font-medium">단위 / 품목 분류</span>
+              <span class="col-span-2 text-slate-700 font-semibold">{{ selectedItemDetail?.unit }} / {{ selectedItemDetail?.itemType }}</span>
             </div>
           </div>
 
-          <div class="space-y-3">
-            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-              <span class="w-1 h-3 bg-blue-500 rounded-sm"></span>
+          <div class="space-y-3.5">
+            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2 text-xs">
+              <span class="w-1.5 h-3.5 bg-blue-600 rounded-sm"></span>
               납품사(공급원) 정보
             </h4>
-            <div class="grid grid-cols-3 gap-y-2 gap-x-1">
-              <span class="text-slate-400">사업자 정보</span>
-              <span class="col-span-2 font-mono text-slate-700">{{ selectedPartnerDetail?.businessNo || '확인 필요' }}</span>
-              <span class="text-slate-400">공급처명</span>
+            <div class="grid grid-cols-3 gap-y-2.5 gap-x-2">
+              <span class="text-slate-450 font-medium">사업자 정보</span>
+              <span class="col-span-2 font-mono text-slate-700 font-semibold">{{ selectedPartnerDetail?.businessNo || '확인 필요' }}</span>
+              <span class="text-slate-450 font-medium">공급처명</span>
               <span class="col-span-2 text-slate-700 font-bold">{{ selectedPartnerDetail?.partnerName || selectedInbound.partnerName }}</span>
-              <span class="text-slate-400">대표 및 연락처</span>
-              <span class="col-span-2 text-slate-600">{{ selectedPartnerDetail?.representative || '-' }} ({{ selectedPartnerDetail?.contactPhone || '-' }})</span>
+              <span class="text-slate-450 font-medium">대표 및 연락처</span>
+              <span class="col-span-2 text-slate-650 font-semibold">
+                {{ selectedPartnerDetail?.representative || '-' }}
+                <span v-if="selectedPartnerDetail?.contactPhone" class="font-mono text-slate-500 font-normal"> ({{ selectedPartnerDetail.contactPhone }})</span>
+              </span>
             </div>
           </div>
         </div>
 
         <!-- 대기 위치 상세 정보 -->
-        <div v-else-if="activeTab === 'location'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-3 col-span-2">
-            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-              <span class="w-1 h-3 bg-indigo-400 rounded-sm"></span>
+        <div v-else-if="activeTab === 'location'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="space-y-3.5 col-span-2">
+            <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2 text-xs">
+              <span class="w-1.5 h-3.5 bg-indigo-550 rounded-sm"></span>
               현재 대기(하역) 구역 상세
             </h4>
-            <div class="grid grid-cols-4 gap-y-2 gap-x-1">
-              <span class="text-slate-400">로케이션 코드</span>
+            <div class="grid grid-cols-4 gap-y-2.5 gap-x-2">
+              <span class="text-slate-455 font-medium">로케이션 코드</span>
               <span class="font-mono font-bold text-[#1428A0]">{{ selectedLocationDetail?.locationCode || selectedInbound.locationCode }}</span>
-              <span class="text-slate-400">임시 창고명</span>
+              <span class="text-slate-455 font-medium">임시 창고명</span>
               <span class="text-slate-700 font-semibold">{{ selectedLocationDetail?.warehouseName || '미지정 구역' }}</span>
-              <span class="text-slate-400">배치 세부 렉(Rack)</span>
-              <span class="text-slate-600" colspan="3">
+              <span class="text-slate-455 font-medium">배치 세부 렉(Rack)</span>
+              <span class="col-span-3 text-slate-650 font-semibold">
                 {{ selectedLocationDetail?.rackRow || '-' }}열 - {{ selectedLocationDetail?.rackColumn || '-' }}단
               </span>
             </div>
@@ -592,15 +582,15 @@ function formatDateTime(dateTimeStr: string) {
 
       <div class="flex min-h-screen items-center justify-center p-4">
         <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all duration-300 scale-100">
-          <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <div class="px-6 py-4.5 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <span class="w-1 h-4 bg-[#1428A0] rounded-sm"></span>
+              <span class="w-1.5 h-4.5 bg-[#1428A0] rounded-sm"></span>
               WMS 창고 렉 로케이션 적재
             </h3>
             <button @click="closeStackModal" class="text-slate-400 hover:text-slate-600 font-bold text-lg">×</button>
           </div>
 
-          <form @submit.prevent="handleStack" class="p-6 space-y-4 text-xs">
+          <form @submit.prevent="handleStack" class="p-6 space-y-4.5 text-xs">
             <div v-if="stackError" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-semibold">
               {{ stackError }}
             </div>
@@ -628,7 +618,7 @@ function formatDateTime(dateTimeStr: string) {
               <select
                 id="modal-target-location"
                 v-model="targetLocationCode"
-                class="w-full h-9 px-3 bg-white border border-slate-300 rounded outline-none focus:border-[#1428A0] transition"
+                class="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-[#1428A0] focus:ring-1 focus:ring-[#1428A0] transition"
                 required
               >
                 <option value="">적재할 로케이션 코드를 선택하세요</option>
@@ -643,16 +633,16 @@ function formatDateTime(dateTimeStr: string) {
               <button
                 type="button"
                 @click="closeStackModal"
-                class="h-8 px-4 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded font-bold transition"
+                class="h-9 px-4 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold transition"
               >
                 취소
               </button>
               <button
                 type="submit"
                 :disabled="isStackSubmitting"
-                class="h-8 px-5 text-white bg-[#1428A0] hover:bg-[#102180] disabled:opacity-70 rounded font-bold transition flex items-center justify-center gap-1.5"
+                class="h-9 px-5 text-white bg-[#1428A0] hover:bg-[#102180] disabled:opacity-70 rounded-lg font-bold transition flex items-center justify-center gap-2"
               >
-                <span v-if="isStackSubmitting" class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                <span v-if="isStackSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                 적재 확인
               </button>
             </div>
@@ -667,16 +657,16 @@ function formatDateTime(dateTimeStr: string) {
 
       <div class="flex min-h-screen items-center justify-center p-4">
         <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all duration-300 scale-100">
-          <div class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+          <div class="px-6 py-4.5 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <span class="w-1 h-4 bg-[#1428A0] rounded-sm"></span>
+              <span class="w-1.5 h-4.5 bg-[#1428A0] rounded-sm"></span>
               WMS 일괄 창고 적재
             </h3>
             <button @click="closeBatchStackModal" class="text-slate-400 hover:text-slate-600 font-bold text-lg">×</button>
           </div>
 
-          <form @submit.prevent="handleBatchStack" class="p-6 space-y-4 text-xs">
-            <div v-if="batchStackError" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-semibold">
+          <form @submit.prevent="handleBatchStack" class="p-6 space-y-4.5 text-xs">
+            <div v-if="batchStackError" class="p-3 bg-red-50 border border-red-200 text-red-650 rounded-lg font-bold">
               {{ batchStackError }}
             </div>
 
@@ -694,7 +684,7 @@ function formatDateTime(dateTimeStr: string) {
               <select
                 id="modal-batch-target-location"
                 v-model="batchTargetLocationCode"
-                class="w-full h-9 px-3 bg-white border border-slate-300 rounded outline-none focus:border-[#1428A0] transition"
+                class="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-[#1428A0] focus:ring-1 focus:ring-[#1428A0] transition"
                 required
               >
                 <option value="">일괄 적재할 로케이션 코드를 선택하세요</option>
@@ -709,16 +699,16 @@ function formatDateTime(dateTimeStr: string) {
               <button
                 type="button"
                 @click="closeBatchStackModal"
-                class="h-8 px-4 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded font-bold transition"
+                class="h-9 px-4 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold transition"
               >
                 취소
               </button>
               <button
                 type="submit"
                 :disabled="isBatchStackSubmitting"
-                class="h-8 px-5 text-white bg-[#1428A0] hover:bg-[#102180] disabled:opacity-70 rounded font-bold transition flex items-center justify-center gap-1.5"
+                class="h-9 px-5 text-white bg-[#1428A0] hover:bg-[#102180] disabled:opacity-70 rounded-lg font-bold transition flex items-center justify-center gap-2"
               >
-                <span v-if="isBatchStackSubmitting" class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                <span v-if="isBatchStackSubmitting" class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                 일괄 적재 확인
               </button>
             </div>
