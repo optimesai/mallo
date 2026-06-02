@@ -13,7 +13,8 @@ import {
   Loader2,
   ArrowRight,
   FileSpreadsheet,
-  RefreshCw
+  RefreshCw,
+  Boxes
 } from '@lucide/vue'
 import { useInboundStore } from '@/state/inboundStore'
 import type { InboundCreateRequest } from '@/api/inboundApi'
@@ -29,7 +30,7 @@ const successToast = ref<string | null>(null)
 const isSearchExpanded = ref(true)
 const filterItem = ref('')
 const filterPartner = ref('')
-const filterStatus = ref<'ALL' | 'READY' | 'COMPLETED'>('ALL')
+const filterStatus = ref<'ALL' | 'READY' | 'COMPLETED' | 'STACKED'>('ALL')
 const filterDateStart = ref('')
 const filterDateEnd = ref('')
 
@@ -71,7 +72,8 @@ const stats = computed(() => {
   const total = inboundStore.inbounds.length
   const ready = inboundStore.inbounds.filter(i => i.status === 'READY').length
   const completed = inboundStore.inbounds.filter(i => i.status === 'COMPLETED').length
-  return { total, ready, completed }
+  const stacked = inboundStore.inbounds.filter(i => i.status === 'STACKED').length
+  return { total, ready, completed, stacked }
 })
 
 // 필터링된 입고 목록 계산
@@ -380,7 +382,7 @@ function formatDateTime(dateTimeStr: string) {
     </div>
 
     <!-- 요약 통계 카드 섹션 -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
         <div class="p-3 bg-slate-100 rounded-lg text-slate-600">
           <FileText class="w-6 h-6" />
@@ -406,6 +408,15 @@ function formatDateTime(dateTimeStr: string) {
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">검수 완료 (COMPLETED)</p>
           <p class="text-xl font-extrabold text-emerald-600 mt-1">{{ stats.completed }} 건</p>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+        <div class="p-3 bg-violet-50 rounded-lg text-violet-600">
+          <Boxes class="w-6 h-6" />
+        </div>
+        <div>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">적재 완료 (STACKED)</p>
+          <p class="text-xl font-extrabold text-violet-600 mt-1">{{ stats.stacked }} 건</p>
         </div>
       </div>
     </div>
@@ -455,6 +466,7 @@ function formatDateTime(dateTimeStr: string) {
             <option value="ALL">전체 상태</option>
             <option value="READY">입고 대기 (READY)</option>
             <option value="COMPLETED">검수 완료 (COMPLETED)</option>
+            <option value="STACKED">적재 완료 (STACKED)</option>
           </select>
         </div>
         <div class="space-y-1.5">
@@ -604,6 +616,12 @@ function formatDateTime(dateTimeStr: string) {
                   대기 (READY)
                 </span>
                 <span
+                  v-else-if="item.status === 'STACKED'"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-extrabold bg-violet-50 text-violet-700 border border-violet-150"
+                >
+                  적재 완료 (STACKED)
+                </span>
+                <span
                   v-else
                   class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-150"
                 >
@@ -634,7 +652,7 @@ function formatDateTime(dateTimeStr: string) {
                       삭제
                     </button>
                   </template>
-                  <template v-else>
+                  <template v-else-if="item.status === 'COMPLETED'">
                     <button
                       @click="navigateToStack"
                       class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-[#1428A0] border border-indigo-200 rounded font-bold transition text-[10px] inline-flex items-center gap-1"
@@ -642,6 +660,9 @@ function formatDateTime(dateTimeStr: string) {
                       창고 적재
                       <ArrowRight class="w-3 h-3" />
                     </button>
+                  </template>
+                  <template v-else>
+                    <span class="text-[10px] text-slate-300 font-medium">처리 완료</span>
                   </template>
                 </div>
               </td>
@@ -756,7 +777,7 @@ function formatDateTime(dateTimeStr: string) {
               <span class="col-span-2 font-mono text-[#1428A0] font-extrabold">WMS-INB-{{ selectedInbound.inboundId }}</span>
               <span class="text-slate-450 font-medium">작업 진행 상태</span>
               <span class="col-span-2 font-bold text-slate-700">
-                {{ selectedInbound.status === 'READY' ? '입고 대기 및 실물 검수 전' : '실물 입고 완료 및 창고 적재 대기' }}
+                {{ selectedInbound.status === 'READY' ? '입고 대기 및 실물 검수 전' : selectedInbound.status === 'STACKED' ? '창고 렉 적재 완료 및 가용 재고 반영됨' : '실물 입고 완료 및 창고 적재 대기' }}
               </span>
               <span class="text-slate-450 font-medium">입고 전산 등록</span>
               <span class="col-span-2 font-mono text-slate-500 font-semibold">{{ formatDateTime(selectedInbound.createdAt) }}</span>
