@@ -108,7 +108,7 @@ const stats = computed(() => {
   const list = inventoryItemsWithSafety.value
   const totalItems = new Set(list.map(i => i.itemCode)).size
   const totalStockQty = list.reduce((sum, curr) => sum + curr.currentQty, 0)
-  const warningCount = list.filter(i => i.isUnderSafety).size
+  const warningCount = list.filter(i => i.isUnderSafety).length
   return { totalItems, totalStockQty, warningCount }
 })
 
