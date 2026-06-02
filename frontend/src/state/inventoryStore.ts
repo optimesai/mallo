@@ -12,6 +12,8 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const inboundStore = useInboundStore()
 
+  const selectedDetail = ref<CurrentInventoryResponse | null>(null)
+
   async function loadInventories() {
     isLoading.value = true
     error.value = null
@@ -22,6 +24,19 @@ export const useInventoryStore = defineStore('inventory', () => {
       inventories.value = await inventoryService.getInventories()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '현재고 목록을 불러오지 못했습니다.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function loadInventoryDetail(id: number) {
+    isLoading.value = true
+    error.value = null
+    try {
+      selectedDetail.value = await inventoryService.getInventory(id)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '재고 상세 정보를 불러오지 못했습니다.'
       throw err
     } finally {
       isLoading.value = false
@@ -55,9 +70,11 @@ export const useInventoryStore = defineStore('inventory', () => {
   return {
     inventories,
     histories,
+    selectedDetail,
     isLoading,
     error,
     loadInventories,
+    loadInventoryDetail,
     loadHistories,
     getSafetyStock,
     getTotalAvailableQty

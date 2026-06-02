@@ -114,15 +114,32 @@ const stats = computed(() => {
 
 // Details selection mapping
 const selectedItemDetail = computed(() => {
-  if (!selectedInventory.value) return null
-  return inboundStore.items.find(i => i.itemCode === selectedInventory.value.itemCode)
+  if (!inventoryStore.selectedDetail) return null
+  return inboundStore.items.find(i => i.itemCode === inventoryStore.selectedDetail.itemCode)
 })
 
-function selectRow(item: any) {
+const isDetailUnderSafety = computed(() => {
+  if (!inventoryStore.selectedDetail) return false
+  const safety = inventoryStore.getSafetyStock(inventoryStore.selectedDetail.itemCode)
+  return inventoryStore.selectedDetail.currentQty < safety
+})
+
+const detailSafetyStock = computed(() => {
+  if (!inventoryStore.selectedDetail) return 0
+  return inventoryStore.getSafetyStock(inventoryStore.selectedDetail.itemCode)
+})
+
+async function selectRow(item: any) {
   if (selectedInventory.value?.inventoryId === item.inventoryId) {
     selectedInventory.value = null
+    inventoryStore.selectedDetail = null
   } else {
     selectedInventory.value = item
+    try {
+      await inventoryStore.loadInventoryDetail(item.inventoryId)
+    } catch (err) {
+      pageError.value = err instanceof Error ? err.message : '상세 정보를 조회하는데 실패했습니다.'
+    }
   }
 }
 </script>
@@ -416,16 +433,16 @@ function selectRow(item: any) {
 
     <!-- 마스터-디테일 상세 레이아웃 -->
     <div
-      v-if="selectedInventory"
+      v-if="inventoryStore.selectedDetail"
       class="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden animate-slide-up"
     >
       <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Package class="w-5 h-5 text-indigo-400" />
-          <h3 class="font-extrabold text-sm">재고 단건 상세 정보 (ID: {{ selectedInventory.inventoryId }})</h3>
+          <h3 class="font-extrabold text-sm">재고 단건 상세 정보 (ID: {{ inventoryStore.selectedDetail.inventoryId }})</h3>
         </div>
         <button
-          @click="selectedInventory = null"
+          @click="selectedInventory = null; inventoryStore.selectedDetail = null"
           class="text-slate-400 hover:text-white text-xs font-bold bg-slate-800 px-2.5 py-1 rounded"
         >
           패널 닫기
@@ -441,11 +458,11 @@ function selectRow(item: any) {
           <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3 text-sm">
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">품목 코드</span>
-              <span class="col-span-2 font-mono font-bold text-slate-800">{{ selectedInventory.itemCode }}</span>
+              <span class="col-span-2 font-mono font-bold text-slate-800">{{ inventoryStore.selectedDetail.itemCode }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">품목명</span>
-              <span class="col-span-2 text-slate-800 font-semibold">{{ selectedInventory.itemName }}</span>
+              <span class="col-span-2 text-slate-800 font-semibold">{{ inventoryStore.selectedDetail.itemName }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">규격 (Spec)</span>
@@ -481,29 +498,29 @@ function selectRow(item: any) {
           <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3 text-sm">
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">적재 창고</span>
-              <span class="col-span-2 text-slate-800 font-bold">{{ selectedInventory.warehouseName }}</span>
+              <span class="col-span-2 text-slate-800 font-bold">{{ inventoryStore.selectedDetail.warehouseName }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">로케이션 주소</span>
-              <span class="col-span-2 text-slate-800 font-mono">{{ selectedInventory.locationCode }}</span>
+              <span class="col-span-2 text-slate-800 font-mono">{{ inventoryStore.selectedDetail.locationCode }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">현재고 수량</span>
-              <span class="col-span-2 font-extrabold text-slate-900">{{ selectedInventory.currentQty.toLocaleString() }} EA</span>
+              <span class="col-span-2 font-extrabold text-slate-900">{{ inventoryStore.selectedDetail.currentQty.toLocaleString() }} EA</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">안전 재고량</span>
-              <span class="col-span-2 font-semibold text-slate-500">{{ selectedInventory.safetyStock.toLocaleString() }} EA</span>
+              <span class="col-span-2 font-semibold text-slate-500">{{ detailSafetyStock.toLocaleString() }} EA</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="text-slate-400 font-bold">보관 상태 분석</span>
               <span class="col-span-2">
                 <span
-                  v-if="selectedInventory.isUnderSafety"
+                  v-if="isDetailUnderSafety"
                   class="text-rose-600 font-extrabold flex items-center gap-1.5"
                 >
                   <AlertTriangle class="w-4 h-4 text-rose-500" />
-                  안전재고 미달 ({{ (selectedInventory.safetyStock - selectedInventory.currentQty).toLocaleString() }} EA 부족)
+                  안전재고 미달 ({{ (detailSafetyStock - inventoryStore.selectedDetail.currentQty).toLocaleString() }} EA 부족)
                 </span>
                 <span v-else class="text-emerald-600 font-bold flex items-center gap-1.5">
                   <CheckCircle2 class="w-4 h-4 text-emerald-500" />
