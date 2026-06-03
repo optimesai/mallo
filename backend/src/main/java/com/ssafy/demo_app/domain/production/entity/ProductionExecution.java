@@ -1,6 +1,7 @@
 package com.ssafy.demo_app.domain.production.entity;
 
 import com.ssafy.demo_app.domain.user.entity.User;
+import com.ssafy.demo_app.domain.routing.entity.FactoryRouting;
 import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,6 +21,10 @@ public class ProductionExecution extends BaseCreatedTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private WorkOrder order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routing_id")
+    private FactoryRouting routing;
 
     @Column(name = "good_qty", nullable = false)
     private Integer goodQty = 0;
