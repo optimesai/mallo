@@ -2,6 +2,13 @@ package com.ssafy.demo_app.domain.production.service;
 
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
+import com.ssafy.demo_app.api.production.dto.ProductionExecutionCreateRequest;
+import com.ssafy.demo_app.api.production.dto.ProductionExecutionResponse;
+import com.ssafy.demo_app.api.production.dto.WorkOrderCloseRequest;
+import com.ssafy.demo_app.api.production.dto.WorkOrderCreateRequest;
+import com.ssafy.demo_app.api.production.dto.WorkOrderResponse;
+import com.ssafy.demo_app.api.production.dto.WorkOrderStatusUpdateRequest;
+import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
 import com.ssafy.demo_app.domain.bom.entity.BomStructure;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
@@ -34,6 +41,9 @@ class WorkOrderServiceTest {
 
     @Autowired
     private WorkOrderService workOrderService;
+
+    @Autowired
+    private ProductionExecutionService productionExecutionService;
 
     @Autowired
     private InventoryService inventoryService;
@@ -104,6 +114,149 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    @DisplayName("작업 지시 생성 성공 - 작업 지시 번호는 계획일 기준으로 자동 생성된다")
+    void createWorkOrder_generatesOrderNo() {
+        // Given
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-AUTO", "자동번호 완제품", ItemMaster.ItemType.FG);
+        LocalDate planDate = LocalDate.of(2026, 6, 3);
+
+        WorkOrderResponse response = workOrderService.createWorkOrder(
+                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, planDate)
+        );
+
+        assertThat(response.getOrderNo()).startsWith("WO-20260603-");
+        assertThat(response.getStatus()).isEqualTo(WorkOrder.OrderStatus.READY.name());
+        assertThat(response.getTargetQty()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("작업 지시 수정 실패 - READY 상태가 아니면 수정할 수 없다")
+    void updateWorkOrder_onlyReadyAllowed() {
+        // Given
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-RUN", "진행중 완제품", ItemMaster.ItemType.FG);
+        WorkOrder workOrder = createWorkOrder("WO-READY-LIMIT", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        // When & Then
+        assertThatThrownBy(() -> workOrderService.updateWorkOrder(
+                String.valueOf(workOrder.getOrderId()),
+                new WorkOrderUpdateRequest(item.getItemCode(), routing.getRoutingId(), 20, LocalDate.now())
+        ))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORK_ORDER_STATUS_INVALID);
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 및 목표 미달 마감 검증 - 허용값이 true일 때만 목표 미달 마감 가능")
+    void closeWorkOrder_underTargetRequiresRequestFlag() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-CLOSE", "미달마감 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-CLOSE", "미달마감 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, BigDecimal.valueOf(2));
+        createInventory(material, location, 100);
+        WorkOrder workOrder = createWorkOrder("WO-CLOSE-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        ProductionExecutionResponse execution = productionExecutionService.createExecution(
+                worker.getUserId(),
+                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 8, 1, 120)
+        );
+        assertThat(execution.getRoutingId()).isEqualTo(routing.getRoutingId());
+        assertThat(execution.getOperationName()).isEqualTo(routing.getOperationName());
+
+        assertThatThrownBy(() -> workOrderService.closeWorkOrder(
+                workOrder.getOrderNo(),
+                new WorkOrderCloseRequest(false)
+        ))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORK_ORDER_CLOSE_UNDER_TARGET);
+
+        WorkOrderResponse closed = workOrderService.closeWorkOrder(
+                workOrder.getOrderNo(),
+                new WorkOrderCloseRequest(true)
+        );
+
+        assertThat(closed.getStatus()).isEqualTo(WorkOrder.OrderStatus.CLOSE.name());
+        assertThat(closed.getTotalGoodQty()).isEqualTo(8);
+    }
+
+    @Test
+    @DisplayName("작업 지시 상태 변경 성공 - READY 상태는 RUN 상태로 변경할 수 있다")
+    void updateStatus_readyToRun_success() {
+        // Given
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-STATUS", "상태변경 완제품", ItemMaster.ItemType.FG);
+        WorkOrder workOrder = createWorkOrder("WO-STATUS-001", item, routing, 10, WorkOrder.OrderStatus.READY);
+        em.flush();
+        em.clear();
+
+        // When
+        WorkOrderResponse response = workOrderService.updateStatus(
+                workOrder.getOrderNo(),
+                new WorkOrderStatusUpdateRequest(WorkOrder.OrderStatus.RUN)
+        );
+
+        // Then
+        assertThat(response.getStatus()).isEqualTo(WorkOrder.OrderStatus.RUN.name());
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 성공 - 실적 수량 기준 BOM 자재가 자동 차감된다")
+    void createExecution_autoIssuesMaterialsByExecutedQty() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-AUTO-ISSUE", "자동불출 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-AUTO-ISSUE", "자동불출 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, BigDecimal.valueOf(2));
+        createInventory(material, location, 100);
+        WorkOrder workOrder = createWorkOrder("WO-AUTO-ISSUE-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        // When
+        productionExecutionService.createExecution(
+                worker.getUserId(),
+                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 4, 1, 60)
+        );
+
+        // Then
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode", CurrentInventory.class)
+                .setParameter("itemCode", "WO-RM-AUTO-ISSUE")
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(90);
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 실패 - RUN 상태 작업 지시에만 실적을 등록할 수 있다")
+    void createExecution_requiresRunStatus() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-EXEC", "실적상태 완제품", ItemMaster.ItemType.FG);
+        WorkOrder workOrder = createWorkOrder("WO-EXEC-001", item, routing, 10, WorkOrder.OrderStatus.READY);
+        em.flush();
+        em.clear();
+
+        // When & Then
+        assertThatThrownBy(() -> productionExecutionService.createExecution(
+                worker.getUserId(),
+                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 1, 0, 30)
+        ))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORK_ORDER_STATUS_INVALID);
+    }
+
+    @Test
     @DisplayName("BOM 기반 생산 자재 출고 성공 - 단순 재고 차감 및 수불 이력 생성 검증")
     void issueMaterials_success() {
         // Given
@@ -144,7 +297,7 @@ class WorkOrderServiceTest {
         em.clear();
 
         // When
-        workOrderService.issueMaterials(workOrder.getOrderId(), worker.getUserId());
+        workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId());
 
         // Then
         // 12개 자재를 차감해야 하므로, 20 - 12 = 8개가 되어야 함
@@ -206,7 +359,7 @@ class WorkOrderServiceTest {
         em.clear();
 
         // When & Then
-        assertThatThrownBy(() -> workOrderService.issueMaterials(workOrder.getOrderId(), worker.getUserId()))
+        assertThatThrownBy(() -> workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId()))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
     }
@@ -220,5 +373,39 @@ class WorkOrderServiceTest {
         item.setSafetyStock(10);
         em.persist(item);
         return item;
+    }
+
+    private void createBom(ItemMaster parentItem, ItemMaster childItem, BigDecimal quantity) {
+        BomStructure bom = new BomStructure();
+        bom.setParentItem(parentItem);
+        bom.setChildItem(childItem);
+        bom.setQuantity(quantity);
+        em.persist(bom);
+    }
+
+    private void createInventory(ItemMaster item, WarehouseLocation location, Integer currentQty) {
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(currentQty);
+        em.persist(inventory);
+    }
+
+    private WorkOrder createWorkOrder(
+            String orderNo,
+            ItemMaster item,
+            FactoryRouting routing,
+            Integer targetQty,
+            WorkOrder.OrderStatus status
+    ) {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setOrderNo(orderNo);
+        workOrder.setItem(item);
+        workOrder.setRouting(routing);
+        workOrder.setTargetQty(targetQty);
+        workOrder.setPlanDate(LocalDate.now());
+        workOrder.setStatus(status);
+        em.persist(workOrder);
+        return workOrder;
     }
 }
