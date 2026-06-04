@@ -178,6 +178,10 @@
     color: var(--auth-color-text-primary);
   }
 
+  .auth-link:visited {
+    color: var(--auth-color-text-muted);
+  }
+
   .auth-info-box {
     @apply mt-5 p-4 text-xs leading-5;
     background-color: var(--auth-color-surface-muted);
