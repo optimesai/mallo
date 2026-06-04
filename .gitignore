@@ -1,4 +1,9 @@
+*.bak
 ref/
+
+# Agents
+.claude/
+.codex/
 
 # Java / Maven
 target/
