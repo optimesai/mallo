@@ -122,7 +122,7 @@
   }
 
   .auth-input {
-    @apply h-10 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none transition;
     background-color: var(--auth-color-surface);
     border: 1px solid var(--auth-color-border-strong);
     border-radius: var(--auth-radius-control);
@@ -150,7 +150,7 @@
   }
 
   .auth-submit {
-    @apply mt-1 h-10 w-full text-sm transition;
+    @apply mt-1 h-11 w-full text-sm transition;
     background-color: var(--auth-color-primary);
     color: var(--auth-color-surface);
     border-radius: var(--auth-radius-control);
@@ -166,7 +166,7 @@
   }
 
   .auth-link {
-    @apply mt-3 flex h-9 items-center justify-center border text-center text-xs transition;
+    @apply mt-3 flex h-11 items-center justify-center border text-center text-sm transition;
     border-color: var(--auth-color-border);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-secondary);
@@ -247,7 +247,7 @@
   }
 
   .profile-input {
-    @apply h-10 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none transition;
     border: 1px solid var(--profile-color-border-strong);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-text-primary);
@@ -286,7 +286,7 @@
   }
 
   .profile-submit {
-    @apply h-10 min-w-28 px-5 text-sm transition;
+    @apply h-11 min-w-28 px-5 text-sm transition;
     background-color: var(--profile-color-primary);
     color: var(--profile-color-surface);
     border-radius: var(--profile-radius-control);
