@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: 'Noto Sans KR', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   --auth-color-page: #f8fafc;
@@ -91,13 +96,13 @@
   }
 
   .auth-title {
-    @apply text-base tracking-tight;
+    @apply text-2xl tracking-tight;
     color: var(--auth-color-text-primary);
     font-weight: var(--auth-font-weight-title);
   }
 
   .auth-subtitle {
-    @apply mt-1 text-xs leading-5;
+    @apply mt-1.5 text-sm leading-5;
     color: var(--auth-color-text-muted);
     font-weight: var(--auth-font-weight-subtitle);
   }
@@ -122,11 +127,12 @@
   }
 
   .auth-input {
-    @apply h-10 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none;
     background-color: var(--auth-color-surface);
     border: 1px solid var(--auth-color-border-strong);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-primary);
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .auth-input::placeholder {
@@ -150,11 +156,12 @@
   }
 
   .auth-submit {
-    @apply mt-1 h-10 w-full text-sm transition;
+    @apply mt-1 h-11 w-full text-sm;
     background-color: var(--auth-color-primary);
     color: var(--auth-color-surface);
     border-radius: var(--auth-radius-control);
     font-weight: var(--auth-font-weight-button);
+    transition: background-color 0.15s;
   }
 
   .auth-submit:hover {
@@ -166,16 +173,21 @@
   }
 
   .auth-link {
-    @apply mt-3 flex h-9 items-center justify-center border text-center text-xs transition;
+    @apply mt-3 flex h-11 items-center justify-center border text-center text-sm;
     border-color: var(--auth-color-border);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-secondary);
     font-weight: var(--auth-font-weight-label);
+    transition: background-color 0.15s, color 0.15s;
   }
 
   .auth-link:hover {
     background-color: var(--auth-color-surface-muted);
     color: var(--auth-color-text-primary);
+  }
+
+  .auth-link:visited {
+    color: var(--auth-color-text-muted);
   }
 
   .auth-info-box {
@@ -247,10 +259,11 @@
   }
 
   .profile-input {
-    @apply h-10 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none;
     border: 1px solid var(--profile-color-border-strong);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-text-primary);
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .profile-input:focus {
@@ -286,11 +299,12 @@
   }
 
   .profile-submit {
-    @apply h-10 min-w-28 px-5 text-sm transition;
+    @apply h-11 min-w-28 px-5 text-sm;
     background-color: var(--profile-color-primary);
     color: var(--profile-color-surface);
     border-radius: var(--profile-radius-control);
     font-weight: var(--profile-font-weight-button);
+    transition: background-color 0.15s;
   }
 
   .profile-submit:hover {
@@ -299,5 +313,43 @@
 
   .profile-submit:disabled {
     @apply cursor-not-allowed opacity-70;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --auth-color-page: #0f172a;
+    --auth-color-page-accent: #1e1b4b;
+    --auth-color-surface: #1e293b;
+    --auth-color-surface-muted: #334155;
+    --auth-color-border: #334155;
+    --auth-color-border-strong: #475569;
+    --auth-color-text-primary: #f1f5f9;
+    --auth-color-text-secondary: #cbd5e1;
+    --auth-color-text-muted: #94a3b8;
+    --auth-color-primary: #3b5cf0;
+    --auth-color-primary-hover: #4f6ef5;
+    --auth-color-primary-soft: #1e2450;
+    --auth-color-danger: #f87171;
+    --auth-color-danger-soft: #3b1515;
+    --auth-color-danger-border: #7f1d1d;
+    --profile-color-surface: #1e293b;
+    --profile-color-surface-muted: #334155;
+    --profile-color-disabled: #0f172a;
+    --profile-color-border: #334155;
+    --profile-color-border-strong: #475569;
+    --profile-color-text-primary: #f1f5f9;
+    --profile-color-text-secondary: #cbd5e1;
+    --profile-color-text-muted: #94a3b8;
+    --profile-color-primary: #3b5cf0;
+    --profile-color-primary-hover: #4f6ef5;
+    --profile-color-primary-soft: #1e2450;
+    --profile-color-danger: #f87171;
+    --profile-color-danger-soft: #3b1515;
+    --profile-color-danger-border: #7f1d1d;
+    --profile-color-success: #34d399;
+    --profile-color-success-soft: #0a2e1f;
+    --profile-color-success-border: #14532d;
   }
 }
