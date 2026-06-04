@@ -42,9 +42,19 @@ async function handleSubmit() {
 <template>
   <main class="auth-page">
     <section class="auth-panel auth-panel-signup" aria-labelledby="signup-title">
-      <h1 id="signup-title" class="auth-title">
-        회원가입
-      </h1>
+      <div class="auth-brand">
+        <div class="auth-logo-box">
+          <span class="auth-logo-mark"></span>
+        </div>
+        <div>
+          <h1 id="signup-title" class="auth-title">
+            회원가입
+          </h1>
+          <p class="auth-subtitle">
+            물류·생산 관리 시스템 접근을 위한 계정 정보를 등록합니다.
+          </p>
+        </div>
+      </div>
 
       <div class="auth-divider"></div>
 
