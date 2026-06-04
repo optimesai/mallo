@@ -15,9 +15,6 @@ import { useInboundStore } from '@/state/inboundStore'
 const inboundStore = useInboundStore()
 const router = useRouter()
 
-// 이미 적치(렉 적재) 완료된 inbound ID 목록 (프론트엔드 실시간 필터링용)
-const stackedIds = ref<number[]>([])
-
 // 에러 & 성공 토스트 메시지
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
@@ -63,10 +60,10 @@ const selectedLocationDetail = computed(() => {
   return inboundStore.locations.find(l => l.locationCode === selectedInbound.value.locationCode)
 })
 
-// 적재 가능한 입고 완료(COMPLETED) 건만 필터링
+// 적재 가능한 입고 완료(COMPLETED) 건만 필터링 (적재 완료된 STACKED 건은 백엔드에서 자동 제외)
 const completedInbounds = computed(() => {
   return inboundStore.inbounds.filter(item => {
-    if (item.status !== 'COMPLETED' || stackedIds.value.includes(item.inboundId)) {
+    if (item.status !== 'COMPLETED') {
       return false
     }
     // 품목 검색
@@ -186,7 +183,6 @@ async function handleStack() {
     // 리스트 및 세부정보 상태 업데이트
     selectedInbound.value = null
     selectedIds.value = selectedIds.value.filter(id => id !== inboundId)
-    stackedIds.value.push(inboundId)
     await inboundStore.loadInbounds()
   } catch (err) {
     stackError.value = err instanceof Error ? err.message : '로케이션 적재 처리에 실패했습니다.'
@@ -236,7 +232,6 @@ async function handleBatchStack() {
     closeBatchStackModal()
 
     // 상태 초기화
-    selectedItems.forEach(item => stackedIds.value.push(item.inboundId))
     selectedIds.value = []
     selectedInbound.value = null
     await inboundStore.loadInbounds()
@@ -270,7 +265,7 @@ function formatDateTime(dateTimeStr: string) {
           <span class="w-1.5 h-6 bg-[#1428A0] rounded-sm"></span>
           창고 적재 및 로케이션 배치
         </h1>
-        <p class="text-xs text-slate-500 mt-1.5 font-medium">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다.</p>
+        <p class="text-xs text-slate-500 mt-1.5 font-medium">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다. 적재 완료 시 상태가 STACKED로 변경되며 중복 적재가 방지됩니다.</p>
       </div>
       <!-- 성공 토스트 -->
       <div v-if="successToast" class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm animate-fade-in">

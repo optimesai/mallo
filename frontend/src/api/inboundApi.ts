@@ -10,7 +10,7 @@ export interface InboundReceiptResponse {
   locationCode: string
   inboundQty: number
   inboundDate: string
-  status: 'READY' | 'COMPLETED'
+  status: 'READY' | 'COMPLETED' | 'STACKED'
   workerName?: string
   createdAt: string
 }
