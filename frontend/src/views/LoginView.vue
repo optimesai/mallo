@@ -29,11 +29,19 @@ async function handleSubmit() {
 <template>
   <main class="auth-page">
     <section class="auth-panel" aria-labelledby="login-title">
-      <div class="auth-logo-box">LOGO</div>
-
-      <h1 id="login-title" class="auth-title">
-        AI 기반 물류·분석 MES 플랫폼
-      </h1>
+      <div class="auth-brand">
+        <div class="auth-logo-box">
+          <span class="auth-logo-mark"></span>
+        </div>
+        <div>
+          <h1 id="login-title" class="auth-title">
+            Logistics Control
+          </h1>
+          <p class="auth-subtitle">
+            AI 기반 물류·분석 MES 플랫폼에 로그인합니다.
+          </p>
+        </div>
+      </div>
 
       <div class="auth-divider"></div>
 
