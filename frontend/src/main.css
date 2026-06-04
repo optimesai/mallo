@@ -122,11 +122,12 @@
   }
 
   .auth-input {
-    @apply h-11 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none;
     background-color: var(--auth-color-surface);
     border: 1px solid var(--auth-color-border-strong);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-primary);
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .auth-input::placeholder {
@@ -150,11 +151,12 @@
   }
 
   .auth-submit {
-    @apply mt-1 h-11 w-full text-sm transition;
+    @apply mt-1 h-11 w-full text-sm;
     background-color: var(--auth-color-primary);
     color: var(--auth-color-surface);
     border-radius: var(--auth-radius-control);
     font-weight: var(--auth-font-weight-button);
+    transition: background-color 0.15s;
   }
 
   .auth-submit:hover {
@@ -166,11 +168,12 @@
   }
 
   .auth-link {
-    @apply mt-3 flex h-11 items-center justify-center border text-center text-sm transition;
+    @apply mt-3 flex h-11 items-center justify-center border text-center text-sm;
     border-color: var(--auth-color-border);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-secondary);
     font-weight: var(--auth-font-weight-label);
+    transition: background-color 0.15s, color 0.15s;
   }
 
   .auth-link:hover {
@@ -251,10 +254,11 @@
   }
 
   .profile-input {
-    @apply h-11 w-full px-3 text-sm outline-none transition;
+    @apply h-11 w-full px-3 text-sm outline-none;
     border: 1px solid var(--profile-color-border-strong);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-text-primary);
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .profile-input:focus {
@@ -290,11 +294,12 @@
   }
 
   .profile-submit {
-    @apply h-11 min-w-28 px-5 text-sm transition;
+    @apply h-11 min-w-28 px-5 text-sm;
     background-color: var(--profile-color-primary);
     color: var(--profile-color-surface);
     border-radius: var(--profile-radius-control);
     font-weight: var(--profile-font-weight-button);
+    transition: background-color 0.15s;
   }
 
   .profile-submit:hover {
