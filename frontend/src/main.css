@@ -91,13 +91,13 @@
   }
 
   .auth-title {
-    @apply text-base tracking-tight;
+    @apply text-2xl tracking-tight;
     color: var(--auth-color-text-primary);
     font-weight: var(--auth-font-weight-title);
   }
 
   .auth-subtitle {
-    @apply mt-1 text-xs leading-5;
+    @apply mt-1.5 text-sm leading-5;
     color: var(--auth-color-text-muted);
     font-weight: var(--auth-font-weight-subtitle);
   }
