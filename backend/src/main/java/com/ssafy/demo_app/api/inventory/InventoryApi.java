@@ -4,24 +4,41 @@ import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Tag(name = "Inbound/Inventory Management API", description = "원부자재 입고 및 재고 적재 관리 API")
 @RequestMapping("/api/inbounds")
 public interface InventoryApi {
 
-    @Operation(summary = "입고 목록 조회", description = "등록된 전체 입고 목록을 조회합니다.")
+    @Operation(summary = "입고 목록 조회", description = "등록된 입고 목록을 페이징 및 필터링하여 조회합니다.")
     @GetMapping
-    ResponseEntity<ApiResponse<List<InboundReceiptResponse>>> getInbounds();
+    ResponseEntity<ApiResponse<PageResponse<InboundReceiptResponse>>> getInbounds(
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            @Parameter(description = "입고 상태 (READY, COMPLETED)")
+            @RequestParam(required = false) String status,
+            @Parameter(description = "품목명/코드 또는 거래처명 검색 키워드")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "입고 예정일 조회 시작 (yyyy-MM-dd)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "입고 예정일 조회 종료 (yyyy-MM-dd)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    );
 
     @Operation(summary = "입고 단건 조회", description = "ID로 특정 입고 상세 내역을 조회합니다.")
     @GetMapping("/{id}")

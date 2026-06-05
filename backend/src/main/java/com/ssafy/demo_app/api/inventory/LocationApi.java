@@ -3,22 +3,30 @@ package com.ssafy.demo_app.api.inventory;
 import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
 import com.ssafy.demo_app.api.inventory.dto.LocationResponse;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "Warehouse Location API", description = "창고 로케이션(렉) CRUD 관리 API")
 @RequestMapping("/api/locations")
 public interface LocationApi {
 
-    @Operation(summary = "로케이션 목록 조회", description = "등록된 전체 창고 로케이션(렉) 목록을 조회합니다.")
+    @Operation(summary = "로케이션 목록 조회", description = "등록된 창고 로케이션 목록을 페이징 및 키워드 검색으로 조회합니다.")
     @GetMapping
-    ResponseEntity<ApiResponse<List<LocationResponse>>> getLocations();
+    ResponseEntity<ApiResponse<PageResponse<LocationResponse>>> getLocations(
+            @PageableDefault(size = 20, sort = "locationCode") Pageable pageable,
+            @Parameter(description = "로케이션 코드 또는 창고명 검색 키워드")
+            @RequestParam(required = false) String keyword
+    );
 
     @Operation(summary = "로케이션 단건 조회", description = "ID로 특정 로케이션 정보를 상세 조회합니다.")
     @GetMapping("/{id}")
