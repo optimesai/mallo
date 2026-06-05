@@ -20,7 +20,7 @@ export const menuGroups: MenuGroup[] = [
     iconPath: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
     items: [
       { name: '품목 마스터', path: '/master/items' },
-      { name: '거래처 마스터', path: '/' },
+      { name: '거래처 마스터', path: '/master/partners' },
       { name: '공장 및 생산 라인', path: '/' },
       { name: 'BOM (부품명세서)', path: '/' }
     ]

@@ -44,6 +44,11 @@ const router = createRouter({
           component: () => import('../views/ItemMasterView.vue')
         },
         {
+          path: 'master/partners',
+          name: 'partner-master',
+          component: () => import('../views/PartnerMasterView.vue')
+        },
+        {
           path: 'inbound/receipt',
           name: 'inbound-receipt',
           component: () => import('../views/InboundReceiptView.vue')
