@@ -21,7 +21,7 @@ export const menuGroups: MenuGroup[] = [
     items: [
       { name: '품목 마스터', path: '/master/items' },
       { name: '거래처 마스터', path: '/master/partners' },
-      { name: '공장 및 생산 라인', path: '/' },
+      { name: '공장 및 생산 라인', path: '/master/factory-lines' },
       { name: 'BOM (부품명세서)', path: '/' }
     ]
   },
