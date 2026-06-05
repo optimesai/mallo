@@ -52,6 +52,17 @@
 2. **간결**: 불필요한 조사 생략, 핵심 동작만 기술
 3. **명사형 종결**: "구현", "추가", "수정", "작성", "제거", "분리", "마이그레이션", "교체" 등
 4. **마침표 없음**: 제목 끝에 `.` 사용하지 않음
+5. **길이 제한**: 제목은 40자 이내 권장, 최대 50자 초과 금지
+
+### 본문 작성 규칙
+
+- 본문은 변경 내역을 **불릿 리스트**로 구조화한다. 한 문단으로 나열하지 않는다.
+- 각 파일 또는 논리적 변경 단위마다 한 줄의 불릿으로 작성한다.
+- 신규 파일은 `(new)`, 삭제된 파일은 `(removed)`, 기능 중단(deprecated)은 `(deprecated)` 상태를 파일명 뒤에 표기한다. 수정된 파일은 별도 상태를 표기하지 않는다.
+- 형식:
+  ```
+  - {파일명 또는 변경 요약} (new|removed|deprecated) — 부가 설명
+  ```
 
 ### 권장 동사
 
@@ -87,6 +98,26 @@ feat: 출하 지시 조회 API 구현 (GET /api/shippings, /{id})
 - 태스크 시작 시 반드시 `chore: start task-{번호}` 커밋
 - 동일 태스크의 모든 커밋은 같은 `[TASK-XX]` prefix로 통일
 - 브랜치명: `task/{번호}`
+
+## 컴포넌트 커밋 순서
+
+작업은 논리적 컴포넌트(계층) 단위로 분할하여 커밋한다. 커밋 순서는 **의존성의 역순**을 따른다:
+
+```
+백엔드 도메인(Entity/Repository) → Service → Controller/API
+  → 프론트엔드 API → Service/Store → View/UI
+```
+
+예시:
+1. `feat: 공통 페이징 인프라 PageResponse DTO 및 Repository 확장`
+2. `feat: Service 계층 Pageable 및 Specification 필터 적용`
+3. `feat: Controller/API 계층 Pageable 및 필터 파라미터 적용`
+4. `feat: 프론트엔드 PageResponse 타입 및 DataTable 페이지네이션`
+5. `feat: 프론트엔드 API/Service/Store 계층 페이징 연동`
+6. `feat: 프론트엔드 View 페이지네이션 및 필터 연동`
+
+- 각 컴포넌트는 하나의 계층 또는 하나의 관심사만 포함한다.
+- 설정 파일 및 지침 문서(예: `CLAUDE.md`, `agent/`) 변경은 코드 커밋과 분리하여 `docs:` 타입으로 별도 커밋한다.
 
 ## 금지 패턴
 

@@ -1,4 +1,4 @@
-### [17:30] [TASK-51] 공통 페이징·필터링·정렬 인프라 도입 (Claude Code)
+### [TASK-51] 공통 페이징·필터링·정렬 인프라 도입 (Claude Code)
 - **User Intent**: 입고/재고/출고 모든 목록 API가 전체 데이터를 무조건 반환하여 데이터 증가 시 성능 저하 우려. Spring Data Pageable 기반 페이징과 동적 필터(키워드, 상태, 기간)를 공통 인프라로 도입 요청.
 - **Agent Context**: 5개 Repository에 JpaSpecificationExecutor 추가, Service 계층에 동적 Specification 빌더 구현, Controller에 @PageableDefault 적용. 프론트엔드 DataTable에 페이지네이션 UI 추가, View의 클라이언트 필터링을 서버 측으로 이관.
 - **Key Decisions**:
@@ -7,39 +7,45 @@
   - View의 클라이언트 필터링 computeds 제거, 서버에서 필터링된 페이징 데이터 직접 사용 — 데이터 정합성 및 성능 개선
   - 페이지 크기 기본값 20, 최대 100 제한 — agent/project/backend.md API 설계 규칙과 일관성 유지
 - **Affected Files**:
-  - `backend/.../global/response/PageResponse.java` (new)
-  - `backend/.../global/response/ApiResponse.java` (+5)
-  - `backend/.../domain/inventory/repository/InboundReceiptRepository.java` (+2/-1)
-  - `backend/.../domain/inventory/repository/CurrentInventoryRepository.java` (+2/-1)
-  - `backend/.../domain/inventory/repository/InventoryTransactionHistoryRepository.java` (+2/-1)
-  - `backend/.../domain/inventory/repository/WarehouseLocationRepository.java` (+2/-1)
-  - `backend/.../domain/shipping/repository/OutboundShippingRepository.java` (+2/-1)
-  - `backend/.../domain/inventory/service/InventoryService.java` (+8/-5)
-  - `backend/.../domain/inventory/service/InventoryServiceImpl.java` (+145/-8)
-  - `backend/.../domain/shipping/service/OutboundShippingService.java` (+3/-2)
-  - `backend/.../domain/shipping/service/OutboundShippingServiceImpl.java` (+50/-4)
-  - `backend/.../api/inventory/InventoryApi.java` (+14/-6)
-  - `backend/.../api/inventory/InventoryController.java` (+9/-4)
-  - `backend/.../api/inventory/CurrentInventoryApi.java` (+14/-5)
-  - `backend/.../api/inventory/CurrentInventoryController.java` (+14/-5)
-  - `backend/.../api/inventory/LocationApi.java` (+8/-3)
-  - `backend/.../api/inventory/LocationController.java` (+5/-2)
-  - `backend/.../api/shipping/OutboundShippingApi.java` (+9/-4)
-  - `backend/.../api/shipping/OutboundShippingController.java` (+10/-2)
-  - `frontend/src/api/types.ts` (new)
-  - `frontend/src/api/inboundApi.ts` (+28/-3)
-  - `frontend/src/api/inventoryApi.ts` (+48/-5)
-  - `frontend/src/api/shippingApi.ts` (+24/-3)
-  - `frontend/src/services/inboundService.ts` (+4/-4)
-  - `frontend/src/services/inventoryService.ts` (+7/-6)
-  - `frontend/src/services/shippingService.ts` (+4/-3)
-  - `frontend/src/state/inboundStore.ts` (+13/-2)
-  - `frontend/src/state/inventoryStore.ts` (+24/-4)
-  - `frontend/src/state/shippingStore.ts` (+14/-2)
-  - `frontend/src/ui/DataTable.vue` (+106/-1)
-  - `frontend/src/views/InboundReceiptView.vue` (+64/-37)
-  - `frontend/src/views/InboundStackView.vue` (+25/-1)
-  - `frontend/src/views/InventoryStatusView.vue` (+25/-1)
-  - `frontend/src/views/InventoryHistoryView.vue` (+26/-1)
-  - `frontend/src/views/ShippingOrderView.vue` (+27/-4)
-  - `frontend/src/views/PickingView.vue` (+26/-1)
+  - **Created**:
+    - `backend/.../global/response/PageResponse.java` — 범용 페이징 응답 DTO
+    - `frontend/src/api/types.ts` — PageResponse<T>, PageParams 공통 타입
+  - **Modified**:
+    - `backend/.../global/response/ApiResponse.java` (+5) — PageResponse 팩토리 메서드
+    - `backend/.../domain/inventory/repository/InboundReceiptRepository.java` (+2/-1) — JpaSpecificationExecutor
+    - `backend/.../domain/inventory/repository/CurrentInventoryRepository.java` (+2/-1)
+    - `backend/.../domain/inventory/repository/InventoryTransactionHistoryRepository.java` (+2/-1)
+    - `backend/.../domain/inventory/repository/WarehouseLocationRepository.java` (+2/-1)
+    - `backend/.../domain/shipping/repository/OutboundShippingRepository.java` (+2/-1)
+    - `backend/.../domain/inventory/service/InventoryService.java` (+8/-5) — Pageable 시그니처
+    - `backend/.../domain/inventory/service/InventoryServiceImpl.java` (+145/-8) — Specification 빌더
+    - `backend/.../domain/shipping/service/OutboundShippingService.java` (+3/-2)
+    - `backend/.../domain/shipping/service/OutboundShippingServiceImpl.java` (+50/-4)
+    - `backend/.../api/inventory/InventoryApi.java` (+14/-6) — Query Param
+    - `backend/.../api/inventory/InventoryController.java` (+9/-4)
+    - `backend/.../api/inventory/CurrentInventoryApi.java` (+14/-5)
+    - `backend/.../api/inventory/CurrentInventoryController.java` (+14/-5)
+    - `backend/.../api/inventory/LocationApi.java` (+8/-3)
+    - `backend/.../api/inventory/LocationController.java` (+5/-2)
+    - `backend/.../api/shipping/OutboundShippingApi.java` (+9/-4)
+    - `backend/.../api/shipping/OutboundShippingController.java` (+10/-2)
+    - `frontend/src/api/inboundApi.ts` (+28/-3) — PageResponse 연동
+    - `frontend/src/api/inventoryApi.ts` (+48/-5)
+    - `frontend/src/api/shippingApi.ts` (+24/-3)
+    - `frontend/src/services/inboundService.ts` (+4/-4)
+    - `frontend/src/services/inventoryService.ts` (+7/-6)
+    - `frontend/src/services/shippingService.ts` (+4/-3)
+    - `frontend/src/state/inboundStore.ts` (+13/-2) — pagination 상태
+    - `frontend/src/state/inventoryStore.ts` (+24/-4)
+    - `frontend/src/state/shippingStore.ts` (+14/-2)
+    - `frontend/src/ui/DataTable.vue` (+106/-1) — 페이지네이션 UI
+    - `frontend/src/views/InboundReceiptView.vue` (+64/-37) — 서버 필터링
+    - `frontend/src/views/InboundStackView.vue` (+25/-1)
+    - `frontend/src/views/InventoryStatusView.vue` (+25/-1)
+    - `frontend/src/views/InventoryHistoryView.vue` (+26/-1)
+    - `frontend/src/views/ShippingOrderView.vue` (+27/-4)
+    - `frontend/src/views/PickingView.vue` (+26/-1)
+    - `CLAUDE.md` — 컴포넌트 커밋, 도메인 경계, 빌드 확인 지침
+    - `agent/project/backend.md` — 들여쓰기 컨벤션 정정
+    - `agent/commit-convention.md` — 제목 길이, 본문 형식, 컴포넌트 순서
+    - `agent/history-logging.md` — 태스크 단위 기록, Affected Files 그룹화
