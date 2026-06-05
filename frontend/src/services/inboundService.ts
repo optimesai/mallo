@@ -4,15 +4,17 @@ import type {
   InboundReceiptResponse,
   InboundCreateRequest,
   InventoryStackRequest,
+  InboundListParams,
   ItemResponse,
   PartnerResponse,
   LocationResponse
 } from '@/api/inboundApi'
+import type { PageResponse } from '@/api/types'
 
 export const inboundService = {
-  async getInbounds(): Promise<InboundReceiptResponse[]> {
+  async getInbounds(params: InboundListParams = {}): Promise<PageResponse<InboundReceiptResponse>> {
     try {
-      const response = await inboundApi.getInbounds()
+      const response = await inboundApi.getInbounds(params)
       return response.data
     } catch (error) {
       if (error instanceof AxiosError) {

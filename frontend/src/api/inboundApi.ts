@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/api/authApi'
+import type { PageResponse } from '@/api/types'
 
 export interface InboundReceiptResponse {
   inboundId: number
@@ -25,6 +26,16 @@ export interface InboundCreateRequest {
 
 export interface InventoryStackRequest {
   targetLocationCode: string
+}
+
+export interface InboundListParams {
+  page?: number
+  size?: number
+  sort?: string
+  status?: string
+  keyword?: string
+  startDate?: string
+  endDate?: string
 }
 
 export interface ItemResponse {
@@ -67,9 +78,18 @@ function getAuthHeaders() {
 }
 
 export const inboundApi = {
-  async getInbounds() {
-    const response = await axios.get<ApiResponse<InboundReceiptResponse[]>>('/api/inbounds', {
-      headers: getAuthHeaders()
+  async getInbounds(params: InboundListParams = {}) {
+    const response = await axios.get<ApiResponse<PageResponse<InboundReceiptResponse>>>('/api/inbounds', {
+      headers: getAuthHeaders(),
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort ?? 'createdAt,desc',
+        status: params.status || undefined,
+        keyword: params.keyword || undefined,
+        startDate: params.startDate || undefined,
+        endDate: params.endDate || undefined,
+      }
     })
     return response.data
   },

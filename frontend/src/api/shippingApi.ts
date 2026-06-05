@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/api/authApi'
+import type { PageResponse } from '@/api/types'
 
 export interface ShippingResponse {
   shippingId: number
@@ -27,6 +28,14 @@ export interface PickingAssignRequest {
   vehicleNo: string
 }
 
+export interface ShippingListParams {
+  page?: number
+  size?: number
+  sort?: string
+  status?: string
+  keyword?: string
+}
+
 const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
 
 function getAuthHeaders() {
@@ -37,9 +46,16 @@ function getAuthHeaders() {
 }
 
 export const shippingApi = {
-  async getShippings() {
-    const response = await axios.get<ApiResponse<ShippingResponse[]>>('/api/shippings', {
-      headers: getAuthHeaders()
+  async getShippings(params: ShippingListParams = {}) {
+    const response = await axios.get<ApiResponse<PageResponse<ShippingResponse>>>('/api/shippings', {
+      headers: getAuthHeaders(),
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort ?? 'createdAt,desc',
+        status: params.status || undefined,
+        keyword: params.keyword || undefined,
+      }
     })
     return response.data
   },

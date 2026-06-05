@@ -3,13 +3,15 @@ import { shippingApi } from '@/api/shippingApi'
 import type {
   ShippingResponse,
   ShippingCreateRequest,
-  PickingAssignRequest
+  PickingAssignRequest,
+  ShippingListParams
 } from '@/api/shippingApi'
+import type { PageResponse } from '@/api/types'
 
 export const shippingService = {
-  async getShippings(): Promise<ShippingResponse[]> {
+  async getShippings(params: ShippingListParams = {}): Promise<PageResponse<ShippingResponse>> {
     try {
-      const response = await shippingApi.getShippings()
+      const response = await shippingApi.getShippings(params)
       return response.data
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -65,7 +67,6 @@ export const shippingService = {
     } catch (error) {
       if (error instanceof AxiosError) {
         const message = error.response?.data?.message
-        // 백엔드 비즈니스 룰 예외(INSUFFICIENT_STOCK 등) 전달을 위해 그대로 메시지 반환
         throw new Error(message || '출하 완료 처리에 실패했습니다.')
       }
       throw new Error('출하 완료 처리에 실패했습니다.')

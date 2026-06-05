@@ -14,14 +14,26 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const selectedDetail = ref<CurrentInventoryResponse | null>(null)
 
-  async function loadInventories() {
+  // Pagination state
+  const invPage = ref<number>(0)
+  const invTotalPages = ref<number>(0)
+  const invTotalElements = ref<number>(0)
+  const histPage = ref<number>(0)
+  const histTotalPages = ref<number>(0)
+  const histTotalElements = ref<number>(0)
+
+  async function loadInventories(params: { page?: number; size?: number; sort?: string; keyword?: string } = {}) {
     isLoading.value = true
     error.value = null
     try {
       if (inboundStore.items.length === 0) {
         await inboundStore.loadItems()
       }
-      inventories.value = await inventoryService.getInventories()
+      const pageResponse = await inventoryService.getInventories(params)
+      inventories.value = pageResponse.content
+      invPage.value = pageResponse.page
+      invTotalPages.value = pageResponse.totalPages
+      invTotalElements.value = pageResponse.totalElements
     } catch (err) {
       error.value = err instanceof Error ? err.message : '현재고 목록을 불러오지 못했습니다.'
       throw err
@@ -43,11 +55,15 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function loadHistories() {
+  async function loadHistories(params: { page?: number; size?: number; sort?: string; transactionType?: string; startDate?: string; endDate?: string } = {}) {
     isLoading.value = true
     error.value = null
     try {
-      histories.value = await inventoryService.getTransactionHistories()
+      const pageResponse = await inventoryService.getTransactionHistories(params)
+      histories.value = pageResponse.content
+      histPage.value = pageResponse.page
+      histTotalPages.value = pageResponse.totalPages
+      histTotalElements.value = pageResponse.totalElements
     } catch (err) {
       error.value = err instanceof Error ? err.message : '수불 이력을 불러오지 못했습니다.'
       throw err
@@ -73,6 +89,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     selectedDetail,
     isLoading,
     error,
+    invPage,
+    invTotalPages,
+    invTotalElements,
+    histPage,
+    histTotalPages,
+    histTotalElements,
     loadInventories,
     loadInventoryDetail,
     loadHistories,

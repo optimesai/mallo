@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/api/authApi'
+import type { PageResponse } from '@/api/types'
 
 export interface CurrentInventoryResponse {
   inventoryId: number
@@ -23,6 +24,22 @@ export interface TransactionHistoryResponse {
   createdAt: string
 }
 
+export interface InventoryListParams {
+  page?: number
+  size?: number
+  sort?: string
+  keyword?: string
+}
+
+export interface HistoryListParams {
+  page?: number
+  size?: number
+  sort?: string
+  transactionType?: string
+  startDate?: string
+  endDate?: string
+}
+
 const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
 
 function getAuthHeaders() {
@@ -33,9 +50,15 @@ function getAuthHeaders() {
 }
 
 export const inventoryApi = {
-  async getInventories() {
-    const response = await axios.get<ApiResponse<CurrentInventoryResponse[]>>('/api/inventory', {
-      headers: getAuthHeaders()
+  async getInventories(params: InventoryListParams = {}) {
+    const response = await axios.get<ApiResponse<PageResponse<CurrentInventoryResponse>>>('/api/inventory', {
+      headers: getAuthHeaders(),
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort ?? 'updatedAt,desc',
+        keyword: params.keyword || undefined,
+      }
     })
     return response.data
   },
@@ -47,9 +70,17 @@ export const inventoryApi = {
     return response.data
   },
 
-  async getTransactionHistories() {
-    const response = await axios.get<ApiResponse<TransactionHistoryResponse[]>>('/api/inventory/history', {
-      headers: getAuthHeaders()
+  async getTransactionHistories(params: HistoryListParams = {}) {
+    const response = await axios.get<ApiResponse<PageResponse<TransactionHistoryResponse>>>('/api/inventory/history', {
+      headers: getAuthHeaders(),
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort ?? 'createdAt,desc',
+        transactionType: params.transactionType || undefined,
+        startDate: params.startDate || undefined,
+        endDate: params.endDate || undefined,
+      }
     })
     return response.data
   }
