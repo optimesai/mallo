@@ -79,6 +79,11 @@ const router = createRouter({
           component: () => import('../views/InventoryHistoryView.vue')
         },
         {
+          path: 'production/work-orders',
+          name: 'production-work-orders',
+          component: () => import('../views/WorkOrderView.vue')
+        },
+        {
           path: 'production/issue',
           name: 'production-issue',
           component: () => import('../views/MaterialIssueView.vue')

@@ -1,82 +1,108 @@
 import axios from 'axios'
 import type { ApiResponse } from '@/api/authApi'
 
-export interface MockWorkOrder {
+export type WorkOrderStatus = 'READY' | 'RUN' | 'HOLD' | 'CLOSE'
+
+export interface WorkOrderResponse {
   orderId: number
   orderNo: string
+  itemId: number
   itemCode: string
   itemName: string
+  itemType: string
+  routingId: number
+  factoryName: string
+  lineName: string
+  operationSeq: number
+  operationName: string
   targetQty: number
-  status: 'READY' | 'RUN' | 'HOLD' | 'CLOSE'
+  status: WorkOrderStatus
+  planDate: string
+  createdAt: string
+  updatedAt: string
+  totalGoodQty: number
+  totalDefectQty: number
+  totalExecutedQty: number
+  totalManHoursMinutes: number
+  progressRate: number
+  canIssueMaterials: boolean
+  canStart: boolean
+  canHold: boolean
+  canClose: boolean
+  canRegisterExecution: boolean
+  canUpdate: boolean
+  canDelete: boolean
+}
+
+export interface WorkOrderMaterialRequirementResponse {
+  itemId: number
+  itemCode: string
+  itemName: string
+  itemType: string
+  unit: string
+  bomQuantity: number
+  requiredQty: number
+  issuedQty: number
+  availableQty: number
+}
+
+export interface ProductionExecutionResponse {
+  executionId: number
+  orderId: number
+  orderNo: string
+  routingId: number | null
+  factoryName: string | null
+  lineName: string | null
+  operationSeq: number | null
+  operationName: string | null
+  goodQty: number
+  defectQty: number
+  executedQty: number
+  workerId: number | null
+  workerEmployeeNo: string | null
+  workerName: string | null
+  manHoursMinutes: number
+  createdAt: string
+}
+
+export interface WorkOrderDetailResponse {
+  workOrder: WorkOrderResponse
+  materialRequirements: WorkOrderMaterialRequirementResponse[]
+  executions: ProductionExecutionResponse[]
+}
+
+export interface WorkOrderRequest {
+  itemCode: string
+  routingId: number
+  targetQty: number
   planDate: string
 }
 
-export interface MockBomStructure {
-  parentItemCode: string
-  childItemCode: string
-  childItemName: string
-  unit: string
-  quantityPerUnit: number
+export interface WorkOrderSearchParams {
+  status?: WorkOrderStatus | ''
+  planDate?: string
+  fromDate?: string
+  toDate?: string
+  keyword?: string
+  factoryName?: string
+  lineName?: string
 }
 
-// Mock work orders representing production commands
-const MOCK_WORK_ORDERS: MockWorkOrder[] = [
-  {
-    orderId: 1,
-    orderNo: 'WO-20260602-001',
-    itemCode: 'FP-SMART-BOX',
-    itemName: '스마트 물류 제어 단말기',
-    targetQty: 50,
-    status: 'READY',
-    planDate: '2026-06-02'
-  },
-  {
-    orderId: 2,
-    orderNo: 'WO-20260602-002',
-    itemCode: 'FP-CONTROLLER',
-    itemName: '산업용 모터 인버터 정밀 제어기',
-    targetQty: 20,
-    status: 'READY',
-    planDate: '2026-06-02'
-  },
-  {
-    orderId: 3,
-    orderNo: 'WO-20260602-003',
-    itemCode: 'SM-PCB-ASSY',
-    itemName: '제어보드 PCB 조립체',
-    targetQty: 100,
-    status: 'READY',
-    planDate: '2026-06-02'
-  },
-  {
-    orderId: 4,
-    orderNo: 'WO-20260602-004',
-    itemCode: 'FP-SMART-BOX',
-    itemName: '스마트 물류 제어 단말기 (재고부족 유도용)',
-    targetQty: 9999,
-    status: 'READY',
-    planDate: '2026-06-02'
-  }
-]
+export interface WorkOrderStatusUpdateRequest {
+  status: Exclude<WorkOrderStatus, 'CLOSE'>
+}
 
-// Mock BOM structures matching database data.sql
-const MOCK_BOM_STRUCTURES: MockBomStructure[] = [
-  // 1. 반제품 '제어보드 PCB 조립체' (SM-PCB-ASSY): 메인 칩셋 1개, 케이블 0.05박스
-  { parentItemCode: 'SM-PCB-ASSY', childItemCode: 'RM-CHIP-5G', childItemName: '통신 제어용 메인 칩셋', unit: 'ea', quantityPerUnit: 1.0 },
-  { parentItemCode: 'SM-PCB-ASSY', childItemCode: 'RM-CABLE-02', childItemName: '고온 절연 와이어 케이블', unit: 'box', quantityPerUnit: 0.05 },
+export interface WorkOrderCloseRequest {
+  allowUnderTargetClose?: boolean
+}
 
-  // 2. 반제품 '강판 프레임 용접 모듈' (SM-FRAME-A): 탄소강판 12.5kg
-  { parentItemCode: 'SM-FRAME-A', childItemCode: 'RM-STEEL-01', childItemName: '고탄소 탄소강판', unit: 'kg', quantityPerUnit: 12.5 },
-
-  // 3. 완제품 '스마트 물류 제어 단말기' (FP-SMART-BOX): PCB조립체 1개, 프레임모듈 1개, 사출케이스 1개
-  { parentItemCode: 'FP-SMART-BOX', childItemCode: 'SM-PCB-ASSY', childItemName: '제어보드 PCB 조립체', unit: 'ea', quantityPerUnit: 1.0 },
-  { parentItemCode: 'FP-SMART-BOX', childItemCode: 'SM-FRAME-A', childItemName: '강판 프레임 용접 모듈', unit: 'ea', quantityPerUnit: 1.0 },
-  { parentItemCode: 'FP-SMART-BOX', childItemCode: 'RM-PLASTIC-P', childItemName: '강화 플라스틱 사출 케이스', unit: 'ea', quantityPerUnit: 1.0 },
-
-  // 4. 완제품 '산업용 모터 인버터 정밀 제어기' (FP-CONTROLLER): 메인 칩셋 2개, 케이블 0.2박스
-  { parentItemCode: 'FP-CONTROLLER', childItemCode: 'RM-CHIP-5G', childItemName: '통신 제어용 메인 칩셋', unit: 'ea', quantityPerUnit: 2.0 },
-  { parentItemCode: 'FP-CONTROLLER', childItemCode: 'RM-CABLE-02', childItemName: '고온 절연 와이어 케이블', unit: 'box', quantityPerUnit: 0.2 }
-]
+export interface ProductionExecutionCreateRequest {
+  orderKey: string
+  routingId: number
+  goodQty: number
+  defectQty: number
+  manHoursMinutes: number
+}
 
 const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
 
@@ -87,29 +113,87 @@ function getAuthHeaders() {
   }
 }
 
+function cleanParams(params: WorkOrderSearchParams) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  )
+}
+
 export const workOrderApi = {
-  // Returns mock list of work orders
-  async getWorkOrders(): Promise<MockWorkOrder[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...MOCK_WORK_ORDERS])
-      }, 150)
+  async getWorkOrders(params: WorkOrderSearchParams = {}) {
+    const response = await axios.get<ApiResponse<WorkOrderResponse[]>>('/api/work-orders', {
+      headers: getAuthHeaders(),
+      params: cleanParams(params)
     })
+    return response.data
   },
 
-  // Returns mock BOM structures for a parent item
-  async getMaterialsRequirements(itemCode: string): Promise<MockBomStructure[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const directChildren = MOCK_BOM_STRUCTURES.filter(bom => bom.parentItemCode === itemCode)
-        resolve(directChildren)
-      }, 100)
+  async getWorkOrder(orderKey: string | number) {
+    const response = await axios.get<ApiResponse<WorkOrderDetailResponse>>(`/api/work-orders/${orderKey}`, {
+      headers: getAuthHeaders()
     })
+    return response.data
   },
 
-  // Real POST request to execute material issue
-  async issueMaterials(orderId: number) {
-    const response = await axios.post<ApiResponse<void>>(`/api/work-orders/${orderId}/issue-materials`, null, {
+  async createWorkOrder(request: WorkOrderRequest) {
+    const response = await axios.post<ApiResponse<WorkOrderResponse>>('/api/work-orders', request, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async updateWorkOrder(orderKey: string | number, request: WorkOrderRequest) {
+    const response = await axios.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}`, request, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async deleteWorkOrder(orderKey: string | number) {
+    const response = await axios.delete<ApiResponse<void>>(`/api/work-orders/${orderKey}`, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async updateStatus(orderKey: string | number, request: WorkOrderStatusUpdateRequest) {
+    const response = await axios.patch<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/status`, request, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async closeWorkOrder(orderKey: string | number, request: WorkOrderCloseRequest = {}) {
+    const response = await axios.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/close`, request, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async issueMaterials(orderKey: string | number) {
+    const response = await axios.post<ApiResponse<void>>(`/api/work-orders/${orderKey}/issue-materials`, null, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async getExecutions(orderKey: string | number) {
+    const response = await axios.get<ApiResponse<ProductionExecutionResponse[]>>('/api/production-executions', {
+      headers: getAuthHeaders(),
+      params: { orderKey }
+    })
+    return response.data
+  },
+
+  async createExecution(request: ProductionExecutionCreateRequest) {
+    const response = await axios.post<ApiResponse<ProductionExecutionResponse>>('/api/production-executions', request, {
+      headers: getAuthHeaders()
+    })
+    return response.data
+  },
+
+  async deleteExecution(executionId: number) {
+    const response = await axios.delete<ApiResponse<void>>(`/api/production-executions/${executionId}`, {
       headers: getAuthHeaders()
     })
     return response.data
