@@ -5,12 +5,16 @@ import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,8 +23,15 @@ public class InventoryController implements InventoryApi {
     private final InventoryService inventoryService;
 
     @Override
-    public ResponseEntity<ApiResponse<List<InboundReceiptResponse>>> getInbounds() {
-        return ResponseEntity.ok(ApiResponse.success(inventoryService.getInbounds()));
+    public ResponseEntity<ApiResponse<PageResponse<InboundReceiptResponse>>> getInbounds(
+            Pageable pageable,
+            String status,
+            String keyword,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        PageResponse<InboundReceiptResponse> page = inventoryService.getInbounds(pageable, status, keyword, startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(page));
     }
 
     @Override

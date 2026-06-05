@@ -1,11 +1,17 @@
 import { AxiosError } from 'axios'
 import { inventoryApi } from '@/api/inventoryApi'
-import type { CurrentInventoryResponse, TransactionHistoryResponse } from '@/api/inventoryApi'
+import type {
+  CurrentInventoryResponse,
+  TransactionHistoryResponse,
+  InventoryListParams,
+  HistoryListParams
+} from '@/api/inventoryApi'
+import type { PageResponse } from '@/api/types'
 
 export const inventoryService = {
-  async getInventories(): Promise<CurrentInventoryResponse[]> {
+  async getInventories(params: InventoryListParams = {}): Promise<PageResponse<CurrentInventoryResponse>> {
     try {
-      const response = await inventoryApi.getInventories()
+      const response = await inventoryApi.getInventories(params)
       return response.data
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -29,9 +35,9 @@ export const inventoryService = {
     }
   },
 
-  async getTransactionHistories(): Promise<TransactionHistoryResponse[]> {
+  async getTransactionHistories(params: HistoryListParams = {}): Promise<PageResponse<TransactionHistoryResponse>> {
     try {
-      const response = await inventoryApi.getTransactionHistories()
+      const response = await inventoryApi.getTransactionHistories(params)
       return response.data
     } catch (error) {
       if (error instanceof AxiosError) {

@@ -4,6 +4,7 @@ import { inboundService } from '@/services/inboundService'
 import type {
   InboundReceiptResponse,
   InboundCreateRequest,
+  InboundListParams,
   ItemResponse,
   PartnerResponse,
   LocationResponse
@@ -17,11 +18,20 @@ export const useInboundStore = defineStore('inbound', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function loadInbounds() {
+  // Pagination state
+  const page = ref<number>(0)
+  const totalPages = ref<number>(0)
+  const totalElements = ref<number>(0)
+
+  async function loadInbounds(params: InboundListParams = {}) {
     isLoading.value = true
     error.value = null
     try {
-      inbounds.value = await inboundService.getInbounds()
+      const pageResponse = await inboundService.getInbounds(params)
+      inbounds.value = pageResponse.content
+      page.value = pageResponse.page
+      totalPages.value = pageResponse.totalPages
+      totalElements.value = pageResponse.totalElements
     } catch (err) {
       error.value = err instanceof Error ? err.message : '입고 목록을 불러오지 못했습니다.'
       throw err
@@ -107,7 +117,6 @@ export const useInboundStore = defineStore('inbound', () => {
     error.value = null
     try {
       await inboundService.stackInventory(id, { targetLocationCode })
-      // 로컬 목록에서도 로케이션 업데이트 (백엔드 로직에 맞게 로케이션 변경 반영)
       const index = inbounds.value.findIndex((item) => item.inboundId === id)
       if (index !== -1) {
         inbounds.value[index].locationCode = targetLocationCode
@@ -141,6 +150,9 @@ export const useInboundStore = defineStore('inbound', () => {
     locations,
     isLoading,
     error,
+    page,
+    totalPages,
+    totalElements,
     loadInbounds,
     loadItems,
     loadPartners,

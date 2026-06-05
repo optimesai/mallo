@@ -7,12 +7,16 @@ import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
 import com.ssafy.demo_app.api.inventory.dto.LocationResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 
-import java.util.List;
+import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
 
 public interface InventoryService {
 
-    List<InboundReceiptResponse> getInbounds();
+    PageResponse<InboundReceiptResponse> getInbounds(Pageable pageable, String status, String keyword,
+                                                     LocalDate startDate, LocalDate endDate);
 
     InboundReceiptResponse getInbound(Integer inboundId);
 
@@ -24,13 +28,14 @@ public interface InventoryService {
 
     void deleteInbound(Integer inboundId);
 
-    List<CurrentInventoryResponse> getInventories();
+    PageResponse<CurrentInventoryResponse> getInventories(Pageable pageable, String keyword);
 
     CurrentInventoryResponse getInventory(Integer inventoryId);
 
-    List<TransactionHistoryResponse> getTransactionHistories();
+    PageResponse<TransactionHistoryResponse> getTransactionHistories(Pageable pageable, String transactionType,
+                                                                     LocalDate startDate, LocalDate endDate);
 
-    List<LocationResponse> getLocations();
+    PageResponse<LocationResponse> getLocations(Pageable pageable, String keyword);
 
     LocationResponse getLocation(Integer locationId);
 

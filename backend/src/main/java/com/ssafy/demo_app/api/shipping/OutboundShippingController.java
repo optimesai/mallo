@@ -4,12 +4,14 @@ import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
 import com.ssafy.demo_app.domain.shipping.service.OutboundShippingService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,8 +30,13 @@ public class OutboundShippingController implements OutboundShippingApi {
     }
 
     @Override
-    public ResponseEntity<ApiResponse<List<ShippingResponse>>> getShippings() {
-        return ResponseEntity.ok(ApiResponse.success(outboundShippingService.getShippings()));
+    public ResponseEntity<ApiResponse<PageResponse<ShippingResponse>>> getShippings(
+            Pageable pageable,
+            String status,
+            String keyword
+    ) {
+        PageResponse<ShippingResponse> page = outboundShippingService.getShippings(pageable, status, keyword);
+        return ResponseEntity.ok(ApiResponse.success(page));
     }
 
     @Override

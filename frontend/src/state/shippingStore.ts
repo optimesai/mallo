@@ -4,7 +4,8 @@ import { shippingService } from '@/services/shippingService'
 import type {
   ShippingResponse,
   ShippingCreateRequest,
-  PickingAssignRequest
+  PickingAssignRequest,
+  ShippingListParams
 } from '@/api/shippingApi'
 
 export const useShippingStore = defineStore('shipping', () => {
@@ -12,11 +13,20 @@ export const useShippingStore = defineStore('shipping', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function loadShippings() {
+  // Pagination state
+  const page = ref<number>(0)
+  const totalPages = ref<number>(0)
+  const totalElements = ref<number>(0)
+
+  async function loadShippings(params: ShippingListParams = {}) {
     isLoading.value = true
     error.value = null
     try {
-      shippings.value = await shippingService.getShippings()
+      const pageResponse = await shippingService.getShippings(params)
+      shippings.value = pageResponse.content
+      page.value = pageResponse.page
+      totalPages.value = pageResponse.totalPages
+      totalElements.value = pageResponse.totalElements
     } catch (err) {
       error.value = err instanceof Error ? err.message : '출하 목록을 불러오지 못했습니다.'
       throw err
@@ -63,7 +73,6 @@ export const useShippingStore = defineStore('shipping', () => {
     error.value = null
     try {
       await shippingService.completeShipping(id)
-      // 완료 후 상태를 현행화하기 위해 목록 다시 불러오기
       await loadShippings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '출하 완료 처리에 실패했습니다.'
@@ -77,6 +86,9 @@ export const useShippingStore = defineStore('shipping', () => {
     shippings,
     isLoading,
     error,
+    page,
+    totalPages,
+    totalElements,
     loadShippings,
     registerShipping,
     assignPicking,

@@ -18,6 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ssafy.demo_app.global.response.PageResponse;
+
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,9 +59,9 @@ class OutboundShippingServiceTest {
         assertThat(response.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.READY.name());
 
         // 목록 조회 확인
-        List<ShippingResponse> shippings = outboundShippingService.getShippings();
-        assertThat(shippings).isNotEmpty();
-        assertThat(shippings.stream().anyMatch(s -> s.getShippingNo().equals("SH-2026-TEST-999"))).isTrue();
+        PageResponse<ShippingResponse> shippings = outboundShippingService.getShippings(Pageable.unpaged(), null, null);
+        assertThat(shippings.getContent()).isNotEmpty();
+        assertThat(shippings.getContent().stream().anyMatch(s -> s.getShippingNo().equals("SH-2026-TEST-999"))).isTrue();
 
         // 단건 조회 확인
         ShippingResponse detail = outboundShippingService.getShipping(response.getShippingId());

@@ -1,5 +1,6 @@
 package com.ssafy.demo_app.domain.shipping.service;
 
+import com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
@@ -16,10 +17,19 @@ import com.ssafy.demo_app.domain.user.entity.User;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
+import com.ssafy.demo_app.global.response.PageResponse;
+
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -59,10 +69,10 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
     }
 
     @Override
-    public List<ShippingResponse> getShippings() {
-        return outboundShippingRepository.findAll().stream()
-                .map(ShippingResponse::from)
-                .toList();
+    public PageResponse<ShippingResponse> getShippings(Pageable pageable, String status, String keyword) {
+        Specification<OutboundShipping> spec = buildShippingSpec(status, keyword);
+        Page<OutboundShipping> page = outboundShippingRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(ShippingResponse::from));
     }
 
     @Override
@@ -120,7 +130,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
     @Override
     @Transactional
-    public ShippingResponse assignPicking(Integer shippingId, com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request) {
+    public ShippingResponse assignPicking(Integer shippingId, PickingAssignRequest request) {
         OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
 
@@ -141,5 +151,31 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
         OutboundShipping savedShipping = outboundShippingRepository.save(shipping);
         return ShippingResponse.from(savedShipping);
+    }
+
+    // --- Specification builder ---
+
+    private Specification<OutboundShipping> buildShippingSpec(String status, String keyword) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"),
+                        OutboundShipping.ShippingStatus.valueOf(status)));
+            }
+
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                Join<OutboundShipping, ItemMaster> itemJoin = root.join("item");
+                Join<OutboundShipping, PartnerMaster> partnerJoin = root.join("partner");
+                Predicate shippingNoMatch = cb.like(cb.lower(root.get("shippingNo")), pattern);
+                Predicate itemCodeMatch = cb.like(cb.lower(itemJoin.get("itemCode")), pattern);
+                Predicate itemNameMatch = cb.like(cb.lower(itemJoin.get("itemName")), pattern);
+                Predicate partnerMatch = cb.like(cb.lower(partnerJoin.get("partnerName")), pattern);
+                predicates.add(cb.or(shippingNoMatch, itemCodeMatch, itemNameMatch, partnerMatch));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 }

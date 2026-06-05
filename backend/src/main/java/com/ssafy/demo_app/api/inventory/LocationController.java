@@ -4,11 +4,13 @@ import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
 import com.ssafy.demo_app.api.inventory.dto.LocationResponse;
 import com.ssafy.demo_app.domain.inventory.service.InventoryService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,8 +19,9 @@ public class LocationController implements LocationApi {
     private final InventoryService inventoryService;
 
     @Override
-    public ResponseEntity<ApiResponse<List<LocationResponse>>> getLocations() {
-        return ResponseEntity.ok(ApiResponse.success(inventoryService.getLocations()));
+    public ResponseEntity<ApiResponse<PageResponse<LocationResponse>>> getLocations(Pageable pageable, String keyword) {
+        PageResponse<LocationResponse> page = inventoryService.getLocations(pageable, keyword);
+        return ResponseEntity.ok(ApiResponse.success(page));
     }
 
     @Override

@@ -23,12 +23,23 @@ import com.ssafy.demo_app.domain.user.entity.User;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
+import com.ssafy.demo_app.global.response.PageResponse;
+
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,10 +57,11 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryTransactionHistoryRepository transactionHistoryRepository;
 
     @Override
-    public List<InboundReceiptResponse> getInbounds() {
-        return inboundReceiptRepository.findAll().stream()
-                .map(InboundReceiptResponse::from)
-                .collect(Collectors.toList());
+    public PageResponse<InboundReceiptResponse> getInbounds(Pageable pageable, String status, String keyword,
+                                                            LocalDate startDate, LocalDate endDate) {
+        Specification<InboundReceipt> spec = buildInboundSpec(status, keyword, startDate, endDate);
+        Page<InboundReceipt> page = inboundReceiptRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(InboundReceiptResponse::from));
     }
 
     @Override
@@ -151,10 +163,10 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public List<CurrentInventoryResponse> getInventories() {
-        return currentInventoryRepository.findAll().stream()
-                .map(CurrentInventoryResponse::from)
-                .collect(Collectors.toList());
+    public PageResponse<CurrentInventoryResponse> getInventories(Pageable pageable, String keyword) {
+        Specification<CurrentInventory> spec = buildInventorySpec(keyword);
+        Page<CurrentInventory> page = currentInventoryRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(CurrentInventoryResponse::from));
     }
 
     @Override
@@ -165,17 +177,18 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public List<TransactionHistoryResponse> getTransactionHistories() {
-        return transactionHistoryRepository.findAll().stream()
-                .map(TransactionHistoryResponse::from)
-                .collect(Collectors.toList());
+    public PageResponse<TransactionHistoryResponse> getTransactionHistories(Pageable pageable, String transactionType,
+                                                                            LocalDate startDate, LocalDate endDate) {
+        Specification<InventoryTransactionHistory> spec = buildTransactionHistorySpec(transactionType, startDate, endDate);
+        Page<InventoryTransactionHistory> page = transactionHistoryRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(TransactionHistoryResponse::from));
     }
 
     @Override
-    public List<LocationResponse> getLocations() {
-        return warehouseLocationRepository.findAll().stream()
-                .map(LocationResponse::from)
-                .collect(Collectors.toList());
+    public PageResponse<LocationResponse> getLocations(Pageable pageable, String keyword) {
+        Specification<WarehouseLocation> spec = buildLocationSpec(keyword);
+        Page<WarehouseLocation> page = warehouseLocationRepository.findAll(spec, pageable);
+        return PageResponse.from(page.map(LocationResponse::from));
     }
 
     @Override
@@ -223,5 +236,86 @@ public class InventoryServiceImpl implements InventoryService {
             throw new BusinessException(ErrorCode.LOCATION_HAS_INVENTORY);
         }
         warehouseLocationRepository.delete(location);
+    }
+
+    // --- Specification builders ---
+
+    private Specification<InboundReceipt> buildInboundSpec(String status, String keyword,
+                                                           LocalDate startDate, LocalDate endDate) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"),
+                        InboundReceipt.InboundStatus.valueOf(status)));
+            }
+
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                Join<InboundReceipt, ItemMaster> itemJoin = root.join("item");
+                Join<InboundReceipt, PartnerMaster> partnerJoin = root.join("partner");
+                Predicate itemMatch = cb.like(cb.lower(itemJoin.get("itemName")), pattern);
+                Predicate itemCodeMatch = cb.like(cb.lower(itemJoin.get("itemCode")), pattern);
+                Predicate partnerMatch = cb.like(cb.lower(partnerJoin.get("partnerName")), pattern);
+                predicates.add(cb.or(itemMatch, itemCodeMatch, partnerMatch));
+            }
+
+            if (startDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("inboundDate"), startDate));
+            }
+            if (endDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("inboundDate"), endDate));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private Specification<CurrentInventory> buildInventorySpec(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + keyword.toLowerCase() + "%";
+            Join<CurrentInventory, ItemMaster> itemJoin = root.join("item");
+            Predicate nameMatch = cb.like(cb.lower(itemJoin.get("itemName")), pattern);
+            Predicate codeMatch = cb.like(cb.lower(itemJoin.get("itemCode")), pattern);
+            return cb.or(nameMatch, codeMatch);
+        };
+    }
+
+    private Specification<InventoryTransactionHistory> buildTransactionHistorySpec(
+            String transactionType, LocalDate startDate, LocalDate endDate) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (transactionType != null && !transactionType.isBlank()) {
+                predicates.add(cb.equal(root.get("transactionType"),
+                        InventoryTransactionHistory.TransactionType.valueOf(transactionType)));
+            }
+
+            if (startDate != null) {
+                LocalDateTime start = startDate.atStartOfDay();
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), start));
+            }
+            if (endDate != null) {
+                LocalDateTime end = endDate.atTime(LocalTime.MAX);
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), end));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private Specification<WarehouseLocation> buildLocationSpec(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + keyword.toLowerCase() + "%";
+            Predicate codeMatch = cb.like(cb.lower(root.get("locationCode")), pattern);
+            Predicate nameMatch = cb.like(cb.lower(root.get("warehouseName")), pattern);
+            return cb.or(codeMatch, nameMatch);
+        };
     }
 }

@@ -53,13 +53,23 @@ async function fetchPageData() {
   try {
     pageError.value = null
     await Promise.all([
-      shippingStore.loadShippings(),
-      inboundStore.loadItems('FG'), // 완제품 위주 조회
-      inboundStore.loadPartners('CUSTOMER') // 고객사 위주 조회
+      shippingStore.loadShippings({
+        page: shippingStore.page,
+        size: 20,
+        status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
+        keyword: filterShippingNo.value || filterPartnerName.value || undefined,
+      }),
+      inboundStore.loadItems('FG'),
+      inboundStore.loadPartners('CUSTOMER')
     ])
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.'
   }
+}
+
+function goToPage(page: number) {
+  shippingStore.page = page
+  fetchPageData()
 }
 
 function showToast(msg: string) {
@@ -424,6 +434,25 @@ function formatDate(dateStr: string | null) {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div v-if="shippingStore.totalPages > 0"
+        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+        <span class="text-slate-500">
+          총 <span class="font-bold text-slate-700">{{ shippingStore.totalElements.toLocaleString() }}</span>건
+          ({{ shippingStore.page + 1 }} / {{ shippingStore.totalPages }} 페이지)
+        </span>
+        <div class="flex items-center gap-1">
+          <button @click="goToPage(0)" :disabled="shippingStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+          <button @click="goToPage(shippingStore.page - 1)" :disabled="shippingStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+          <button @click="goToPage(shippingStore.page + 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+          <button @click="goToPage(shippingStore.totalPages - 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+        </div>
       </div>
     </div>
 
