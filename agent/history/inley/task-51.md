@@ -1,27 +1,38 @@
 ### [TASK-51] 공통 페이징·필터링·정렬 인프라 도입 (Claude Code)
-- **User Intent**: 입고/재고/출고 모든 목록 API가 전체 데이터를 무조건 반환하여 데이터 증가 시 성능 저하 우려. Spring Data Pageable 기반 페이징과 동적 필터(키워드, 상태, 기간)를 공통 인프라로 도입 요청.
-- **Agent Context**: 5개 Repository에 JpaSpecificationExecutor 추가, Service 계층에 동적 Specification 빌더 구현, Controller에 @PageableDefault 적용. 프론트엔드 DataTable에 페이지네이션 UI 추가, View의 클라이언트 필터링을 서버 측으로 이관.
+- **User Intent**:
+  - 입고/재고/출고 모든 목록 API가 전체 데이터를 무조건 반환 — 데이터 1000건↑ 시 프론트·DB 모두 병목
+  - Spring Data Pageable 기반 페이징과 동적 필터(키워드, 상태, 기간)를 공통 인프라로 도입 요청
+  - 적용 대상: `/api/inbounds`, `/api/inventory`, `/api/inventory/history`, `/api/locations`, `/api/shippings` (5개 도메인)
+- **Agent Context**:
+  - Repository 계층: 5개 Repository에 `JpaSpecificationExecutor` 추가, 컴파일 타임 의존성만 추가 (Spring Data JPA 기본 포함)
+  - Service 계층: 동적 `Specification` 빌더를 각 ServiceImpl의 private 메서드로 구현, `List<T>` → `PageResponse<T>` 반환
+  - Controller 계층: `@PageableDefault(size=20)` + `@RequestParam` 필터 추가
+  - 프론트엔드: `types.ts` 신규 파일로 공통 타입 분리 (authApi.ts 비침범), DataTable 페이지네이션 UI, View의 클라이언트 필터를 서버 측으로 이관
+  - 지침 갱신: commit-convention.md(제목/본문 형식), history-logging.md(Affected Files 그룹화), CLAUDE.md(도메인 경계, 빌드 확인, 작업 범위)
 - **Key Decisions**:
   - Specification 빌더는 각 ServiceImpl의 private 메서드로 구현 — 별도 파일 생성 없이 도메인 로직과 필터를 한 곳에서 관리 (agent/project/backend.md 계층 아키텍처 준수)
-  - 프론트엔드 공통 타입은 `types.ts` 신규 파일로 분리하고 authApi.ts는 비침범 — 도메인 경계 존중
+  - 프론트엔드 공통 타입은 `types.ts` 신규 파일로 분리하고 authApi.ts는 비침범 — 도메인 경계 존중 (authApi.ts 수정 시도 → 사용자 지적 → 즉시 분리)
   - View의 클라이언트 필터링 computeds 제거, 서버에서 필터링된 페이징 데이터 직접 사용 — 데이터 정합성 및 성능 개선
-  - 페이지 크기 기본값 20, 최대 100 제한 — agent/project/backend.md API 설계 규칙과 일관성 유지
-- **Affected Files**:
+  - 페이지 크기 기본값 20 — 기존 DataTable의 표시 관행과 일관성 유지
+  - 지침 파일(CLAUDE.md, backend.md) 변경은 코드 커밋과 분리 — 사용자 지시에 따른 컴포넌트 경계 명확화
+  - 컴포넌트 커밋 순서는 의존성 역순(도메인 → Service → Controller → 프론트엔드) — 상위 계층이 하위 계층에 의존하므로 역순 커밋이 논리적
+- **Affected Files**: <details><summary>38개 파일</summary>
+
   - **Created**:
     - `backend/.../global/response/PageResponse.java` — 범용 페이징 응답 DTO
     - `frontend/src/api/types.ts` — PageResponse<T>, PageParams 공통 타입
   - **Modified**:
     - `backend/.../global/response/ApiResponse.java` (+5) — PageResponse 팩토리 메서드
-    - `backend/.../domain/inventory/repository/InboundReceiptRepository.java` (+2/-1) — JpaSpecificationExecutor
+    - `backend/.../domain/inventory/repository/InboundReceiptRepository.java` (+2/-1)
     - `backend/.../domain/inventory/repository/CurrentInventoryRepository.java` (+2/-1)
     - `backend/.../domain/inventory/repository/InventoryTransactionHistoryRepository.java` (+2/-1)
     - `backend/.../domain/inventory/repository/WarehouseLocationRepository.java` (+2/-1)
     - `backend/.../domain/shipping/repository/OutboundShippingRepository.java` (+2/-1)
-    - `backend/.../domain/inventory/service/InventoryService.java` (+8/-5) — Pageable 시그니처
-    - `backend/.../domain/inventory/service/InventoryServiceImpl.java` (+145/-8) — Specification 빌더
+    - `backend/.../domain/inventory/service/InventoryService.java` (+8/-5)
+    - `backend/.../domain/inventory/service/InventoryServiceImpl.java` (+145/-8)
     - `backend/.../domain/shipping/service/OutboundShippingService.java` (+3/-2)
     - `backend/.../domain/shipping/service/OutboundShippingServiceImpl.java` (+50/-4)
-    - `backend/.../api/inventory/InventoryApi.java` (+14/-6) — Query Param
+    - `backend/.../api/inventory/InventoryApi.java` (+14/-6)
     - `backend/.../api/inventory/InventoryController.java` (+9/-4)
     - `backend/.../api/inventory/CurrentInventoryApi.java` (+14/-5)
     - `backend/.../api/inventory/CurrentInventoryController.java` (+14/-5)
@@ -29,23 +40,25 @@
     - `backend/.../api/inventory/LocationController.java` (+5/-2)
     - `backend/.../api/shipping/OutboundShippingApi.java` (+9/-4)
     - `backend/.../api/shipping/OutboundShippingController.java` (+10/-2)
-    - `frontend/src/api/inboundApi.ts` (+28/-3) — PageResponse 연동
+    - `frontend/src/api/inboundApi.ts` (+28/-3)
     - `frontend/src/api/inventoryApi.ts` (+48/-5)
     - `frontend/src/api/shippingApi.ts` (+24/-3)
     - `frontend/src/services/inboundService.ts` (+4/-4)
     - `frontend/src/services/inventoryService.ts` (+7/-6)
     - `frontend/src/services/shippingService.ts` (+4/-3)
-    - `frontend/src/state/inboundStore.ts` (+13/-2) — pagination 상태
+    - `frontend/src/state/inboundStore.ts` (+13/-2)
     - `frontend/src/state/inventoryStore.ts` (+24/-4)
     - `frontend/src/state/shippingStore.ts` (+14/-2)
-    - `frontend/src/ui/DataTable.vue` (+106/-1) — 페이지네이션 UI
-    - `frontend/src/views/InboundReceiptView.vue` (+64/-37) — 서버 필터링
+    - `frontend/src/ui/DataTable.vue` (+106/-1)
+    - `frontend/src/views/InboundReceiptView.vue` (+64/-37)
     - `frontend/src/views/InboundStackView.vue` (+25/-1)
     - `frontend/src/views/InventoryStatusView.vue` (+25/-1)
     - `frontend/src/views/InventoryHistoryView.vue` (+26/-1)
     - `frontend/src/views/ShippingOrderView.vue` (+27/-4)
     - `frontend/src/views/PickingView.vue` (+26/-1)
-    - `CLAUDE.md` — 컴포넌트 커밋, 도메인 경계, 빌드 확인 지침
+    - `CLAUDE.md` — 컴포넌트 커밋, 도메인 경계, 빌드 확인, 작업 범위, 텍스트 형식 지침
     - `agent/project/backend.md` — 들여쓰기 컨벤션 정정
-    - `agent/commit-convention.md` — 제목 길이, 본문 형식, 컴포넌트 순서
-    - `agent/history-logging.md` — 태스크 단위 기록, Affected Files 그룹화
+    - `agent/commit-convention.md` — 제목 길이, 본문 불릿 형식, 컴포넌트 순서
+    - `agent/history-logging.md` — 기록 시점, Affected Files 토글, 제약 해제
+
+  </details>
