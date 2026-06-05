@@ -92,7 +92,7 @@ com.ssafy.demo_app
 
 | 규칙 | 설명 |
 |------|------|
-| 들여쓰기 | 탭 |
+| 들여쓰기 | 스페이스 4칸 |
 | Lombok | `@Getter`/`@Setter`만 사용. `@Builder`/`@AllArgsConstructor` 절대 금지 |
 | Service | Interface + Impl 패턴 (예: `InventoryService` + `InventoryServiceImpl`) |
 | 생성자 주입 | `@RequiredArgsConstructor` 사용 |
