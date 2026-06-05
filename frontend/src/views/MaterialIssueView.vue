@@ -16,10 +16,9 @@ import {
   ChevronDown
 } from '@lucide/vue'
 import { useWorkOrderStore } from '@/state/workOrderStore'
-import { useInventoryStore } from '@/state/inventoryStore'
+import type { WorkOrderResponse } from '@/api/workOrderApi'
 
 const workOrderStore = useWorkOrderStore()
-const inventoryStore = useInventoryStore()
 
 // State
 const pageError = ref<string | null>(null)
@@ -29,10 +28,10 @@ const isSubmitting = ref(false)
 
 // Filter states
 const filterOrderNo = ref('')
-const filterStatus = ref<'ALL' | 'READY' | 'RUN'>('ALL')
+const filterStatus = ref<'ALL' | 'READY' | 'RUN' | 'HOLD'>('ALL')
 
 // Selected work order (Master-detail)
-const selectedOrder = ref<any>(null)
+const selectedOrder = ref<WorkOrderResponse | null>(null)
 
 onMounted(async () => {
   await fetchPageData()
@@ -41,10 +40,7 @@ onMounted(async () => {
 async function fetchPageData() {
   try {
     pageError.value = null
-    await Promise.all([
-      workOrderStore.loadWorkOrders(),
-      inventoryStore.loadInventories()
-    ])
+    await workOrderStore.loadWorkOrders()
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.'
   }
@@ -89,15 +85,13 @@ const selectedOrderBOMStatus = computed(() => {
   if (!selectedOrder.value || workOrderStore.bomRequirements.length === 0) return []
 
   return workOrderStore.bomRequirements.map(req => {
-    // Calculate total required qty
-    const requiredQty = req.quantityPerUnit * selectedOrder.value.targetQty
-    // Get total available qty from real-time inventories
-    const availableQty = inventoryStore.getTotalAvailableQty(req.childItemCode)
-    const isSufficient = availableQty >= requiredQty
+    const remainingQty = Math.max(req.requiredQty - req.issuedQty, 0)
+    const availableQty = req.availableQty
+    const isSufficient = availableQty >= remainingQty
 
     return {
       ...req,
-      requiredQty,
+      remainingQty,
       availableQty,
       isSufficient
     }
@@ -121,27 +115,25 @@ async function handleIssueMaterials() {
   isSubmitting.value = true
   pageError.value = null
   try {
-    // API Call
-    await workOrderStore.issueMaterials(selectedOrder.value.orderId)
+    await workOrderStore.issueMaterials(selectedOrder.value.orderNo)
     showToast(`작업 지시 [${selectedOrder.value.orderNo}]에 대한 자재 불출이 완료되었습니다.`)
-    // Status in local copy of selected order will automatically be 'RUN'
-    selectedOrder.value.status = 'RUN'
+    selectedOrder.value = workOrderStore.selectedDetail?.workOrder ?? selectedOrder.value
   } catch (err) {
-    // Show descriptive warning if the mock order ID is not found in the DB (expected behaviour in Option 3)
     const errMsg = err instanceof Error ? err.message : '출고 처리에 실패했습니다.'
-    pageError.value = `[자재 불출 실행 반려] ${errMsg}\n(주의: 본 작업 지시 목록 및 상세는 백엔드 GET API 미개발로 인한 모의(Mock) 데이터입니다. 실제 작업 지시 ID가 데이터베이스에 존재해야 POST 불출 처리가 완결됩니다.)`
+    pageError.value = `[자재 불출 실행 반려] ${errMsg}`
   } finally {
     isSubmitting.value = false
   }
 }
 
-async function selectRow(order: any) {
+async function selectRow(order: WorkOrderResponse) {
   if (selectedOrder.value?.orderId === order.orderId) {
     selectedOrder.value = null
     workOrderStore.bomRequirements = []
   } else {
     selectedOrder.value = order
-    await workOrderStore.loadBOMRequirements(order.itemCode)
+    await workOrderStore.loadBOMRequirements(order.orderNo)
+    selectedOrder.value = workOrderStore.selectedDetail?.workOrder ?? order
   }
 }
 </script>
@@ -194,17 +186,17 @@ async function selectRow(order: any) {
       </div>
     </div>
 
-    <!-- 안내 카드 (백로그 및 모의 개발 현황 명시) -->
+    <!-- 안내 카드 -->
     <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5 shadow-sm flex gap-4">
       <div class="p-3 bg-indigo-600 text-white rounded-lg shrink-0 h-fit">
         <ShieldAlert class="w-5 h-5" />
       </div>
       <div class="space-y-1">
-        <h4 class="text-sm font-bold text-indigo-900">API 미작성으로 인한 모의(Mock) 리스팅 안내</h4>
+        <h4 class="text-sm font-bold text-indigo-900">실제 작업지시 기반 자재 불출 안내</h4>
         <p class="text-xs text-indigo-700/90 leading-relaxed">
-          - **백로그 이관 안내**: 작업 지시 조회(`GET /api/work-orders`) 및 자재 매핑 조회 API가 백엔드에 없어 프론트엔드 자체 모의 데이터셋을 활용해 구동됩니다.<br />
-          - **실재고 연동**: BOM 소요량 대비 가용 재고량 비교는 실제 백엔드 현재고(`GET /api/inventory`) 데이터의 합계를 연산해 실시간 매핑됩니다.<br />
-          - **출고 실행**: "자재 불출 실행" 버튼 클릭 시 실제 백엔드 API인 `POST /api/work-orders/{id}/issue-materials`를 호출합니다.
+          - **작업지시 조회**: 실제 백엔드 `GET /api/work-orders` 목록을 사용합니다.<br />
+          - **자재 소요량**: 선택한 작업지시 상세의 BOM 기준 필요 수량, 불출 수량, 가용 재고를 표시합니다.<br />
+          - **출고 실행**: "자재 불출 실행" 버튼 클릭 시 `POST /api/work-orders/{orderNo}/issue-materials`를 호출합니다.
         </p>
       </div>
     </div>
@@ -251,6 +243,7 @@ async function selectRow(order: any) {
               <option value="ALL">전체 상태</option>
               <option value="READY">지시 대기 (READY)</option>
               <option value="RUN">지시 실행 중 (RUN)</option>
+              <option value="HOLD">작업 보류 (HOLD)</option>
             </select>
           </div>
         </div>
@@ -427,21 +420,21 @@ async function selectRow(order: any) {
             <tbody class="divide-y divide-slate-100 text-sm">
               <tr
                 v-for="mat in selectedOrderBOMStatus"
-                :key="mat.childItemCode"
+                :key="mat.itemCode"
                 class="hover:bg-slate-50/50"
                 :class="{ 'bg-rose-50/10': !mat.isSufficient }"
               >
                 <!-- 자재 코드 -->
-                <td class="px-5 py-4 font-mono text-xs font-bold text-slate-900">{{ mat.childItemCode }}</td>
+                <td class="px-5 py-4 font-mono text-xs font-bold text-slate-900">{{ mat.itemCode }}</td>
                 <!-- 자재명 -->
-                <td class="px-5 py-4 font-medium text-slate-700 truncate" :title="mat.childItemName">
-                  {{ mat.childItemName }}
+                <td class="px-5 py-4 font-medium text-slate-700 truncate" :title="mat.itemName">
+                  {{ mat.itemName }}
                 </td>
                 <!-- 단위 -->
                 <td class="px-5 py-4 text-slate-500 font-bold uppercase">{{ mat.unit }}</td>
                 <!-- 단위 소요 비율 -->
                 <td class="px-5 py-4 text-right font-mono text-slate-500">
-                  {{ mat.quantityPerUnit.toFixed(2) }}
+                  {{ Number(mat.bomQuantity).toFixed(2) }}
                 </td>
                 <!-- 총 필요 수량 -->
                 <td class="px-5 py-4 text-right font-bold text-slate-800">
