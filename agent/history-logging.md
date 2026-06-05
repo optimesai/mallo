@@ -57,7 +57,7 @@ git config user.name
 `[...]`로 표시된 부분은 동적으로 수집하고 요약한 내용으로 대체한다.
 
 ```markdown
-### [HH:MM] [TASK-XX] 작업의 핵심 요약 제목 (사용 에이전트명)
+### [HH:MM] 작업의 핵심 요약 제목 (사용 에이전트명)
 - **Commit Hash**: `[방금 생성된 Git 커밋의 Short SHA 또는 Hash]`
 - **User Intent**: [증상 + 요청 — 무슨 일이 일어나서, 무엇을 해달라고 했는지. 구체적 증상 기술, 1~2줄]
 - **Agent Context**: [진단 + 접근 — 실제 근본 원인과 해결 방식. 사용자 요청과 다른 접근을 취했다면 그 이유, 1~2줄]
@@ -75,10 +75,12 @@ git config user.name
 ## 각 필드별 작성 규칙
 
 ### 작업 제목 (Title)
-- 작업의 핵심을 1문장으로 압축한다.
-- **반드시 `[TASK-XX]` prefix를 포함**해야 한다. 이슈 트래킹 연동에 필수적이며, `git log --grep="TASK-XX"`로 해당 작업의 모든 커밋과 히스토리를 연결할 수 있다.
-- 한글로 작성하며, 너무 길지 않게 (15자 내외 권장).
-- 예시: `[TASK-49] 재고 마스터 페이징 조회 API 구현`, `[TASK-53] JWT 토큰 갱신 로직 리팩토링`
+- 작업의 핵심을 1문장으로 압축한다. 한글로 작성하며, 너무 길지 않게 (15자 내외 권장).
+- **태스크 번호는 현재 브랜치명에서 추출**한다. 브랜치가 `task/49` 또는 `feature/42`와 같이 번호를 포함하는 패턴일 경우, `[TASK-49]` 또는 `[TASK-42]`를 제목 앞에 붙인다.
+- 브랜치명이 패턴과 일치하지 않거나 번호를 추출할 수 없는 경우(예: `main`, `dev`, `fix/login`, `hotfix/timeout`), **prefix를 표시하지 않고 제목만 기록**한다. `[TASK-XX]`와 같은 추측성 표기를 절대 사용해서는 안 된다.
+- 브랜치 확인 명령어: `git branch --show-current`
+- 예시 (태스크 브랜치 `task/49`): `[TASK-49] 재고 마스터 페이징 조회 API 구현`
+- 예시 (일반 브랜치 `hotfix/timeout`): `JWT 토큰 갱신 로직 리팩토링`
 
 ### Commit Hash
 - 방금 생성된 Git 커밋의 short SHA(7자리)를 기입한다.
@@ -117,7 +119,6 @@ git config user.name
   - `` `backend/.../api/inbound/InboundController.java` (new) ``
   - `` `frontend/src/views/InboundReceiptView.vue` (+42/-18) ``
   - `` `agent/RULES.md` (remove) ``
-  - `` other n files `(0 new / 0 removed)` ``
 
 ---
 
@@ -136,6 +137,8 @@ git config user.name
 
 ## 완전한 예시
 
+**태스크 브랜치(`task/63`)에서 작업한 경우:**
+
 ```markdown
 ### [14:30] [TASK-63] 재고 마스터 페이징 조회 API 구현 (Claude Code)
 - **Commit Hash**: `a1b2c3d`
@@ -151,4 +154,17 @@ git config user.name
   - `backend/.../domain/inventory/service/InventoryServiceImpl.java` (+42/-8)
   - `frontend/src/api/inventoryApi.ts` (+15/-4)
   - `frontend/src/views/InventoryStatusView.vue` (+42/-18)
+```
+
+**일반 브랜치(`hotfix/timeout-fix`)에서 작업한 경우:**
+
+```markdown
+### [16:00] 로그인 페이지 토큰 만료 처리 개선 (Claude Code)
+- **Commit Hash**: `d4e5f6g`
+- **User Intent**: 토큰 만료 시 화이트 스크린이 발생하여, 만료 시점에 자동으로 로그인 페이지로 이동하도록 요청
+- **Agent Context**: 401 응답을 인터셉트하지 못해 발생. 브랜치명이 `hotfix/timeout-fix`로 태스크 번호가 없어 prefix 없이 기록.
+- **Key Decisions**:
+  - 기존 `getAuthHeaders()` 유틸리티 함수 내에서 401 응답 감지 및 리다이렉트 처리 — 최소 변경
+- **Affected Files**:
+  - `frontend/src/api/authApi.ts` (+12/-3)
 ```
