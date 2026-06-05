@@ -18,6 +18,7 @@
 | 프론트엔드 라우트 & 메뉴 | [frontend/routes.md](frontend/routes.md) |
 | 인프라, Git, CI/CD | [infra.md](infra.md) |
 | 커밋 컨벤션 | [commit-convention.md](commit-convention.md) |
+| 작업 히스토리 로깅 정책 | [history-logging.md](history-logging.md) |
 
 ---
 
