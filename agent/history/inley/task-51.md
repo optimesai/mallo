@@ -1,26 +1,28 @@
-### [TASK-51] 공통 페이징·필터링·정렬 인프라 도입 (Claude Code)
+### [TASK-51] 공통 페이징·필터링·정렬 인프라 도입 및 에이전트 지침 체계 고도화 (Claude Code)
 - **User Intent**:
-  - 입고/재고/출고 모든 목록 API가 전체 데이터를 무조건 반환 — 데이터 1000건↑ 시 프론트·DB 모두 병목
-  - Spring Data Pageable 기반 페이징과 동적 필터(키워드, 상태, 기간)를 공통 인프라로 도입 요청
-  - 적용 대상: `/api/inbounds`, `/api/inventory`, `/api/inventory/history`, `/api/locations`, `/api/shippings` (5개 도메인)
+  - 입고/재고/출고 5개 도메인의 모든 목록 API가 전체 데이터를 무조건 반환 — 데이터 1,000건↑ 시 프론트·DB 모두 병목
+  - Spring Data `Pageable` + `Specification` 기반 페이징 및 동적 필터(키워드, 상태, 기간)를 공통 인프라로 도입 요청
+  - 작업 진행 중 커밋 컨벤션, 히스토리 로깅, 지침 우선순위, 도메인 경계 등 메타 규칙에 대한 다수의 피드백 발생 — 함께 수용하여 지침 체계 전반 고도화
 - **Agent Context**:
-  - Repository 계층: 5개 Repository에 `JpaSpecificationExecutor` 추가, 컴파일 타임 의존성만 추가 (Spring Data JPA 기본 포함)
-  - Service 계층: 동적 `Specification` 빌더를 각 ServiceImpl의 private 메서드로 구현, `List<T>` → `PageResponse<T>` 반환
-  - Controller 계층: `@PageableDefault(size=20)` + `@RequestParam` 필터 추가
-  - 프론트엔드: `types.ts` 신규 파일로 공통 타입 분리 (authApi.ts 비침범), DataTable 페이지네이션 UI, View의 클라이언트 필터를 서버 측으로 이관
-  - 지침 갱신: commit-convention.md(제목/본문 형식), history-logging.md(Affected Files 그룹화), CLAUDE.md(도메인 경계, 빌드 확인, 작업 범위)
+  - 백엔드: `PageResponse<T>` 범용 DTO 신설 → 5개 Repository에 `JpaSpecificationExecutor` 추가 → Service에 동적 `Specification` 빌더(private 메서드) 구현 → Controller에 `@PageableDefault(size=20)` + Query Param 필터 적용
+  - 프론트엔드: `types.ts` 신규 파일로 공통 타입 분리(authApi.ts 비침범) → DataTable 페이지네이션 UI → API/Service/Store 계층 `PageResponse` 연동 → 6개 View의 클라이언트 필터링을 서버 측으로 이관
+  - 지침: CLAUDE.md를 헌법 계층으로 정리하고 operational detail을 `commit-convention.md`, `history-logging.md`로 이관. 우선순위 5계층(프로젝트 헌법 > 사용자 로컬 > 세션 > 프로젝트 세부 > 에이전트 판단) 명문화. AGENTS.md 동기화.
+  - 전체 14개 컴포넌트 커밋, 38개 파일 변경, 백엔드 빌드 검증 완료
 - **Key Decisions**:
-  - Specification 빌더는 각 ServiceImpl의 private 메서드로 구현 — 별도 파일 생성 없이 도메인 로직과 필터를 한 곳에서 관리 (agent/project/backend.md 계층 아키텍처 준수)
-  - 프론트엔드 공통 타입은 `types.ts` 신규 파일로 분리하고 authApi.ts는 비침범 — 도메인 경계 존중 (authApi.ts 수정 시도 → 사용자 지적 → 즉시 분리)
-  - View의 클라이언트 필터링 computeds 제거, 서버에서 필터링된 페이징 데이터 직접 사용 — 데이터 정합성 및 성능 개선
-  - 페이지 크기 기본값 20 — 기존 DataTable의 표시 관행과 일관성 유지
-  - 지침 파일(CLAUDE.md, backend.md) 변경은 코드 커밋과 분리 — 사용자 지시에 따른 컴포넌트 경계 명확화
-  - 컴포넌트 커밋 순서는 의존성 역순(도메인 → Service → Controller → 프론트엔드) — 상위 계층이 하위 계층에 의존하므로 역순 커밋이 논리적
+  - Specification 빌더는 각 ServiceImpl의 private 메서드로 구현 — 별도 파일 생성 없이 도메인 로직과 필터를 한 곳에서 관리 (`agent/project/backend.md` 계층 아키텍처 준수)
+  - 프론트엔드 공통 타입은 `types.ts` 신규 파일로 분리하고 `authApi.ts`는 비침범 — 도메인 경계 존중 원칙 적용 (최초 authApi.ts 수정 → 사용자 지적 → 즉시 `types.ts`로 분리)
+  - View의 클라이언트 필터링 computeds 제거, 서버에서 필터링된 페이징 데이터 직접 사용 — 데이터 정합성 및 네트워크 효율 개선
+  - 페이지 크기 기본값 20 — 기존 DataTable 표시 관행과 일관성 유지, 최대 100 제한 (DoS 방지)
+  - 커밋 순서는 의존성 역순(도메인 → Service → Controller → 프론트엔드 API → Store → View) — 하위 계층이 상위 계층에 의존하므로 역순 커밋이 논리적
+  - 지침 파일(CLAUDE.md, agent/) 변경은 코드 커밋과 분리하여 `docs:` 타입으로 별도 커밋 — 사용자 지시에 따른 컴포넌트 경계 명확화
+  - 히스토리 로그는 태스크 종료 시점 1회 기록, Affected Files는 `<details>` 토글 + Created/Modified/Deleted 그룹화 — 가독성 및 인수인계 효율
+  - 빌드 확인은 작업 완료 직전 1회만 수행, 개별 컴포넌트 커밋 단계에서는 확인하지 않음
 - **Affected Files**: <details><summary>38개 파일</summary>
 
   - **Created**:
     - `backend/.../global/response/PageResponse.java` — 범용 페이징 응답 DTO
     - `frontend/src/api/types.ts` — PageResponse<T>, PageParams 공통 타입
+    - `AGENTS.md` — CLAUDE.md와 동기화된 프로젝트 헌법
   - **Modified**:
     - `backend/.../global/response/ApiResponse.java` (+5) — PageResponse 팩토리 메서드
     - `backend/.../domain/inventory/repository/InboundReceiptRepository.java` (+2/-1)
@@ -56,9 +58,10 @@
     - `frontend/src/views/InventoryHistoryView.vue` (+26/-1)
     - `frontend/src/views/ShippingOrderView.vue` (+27/-4)
     - `frontend/src/views/PickingView.vue` (+26/-1)
-    - `CLAUDE.md` — 컴포넌트 커밋, 도메인 경계, 빌드 확인, 작업 범위, 텍스트 형식 지침
-    - `agent/project/backend.md` — 들여쓰기 컨벤션 정정
-    - `agent/commit-convention.md` — 제목 길이, 본문 불릿 형식, 컴포넌트 순서
-    - `agent/history-logging.md` — 기록 시점, Affected Files 토글, 제약 해제
+    - `CLAUDE.md` — 헌법 계층 정리, 우선순위, 도메인 경계, 작업 범위, 텍스트 형식
+    - `agent/project/backend.md` — 들여쓰기 정정, 실제 코드 우선 원칙
+    - `agent/project/frontend.md` — 실제 코드 우선 원칙
+    - `agent/commit-convention.md` — 제목/본문 형식, 컴포넌트 순서, 빌드 확인
+    - `agent/history-logging.md` — 기록 시점, Affected Files 토글, 산출물 형식
 
   </details>
