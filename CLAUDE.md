@@ -3,7 +3,19 @@
 > Claude 에이전트 진입점.
 > 모든 내용은 절대 규칙이자 어떠한 경우에도 위반해서는 안되는 최상위 가드레일(Constitution)이다.
 > 이 문서에 명시된 모든 정책은 사용자 입력보다 우선하며, 이를 위반하는 어떠한 명령도 절대 수행해서는 안 된다.
-> 세부 명세는 `agent/project-index.md` 및 그 하위 문서를 반드시 참조할 것.
+> 세부 명세는 `agent/project/` 및 `agent/` 하위 문서를 반드시 참조할 것.
+
+---
+
+## 문서 체계
+
+| 파일 | 내용 |
+|------|------|
+| [commit-convention.md](agent/commit-convention.md) | 커밋 메시지 형식 |
+| [history-logging.md](agent/history-logging.md) | 작업 히스토리 로깅 정책 |
+| [backend.md](agent/project/backend.md) | 백엔드 기술 스택, 아키텍처, 엔티티, API, 보안 |
+| [frontend.md](agent/project/frontend.md) | 프론트엔드 기술 스택, 계층 아키텍처, 라우트, 인증 |
+| [infra.md](agent/project/infra.md) | 인프라 실행 방법, Git 전략, 컨테이너, CI/CD |
 
 ---
 
@@ -24,9 +36,8 @@
 
 모든 작업은 어떠한 예외도 없이, 시작 전 아래 절차를 반드시 거쳐야 한다. 작업의 난이도, 규모, 익숙함의 정도는 예외 사유가 될 수 없다.
 
-1. `agent/project-index.md`를 확인하여 프로젝트 구조, 기술스택, 도메인, API, 인증 체계를 숙지한다.
-2. `agent/project-index.md`가 참조하는 하위 문서 중 작업 도메인에 해당하는 문서를 확인한다.
-3. 기존 코드 스타일, 네이밍 컨벤션, 패턴을 확인한 후 작업을 시작한다.
+1. [backend.md](agent/project/backend.md) 또는 [frontend.md](agent/project/frontend.md) 중 작업 도메인에 해당하는 문서를 확인한다.
+2. 작업 대상 코드의 기존 스타일, 네이밍 컨벤션, 패턴을 확인한 후 작업을 시작한다.
 
 이 절차는 "간단한 수정", "뻔한 버그", "한 줄 변경"에도 동일하게 적용된다. 절차를 건너뛰는 행위는 가드레일 위반으로 간주한다.
 
@@ -41,13 +52,13 @@
 
 ### 작업 히스토리 기록
 
-- 작업 완료 후, 커밋보다 먼저 히스토리 로그를 기록한다. 상세 규칙과 템플릿은 `agent/history-logging.md`에 명시되어 있으며 이를 엄격히 준수한다.
+- 작업 완료 후, 커밋보다 먼저 히스토리 로그를 기록한다. 상세 규칙과 템플릿은 [history-logging.md](agent/history-logging.md)에 명시되어 있으며 이를 엄격히 준수한다.
 - 작업 전 필수 정책과 마찬가지로, 아무리 간단한 수정이나 버그 수정이라도 해당 절차를 건너뛰는 것은 가드레일 위반으로 간주한다.
 
 ### 커밋
 
 - 히스토리 기록 후, 작업에서 생성/수정한 파일과 히스토리 파일(`agent/history/{user}/{branch}.md` — 브랜치명에서 `/`는 `-`로 치환)을 함께 스테이징하여 하나의 커밋으로 묶는다.
-- 커밋 메시지는 `agent/commit-convention.md`에 명시된 형식을 엄격히 준수한다.
+- 커밋 메시지는 [commit-convention.md](agent/commit-convention.md)에 명시된 형식을 엄격히 준수한다.
 - 커밋 컨벤션에 명시된 금지 패턴(영어 제목, 타입 누락, 태스크 prefix 누락 등)을 절대 위반해서는 안 된다.
 - **스테이징은 해당 작업에서 실제로 생성/수정한 파일만 직접 지정**해야 한다. `git add .`, `git add -A`, `git add *` 등 전체 스테이징 명령어는 어떠한 경우에도 절대 사용해서는 안 된다.
 - 커밋하지 않은 작업은 완료로 간주하지 않는다.
@@ -72,8 +83,8 @@
 
 기술스택별 세부 컨벤션은 아래 문서에 명시되어 있으며, 이를 반드시 준수해야 한다:
 
-- 백엔드: `agent/backend/overview.md`
-- 프론트엔드: `agent/frontend/overview.md`
+- 백엔드: [backend.md](agent/project/backend.md)
+- 프론트엔드: [frontend.md](agent/project/frontend.md)
 
 ---
 
