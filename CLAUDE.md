@@ -79,13 +79,11 @@
 - 새로운 파일을 생성할 때는 같은 도메인에 속한 기존 파일을 템플릿으로 삼아 구조와 스타일을 복제해야 한다.
 - 절대 개인적 선호나 임의적 판단으로 기존 코드베이스와 다른 스타일을 도입해서는 안 된다.
 
-### 기술스택별 세부 컨벤션
+기술스택별 세부 컨벤션은 아래 문서에서 상속된다:
 
-기술스택별 세부 컨벤션은 아래 문서에 명시되어 있으며, 이를 반드시 준수해야 한다:
-
-- 백엔드: [backend.md](agent/project/backend.md)
-- 프론트엔드: [frontend.md](agent/project/frontend.md)
-- 인프라: [infra.md](agent/project/infra.md)
+- 백엔드(Java, Spring Boot, JPA): [backend.md](agent/project/backend.md)
+- 프론트엔드(Vue 3, TypeScript, Pinia): [frontend.md](agent/project/frontend.md)
+- 인프라(Docker, Git, CI/CD): [infra.md](agent/project/infra.md)
 
 ### 도메인 경계 준수
 
