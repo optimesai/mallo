@@ -49,6 +49,11 @@ const router = createRouter({
           component: () => import('../views/PartnerMasterView.vue')
         },
         {
+          path: 'master/factory-lines',
+          name: 'factory-line-master',
+          component: () => import('../views/FactoryLineMasterView.vue')
+        },
+        {
           path: 'inbound/receipt',
           name: 'inbound-receipt',
           component: () => import('../views/InboundReceiptView.vue')
