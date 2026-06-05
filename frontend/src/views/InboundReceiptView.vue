@@ -14,11 +14,12 @@ import {
   ArrowRight,
   FileSpreadsheet,
   RefreshCw,
-  Boxes
+  Boxes,
+  ChevronLeft,
+  ChevronRight
 } from '@lucide/vue'
 import { useInboundStore } from '@/state/inboundStore'
 import type { InboundCreateRequest } from '@/api/inboundApi'
-import { ChevronLeft, ChevronRight } from 'lucide-vue'
 
 const inboundStore = useInboundStore()
 const router = useRouter()
