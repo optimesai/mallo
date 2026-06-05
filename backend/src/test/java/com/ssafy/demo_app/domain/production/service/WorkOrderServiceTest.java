@@ -28,6 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ssafy.demo_app.global.response.PageResponse;
+
+import org.springframework.data.domain.Pageable;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -68,11 +72,11 @@ class WorkOrderServiceTest {
         em.clear();
 
         // When
-        List<CurrentInventoryResponse> inventories = inventoryService.getInventories();
+        PageResponse<CurrentInventoryResponse> inventories = inventoryService.getInventories(Pageable.unpaged(), null);
 
         // Then
-        assertThat(inventories).isNotEmpty();
-        CurrentInventoryResponse target = inventories.stream()
+        assertThat(inventories.getContent()).isNotEmpty();
+        CurrentInventoryResponse target = inventories.getContent().stream()
                 .filter(i -> i.getItemCode().equals("TEST-INV-GET"))
                 .findFirst()
                 .orElseThrow();
@@ -101,11 +105,11 @@ class WorkOrderServiceTest {
         em.clear();
 
         // When
-        List<TransactionHistoryResponse> histories = inventoryService.getTransactionHistories();
+        PageResponse<TransactionHistoryResponse> histories = inventoryService.getTransactionHistories(Pageable.unpaged(), null, null, null);
 
         // Then
-        assertThat(histories).isNotEmpty();
-        TransactionHistoryResponse target = histories.stream()
+        assertThat(histories.getContent()).isNotEmpty();
+        TransactionHistoryResponse target = histories.getContent().stream()
                 .filter(h -> h.getItemCode().equals("TEST-INV-HIST"))
                 .findFirst()
                 .orElseThrow();
