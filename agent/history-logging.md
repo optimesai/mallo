@@ -36,18 +36,27 @@ AI 에이전트 간의 작업 파편화를 막고 변경 사항을 투명하게 
 ## 기록 경로 및 파일명 패턴
 
 ```
-agent/history/{git_username}/YYYY-MM-DD.md
+agent/history/{git_username}/{branch}.md
 ```
 
 | 구성요소 | 설명 |
 |----------|------|
 | `{git_username}` | `git config user.name` 명령어로 확인된 Git 사용자 이름 (소문자, 공백은 하이픈으로 치환) |
-| `YYYY-MM-DD` | 작업 완료 시점의 현재 날짜 |
+| `{branch}` | `git branch --show-current`로 획득한 현재 브랜치명. `/`는 `-`으로 치환 (예: `task/49` → `task-49`, `feature/user-auth` → `feature-user-auth`) |
 
-**사용자명 획득 명령어**:
+**획득 명령어**:
 ```bash
 git config user.name
+git branch --show-current
 ```
+
+**예시 경로**:
+```
+agent/history/inley/task-49.md
+agent/history/john-doe/hotfix-timeout-fix.md
+```
+
+브랜치명을 파일명으로 사용하면 하나의 브랜치(태스크)에 하나의 히스토리 파일이 대응되어, 동시 작업 시 충돌 없이 모든 로그가 태스크 단위로 축적된다.
 
 ---
 
@@ -58,7 +67,6 @@ git config user.name
 
 ```markdown
 ### [HH:MM] 작업의 핵심 요약 제목 (사용 에이전트명)
-- **Commit Hash**: `[방금 생성된 Git 커밋의 Short SHA 또는 Hash]`
 - **User Intent**: [증상 + 요청 — 무슨 일이 일어나서, 무엇을 해달라고 했는지. 구체적 증상 기술, 1~2줄]
 - **Agent Context**: [진단 + 접근 — 실제 근본 원인과 해결 방식. 사용자 요청과 다른 접근을 취했다면 그 이유, 1~2줄]
 - **Key Decisions**:
@@ -81,11 +89,6 @@ git config user.name
 - 브랜치 확인 명령어: `git branch --show-current`
 - 예시 (태스크 브랜치 `task/49`): `[TASK-49] 재고 마스터 페이징 조회 API 구현`
 - 예시 (일반 브랜치 `hotfix/timeout`): `JWT 토큰 갱신 로직 리팩토링`
-
-### Commit Hash
-- 방금 생성된 Git 커밋의 short SHA(7자리)를 기입한다.
-- 커밋하지 않은 작업의 경우 `(unstaged)` 또는 `(pending)`으로 표기한다.
-- 복수 커밋일 경우 대표 커밋 하나만 기입한다.
 
 ### User Intent (사용자 의도)
 - **증상 + 요청 구조**로 1~2줄 작성한다: 사용자가 관찰한 현상과 요청한 해결 방향을 구체적으로 기술.
@@ -141,7 +144,6 @@ git config user.name
 
 ```markdown
 ### [14:30] [TASK-63] 재고 마스터 페이징 조회 API 구현 (Claude Code)
-- **Commit Hash**: `a1b2c3d`
 - **User Intent**: 재고 현황 화면에서 대량 데이터 로딩 시 타임아웃이 발생하여, 페이지네이션과 검색 필터를 적용한 API 개선 요청
 - **Agent Context**: 3천 건 이상의 입고 데이터가 쌓이며 DB 풀스캔이 발생하는 것이 근본 원인으로 진단. Pageable + Specification 조합으로 동적 쿼리와 페이지네이션을 동시에 적용하여 쿼리당 20건으로 제한.
 - **Key Decisions**:
@@ -160,7 +162,6 @@ git config user.name
 
 ```markdown
 ### [16:00] 로그인 페이지 토큰 만료 처리 개선 (Claude Code)
-- **Commit Hash**: `d4e5f6g`
 - **User Intent**: 토큰 만료 시 화이트 스크린이 발생하여, 만료 시점에 자동으로 로그인 페이지로 이동하도록 요청
 - **Agent Context**: 401 응답을 인터셉트하지 못해 발생. 브랜치명이 `hotfix/timeout-fix`로 태스크 번호가 없어 prefix 없이 기록.
 - **Key Decisions**:
