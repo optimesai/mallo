@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from 'lucide-vue'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 interface TableColumn {
   key: string
