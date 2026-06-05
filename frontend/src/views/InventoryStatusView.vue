@@ -41,12 +41,21 @@ async function fetchPageData() {
   try {
     pageError.value = null
     await Promise.all([
-      inventoryStore.loadInventories(),
+      inventoryStore.loadInventories({
+        page: inventoryStore.invPage,
+        size: 20,
+        keyword: filterItem.value || undefined,
+      }),
       inboundStore.loadItems()
     ])
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '재고 데이터를 불러오는데 실패했습니다.'
   }
+}
+
+function goToPage(page: number) {
+  inventoryStore.invPage = page
+  fetchPageData()
 }
 
 function showToast(msg: string) {
@@ -428,6 +437,25 @@ async function selectRow(item: any) {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div v-if="inventoryStore.invTotalPages > 0"
+        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+        <span class="text-slate-500">
+          총 <span class="font-bold text-slate-700">{{ inventoryStore.invTotalElements.toLocaleString() }}</span>건
+          ({{ inventoryStore.invPage + 1 }} / {{ inventoryStore.invTotalPages }} 페이지)
+        </span>
+        <div class="flex items-center gap-1">
+          <button @click="goToPage(0)" :disabled="inventoryStore.invPage === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+          <button @click="goToPage(inventoryStore.invPage - 1)" :disabled="inventoryStore.invPage === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+          <button @click="goToPage(inventoryStore.invPage + 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+          <button @click="goToPage(inventoryStore.invTotalPages - 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+        </div>
       </div>
     </div>
 

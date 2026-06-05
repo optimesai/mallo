@@ -18,6 +18,7 @@ import {
 } from '@lucide/vue'
 import { useInboundStore } from '@/state/inboundStore'
 import type { InboundCreateRequest } from '@/api/inboundApi'
+import { ChevronLeft, ChevronRight } from 'lucide-vue'
 
 const inboundStore = useInboundStore()
 const router = useRouter()
@@ -67,46 +68,18 @@ const selectedLocationDetail = computed(() => {
   return inboundStore.locations.find(l => l.locationCode === selectedInbound.value.locationCode)
 })
 
-// 통계 데이터 계산
+// 통계 데이터 계산 (total은 서버 totalElements, 상태별 건수는 현재 페이지 기준)
 const stats = computed(() => {
-  const total = inboundStore.inbounds.length
+  const total = inboundStore.totalElements
   const ready = inboundStore.inbounds.filter(i => i.status === 'READY').length
   const completed = inboundStore.inbounds.filter(i => i.status === 'COMPLETED').length
   const stacked = inboundStore.inbounds.filter(i => i.status === 'STACKED').length
   return { total, ready, completed, stacked }
 })
 
-// 필터링된 입고 목록 계산
+// 서버 측 필터링 사용 — inboundStore.inbounds 그대로 표시
 const filteredInbounds = computed(() => {
-  return inboundStore.inbounds.filter(item => {
-    // 1) 상태 필터
-    if (filterStatus.value !== 'ALL' && item.status !== filterStatus.value) {
-      return false
-    }
-    // 2) 품목 검색 (코드 or 명)
-    if (filterItem.value.trim() !== '') {
-      const keyword = filterItem.value.toLowerCase()
-      const matchCode = item.itemCode?.toLowerCase().includes(keyword)
-      const matchName = item.itemName?.toLowerCase().includes(keyword)
-      if (!matchCode && !matchName) return false
-    }
-    // 3) 거래처 검색 (코드 or 명)
-    if (filterPartner.value.trim() !== '') {
-      const keyword = filterPartner.value.toLowerCase()
-      const matchCode = item.partnerCode?.toLowerCase().includes(keyword)
-      const matchName = item.partnerName?.toLowerCase().includes(keyword)
-      if (!matchCode && !matchName) return false
-    }
-    // 4) 기간 필터
-    if (filterDateStart.value) {
-      if (item.inboundDate < filterDateStart.value) return false
-    }
-    if (filterDateEnd.value) {
-      if (item.inboundDate > filterDateEnd.value) return false
-    }
-
-    return true
-  })
+  return inboundStore.inbounds
 })
 
 // 합계 계산 (필터링된 수량 총합)
@@ -127,7 +100,14 @@ async function fetchPageData() {
   try {
     pageError.value = null
     await Promise.all([
-      inboundStore.loadInbounds(),
+      inboundStore.loadInbounds({
+        page: inboundStore.page,
+        size: 20,
+        status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
+        keyword: filterItem.value || filterPartner.value || undefined,
+        startDate: filterDateStart.value || undefined,
+        endDate: filterDateEnd.value || undefined,
+      }),
       inboundStore.loadItems('RAW'),
       inboundStore.loadPartners('SUPPLIER'),
       inboundStore.loadLocations()
@@ -135,6 +115,11 @@ async function fetchPageData() {
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.'
   }
+}
+
+function goToPage(page: number) {
+  inboundStore.page = page
+  fetchPageData()
 }
 
 // 필터 초기화
@@ -683,6 +668,50 @@ function formatDateTime(dateTimeStr: string) {
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div
+        v-if="inboundStore.totalPages > 0"
+        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs"
+      >
+        <span class="text-slate-500">
+          총 <span class="font-bold text-slate-700">{{ inboundStore.totalElements.toLocaleString() }}</span>건
+          ({{ inboundStore.page + 1 }} / {{ inboundStore.totalPages }} 페이지)
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            @click="goToPage(0)"
+            :disabled="inboundStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >««</button>
+          <button
+            @click="goToPage(inboundStore.page - 1)"
+            :disabled="inboundStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >«</button>
+          <button
+            v-for="p in Math.min(inboundStore.totalPages, 5)"
+            :key="p"
+            @click="goToPage(Math.max(0, inboundStore.page - 2) + p - 1)"
+            class="w-7 h-7 rounded text-xs font-bold transition"
+            :class="(Math.max(0, inboundStore.page - 2) + p - 1) === inboundStore.page
+              ? 'bg-[#1428A0] text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-200'"
+          >
+            {{ Math.max(0, inboundStore.page - 2) + p }}
+          </button>
+          <button
+            @click="goToPage(inboundStore.page + 1)"
+            :disabled="inboundStore.page >= inboundStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >»</button>
+          <button
+            @click="goToPage(inboundStore.totalPages - 1)"
+            :disabled="inboundStore.page >= inboundStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >»»</button>
+        </div>
       </div>
     </div>
 

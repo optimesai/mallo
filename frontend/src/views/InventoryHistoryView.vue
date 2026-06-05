@@ -34,10 +34,21 @@ onMounted(async () => {
 async function fetchPageData() {
   try {
     pageError.value = null
-    await inventoryStore.loadHistories()
+    await inventoryStore.loadHistories({
+      page: inventoryStore.histPage,
+      size: 20,
+      transactionType: filterType.value !== 'ALL' ? filterType.value : undefined,
+      startDate: filterDateStart.value || undefined,
+      endDate: filterDateEnd.value || undefined,
+    })
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '수불 이력을 불러오는데 실패했습니다.'
   }
+}
+
+function goToPage(page: number) {
+  inventoryStore.histPage = page
+  fetchPageData()
 }
 
 function showToast(msg: string) {
@@ -364,6 +375,25 @@ const stats = computed(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div v-if="inventoryStore.histTotalPages > 0"
+        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+        <span class="text-slate-500">
+          총 <span class="font-bold text-slate-700">{{ inventoryStore.histTotalElements.toLocaleString() }}</span>건
+          ({{ inventoryStore.histPage + 1 }} / {{ inventoryStore.histTotalPages }} 페이지)
+        </span>
+        <div class="flex items-center gap-1">
+          <button @click="goToPage(0)" :disabled="inventoryStore.histPage === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+          <button @click="goToPage(inventoryStore.histPage - 1)" :disabled="inventoryStore.histPage === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+          <button @click="goToPage(inventoryStore.histPage + 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+          <button @click="goToPage(inventoryStore.histTotalPages - 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+        </div>
       </div>
     </div>
   </div>

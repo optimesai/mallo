@@ -102,12 +102,21 @@ async function fetchPageData() {
   try {
     pageError.value = null
     await Promise.all([
-      inboundStore.loadInbounds(),
+      inboundStore.loadInbounds({
+        page: inboundStore.page,
+        size: 20,
+        status: 'COMPLETED',
+      }),
       inboundStore.loadLocations()
     ])
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '데이터 로드에 실패했습니다.'
   }
+}
+
+function goToPage(page: number) {
+  inboundStore.page = page
+  fetchPageData()
 }
 
 function resetFilters() {
@@ -472,6 +481,27 @@ function formatDateTime(dateTimeStr: string) {
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div
+        v-if="inboundStore.totalPages > 0"
+        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs"
+      >
+        <span class="text-slate-500">
+          총 <span class="font-bold text-slate-700">{{ inboundStore.totalElements.toLocaleString() }}</span>건
+          ({{ inboundStore.page + 1 }} / {{ inboundStore.totalPages }} 페이지)
+        </span>
+        <div class="flex items-center gap-1">
+          <button @click="goToPage(0)" :disabled="inboundStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+          <button @click="goToPage(inboundStore.page - 1)" :disabled="inboundStore.page === 0"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+          <button @click="goToPage(inboundStore.page + 1)" :disabled="inboundStore.page >= inboundStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+          <button @click="goToPage(inboundStore.totalPages - 1)" :disabled="inboundStore.page >= inboundStore.totalPages - 1"
+            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+        </div>
       </div>
     </div>
 
