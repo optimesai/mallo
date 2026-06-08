@@ -47,7 +47,7 @@ export const menuGroups: MenuGroup[] = [
     items: [
       { name: '작업 지시 등록', path: '/production/work-orders' },
       { name: '자재 출고(불출) 처리', path: '/production/issue' },
-      { name: '공정 실적 및 원부자재', path: '/' }
+      { name: '공정 실적 및 원부자재', path: '/production/executions' }
     ]
   },
   {
