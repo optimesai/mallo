@@ -61,3 +61,25 @@
     - 없음
 
   </details>
+
+### 사용자 권한 관리 안전장치 보강 (Codex)
+- **User Intent**: `시스템 관리 > 사용자 및 권한` 메뉴 구현 전 백엔드부터 작업해 달라는 요청. 관리자 화면에서 사용할 사용자 목록/상세/권한 변경/삭제 API의 운영 안정성을 먼저 확보해야 하는 상황.
+- **Agent Context**: 기존 백엔드는 관리자 API는 존재했지만 자기 계정 삭제/권한 강등, 마지막 관리자 삭제/강등을 막는 도메인 규칙이 없었음. 프론트 구현 전 관리자 권한 관리 API가 시스템 관리자 계정을 소실시키지 않도록 서비스 계층에 보호 규칙을 추가.
+- **Key Decisions**:
+  - 관리자 자기 계정 권한 변경과 삭제를 차단 — `agent/project/backend.md`의 `ADMIN` 사용자 관리 권한 모델에서 관리자 권한 상실로 인한 운영 불능을 방지해야 하기 때문.
+  - 마지막 `ADMIN` 계정의 강등과 삭제를 차단 — 사용자 관리 기능이 최소 1개 관리자 계정을 유지해야 프론트 관리자 화면과 후속 운영이 가능하기 때문.
+  - 검증 규칙은 Controller가 아닌 Service 계층에 배치 — `agent/project/backend.md`의 API → Domain 계층 분리 규칙에 맞춰 비즈니스 규칙을 도메인 서비스에서 일관되게 적용하기 위함.
+- **Affected Files**: <details><summary>6개 파일</summary>
+
+  - **Created**:
+    - `backend/src/test/java/com/ssafy/demo_app/domain/user/service/UserServiceTest.java` — 사용자 권한 변경/삭제 보호 정책 단위 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/user/UserController.java` (+7/-3) — 권한 변경/삭제 요청에 현재 관리자 ID 전달
+    - `backend/src/main/java/com/ssafy/demo_app/domain/user/repository/UserRepository.java` (+2/-0) — 관리자 수 집계 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/user/service/UserService.java` (+2/-2) — 관리자 ID를 받도록 권한 변경/삭제 시그니처 변경
+    - `backend/src/main/java/com/ssafy/demo_app/domain/user/service/UserServiceImpl.java` (+28/-2) — 자기 계정 및 마지막 관리자 보호 규칙 추가
+    - `backend/src/main/java/com/ssafy/demo_app/global/exception/ErrorCode.java` (+3/-0) — 사용자 관리 보호 정책 에러 코드 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
