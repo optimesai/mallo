@@ -9,6 +9,20 @@ import {
 } from '@/api/authApi'
 
 export const authService = {
+  async existsByEmployeeNo(employeeNo: string): Promise<boolean> {
+    try {
+      const response = await authApi.existsByEmployeeNo(employeeNo)
+      return response.data
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const message = error.response?.data?.message
+        throw new Error(message || '사번 중복 여부를 확인하지 못했습니다.')
+      }
+
+      throw new Error('사번 중복 여부를 확인하지 못했습니다.')
+    }
+  },
+
   async signup(request: SignupRequest): Promise<ApiResponse<UserResponse>> {
     try {
       return await authApi.signup(request)

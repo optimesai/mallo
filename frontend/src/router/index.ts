@@ -39,6 +39,11 @@ const router = createRouter({
           component: () => import('../views/MyInfoView.vue')
         },
         {
+          path: 'system/users',
+          name: 'system-users',
+          component: () => import('../views/UserManagementView.vue')
+        },
+        {
           path: 'master/items',
           name: 'item-master',
           component: () => import('../views/ItemMasterView.vue')

@@ -51,6 +51,13 @@ export const authApi = {
     return response.data
   },
 
+  async existsByEmployeeNo(employeeNo: string) {
+    const response = await axios.get<ApiResponse<boolean>>('/api/auth/employee-no/exists', {
+      params: { employeeNo }
+    })
+    return response.data
+  },
+
   async login(request: LoginRequest) {
     const response = await axios.post<ApiResponse<LoginResponse>>('/api/auth/login', request, {
       withCredentials: true

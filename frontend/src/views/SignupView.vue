@@ -9,14 +9,95 @@ const employeeNo = ref('')
 const userName = ref('')
 const department = ref('')
 const password = ref('')
+const passwordConfirm = ref('')
 const errorMessage = ref('')
 const isSubmitting = ref(false)
+const isCheckingEmployeeNo = ref(false)
+const isEmployeeNoDuplicated = ref(false)
+const employeeNoCheckMessage = ref('중복확인 버튼 또는 Enter로 사번 중복 여부를 확인해 주세요.')
+const employeeNoCheckStatus = ref<'idle' | 'checking' | 'available' | 'duplicated' | 'error' | 'required'>('idle')
+const checkedEmployeeNo = ref('')
+
+let employeeNoCheckSequence = 0
+
+function handleEmployeeNoInput() {
+  isEmployeeNoDuplicated.value = false
+  checkedEmployeeNo.value = ''
+  employeeNoCheckStatus.value = employeeNo.value.trim() ? 'idle' : 'idle'
+  employeeNoCheckMessage.value = '중복확인 버튼 또는 Enter로 사번 중복 여부를 확인해 주세요.'
+}
+
+async function checkEmployeeNo(targetEmployeeNo: string) {
+  const sequence = ++employeeNoCheckSequence
+
+  try {
+    const exists = await authService.existsByEmployeeNo(targetEmployeeNo)
+    if (sequence !== employeeNoCheckSequence || employeeNo.value.trim() !== targetEmployeeNo) return
+
+    isEmployeeNoDuplicated.value = exists
+    checkedEmployeeNo.value = exists ? '' : targetEmployeeNo
+    employeeNoCheckStatus.value = exists ? 'duplicated' : 'available'
+    employeeNoCheckMessage.value = exists
+      ? '이미 사용 중인 사번입니다.'
+      : '사용 가능한 사번입니다.'
+  } catch (error) {
+    if (sequence !== employeeNoCheckSequence) return
+    isEmployeeNoDuplicated.value = false
+    checkedEmployeeNo.value = ''
+    employeeNoCheckStatus.value = 'error'
+    employeeNoCheckMessage.value = error instanceof Error ? error.message : '사번 중복 여부를 확인하지 못했습니다.'
+  } finally {
+    if (sequence === employeeNoCheckSequence) {
+      isCheckingEmployeeNo.value = false
+    }
+  }
+}
+
+async function handleEmployeeNoCheck() {
+  errorMessage.value = ''
+
+  const trimmedEmployeeNo = employeeNo.value.trim()
+  if (!trimmedEmployeeNo) {
+    checkedEmployeeNo.value = ''
+    isEmployeeNoDuplicated.value = false
+    employeeNoCheckStatus.value = 'required'
+    employeeNoCheckMessage.value = '사번을 입력한 뒤 중복확인을 진행해 주세요.'
+    return
+  }
+
+  employeeNoCheckMessage.value = '사번 중복 여부를 확인하는 중입니다.'
+  employeeNoCheckStatus.value = 'checking'
+  isCheckingEmployeeNo.value = true
+  await checkEmployeeNo(trimmedEmployeeNo)
+}
 
 async function handleSubmit() {
   errorMessage.value = ''
 
+  if (isCheckingEmployeeNo.value) {
+    errorMessage.value = '사번 중복 확인이 끝난 뒤 다시 시도해 주세요.'
+    return
+  }
+
+  if (isEmployeeNoDuplicated.value) {
+    errorMessage.value = '이미 사용 중인 사번입니다.'
+    return
+  }
+
+  if (!checkedEmployeeNo.value || checkedEmployeeNo.value !== employeeNo.value.trim()) {
+    employeeNoCheckStatus.value = 'required'
+    employeeNoCheckMessage.value = '회원가입 전 사번 중복확인을 진행해 주세요.'
+    errorMessage.value = '사번 중복확인을 진행해 주세요.'
+    return
+  }
+
   if (password.value.length < 8) {
     errorMessage.value = '비밀번호는 8자 이상 입력해 주세요.'
+    return
+  }
+
+  if (password.value !== passwordConfirm.value) {
+    errorMessage.value = '비밀번호 확인이 일치하지 않습니다.'
     return
   }
 
@@ -61,17 +142,37 @@ async function handleSubmit() {
       <form class="auth-form" @submit.prevent="handleSubmit">
         <div class="auth-field">
           <label class="auth-label" for="employee-no">사번</label>
-          <input
-            id="employee-no"
-            v-model="employeeNo"
-            class="auth-input"
-            name="employeeNo"
-            placeholder="EMP001"
-            autocomplete="username"
-            maxlength="50"
-            required
+          <div class="flex gap-2">
+            <input
+              id="employee-no"
+              v-model="employeeNo"
+              class="auth-input"
+              name="employeeNo"
+              placeholder="EMP001"
+              autocomplete="username"
+              maxlength="50"
+              required
+              @input="handleEmployeeNoInput"
+              @keydown.enter.prevent="handleEmployeeNoCheck"
+            >
+            <button
+              class="h-11 shrink-0 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+              type="button"
+              :disabled="isCheckingEmployeeNo"
+              @click="handleEmployeeNoCheck"
+            >
+              중복확인
+            </button>
+          </div>
+          <p
+            class="auth-help"
+            :class="{
+              'text-rose-500': employeeNoCheckStatus === 'duplicated' || employeeNoCheckStatus === 'error' || employeeNoCheckStatus === 'required',
+              'text-emerald-600': employeeNoCheckStatus === 'available'
+            }"
           >
-          <p class="auth-help">사번 중복 여부 확인</p>
+            {{ employeeNoCheckMessage }}
+          </p>
         </div>
 
         <div class="auth-field">
@@ -111,7 +212,22 @@ async function handleSubmit() {
             maxlength="100"
             required
           >
-          <p class="auth-help">비밀번호는 암호화되어 저장됩니다</p>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="signup-password-confirm">비밀번호 확인</label>
+          <input
+            id="signup-password-confirm"
+            v-model="passwordConfirm"
+            class="auth-input"
+            type="password"
+            name="passwordConfirm"
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="100"
+            required
+          >
+          <p class="auth-help">동일한 비밀번호를 한 번 더 입력해 주세요</p>
         </div>
 
         <p class="auth-error" role="alert">
