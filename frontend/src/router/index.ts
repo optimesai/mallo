@@ -41,10 +41,7 @@ const router = createRouter({
         {
           path: 'system/users',
           name: 'system-users',
-          component: () => import('../views/UserManagementView.vue'),
-          meta: {
-            requiresAdmin: true
-          }
+          component: () => import('../views/UserManagementView.vue')
         },
         {
           path: 'master/items',
@@ -128,10 +125,6 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guestOnly && authStore.isLoggedIn) {
-    return { name: 'home' }
-  }
-
-  if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
     return { name: 'home' }
   }
 

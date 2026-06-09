@@ -16,9 +16,6 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
     try {
       users.value = await userService.getUsers()
-      if (selectedUser.value && !users.value.some((user) => user.userId === selectedUser.value?.userId)) {
-        selectedUser.value = null
-      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '사용자 목록을 불러오지 못했습니다.'
       throw err
@@ -47,9 +44,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       const updated = await userService.updateUserRole(userId, { role })
       const index = users.value.findIndex((user) => user.userId === userId)
-      if (index !== -1) {
-        users.value[index] = updated
-      }
+      if (index !== -1) users.value[index] = updated
       selectedUser.value = updated
       return updated
     } catch (err) {
@@ -66,19 +61,13 @@ export const useUserStore = defineStore('user', () => {
     try {
       await userService.deleteUser(userId)
       users.value = users.value.filter((user) => user.userId !== userId)
-      if (selectedUser.value?.userId === userId) {
-        selectedUser.value = null
-      }
+      if (selectedUser.value?.userId === userId) selectedUser.value = null
     } catch (err) {
       error.value = err instanceof Error ? err.message : '사용자를 삭제하지 못했습니다.'
       throw err
     } finally {
       isSaving.value = false
     }
-  }
-
-  function selectUser(user: UserResponse | null) {
-    selectedUser.value = user
   }
 
   return {
@@ -90,7 +79,6 @@ export const useUserStore = defineStore('user', () => {
     loadUsers,
     loadUser,
     updateUserRole,
-    deleteUser,
-    selectUser
+    deleteUser
   }
 })

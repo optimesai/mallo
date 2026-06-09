@@ -65,6 +65,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public boolean existsByEmployeeNo(String employeeNo) {
+        return userRepository.existsByEmployeeNo(employeeNo);
+    }
+
+    @Override
     @Transactional
     public AuthTokenResult login(LoginRequest request) {
         User user = userRepository.findByEmployeeNo(request.getEmployeeNo())

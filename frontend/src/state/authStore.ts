@@ -4,6 +4,8 @@ import { configureAuthClient } from '@/api/client'
 import { authService } from '@/services/authService'
 import type { LoginResponse, UserResponse } from '@/api/authApi'
 
+const SESSION_ACTIVE_KEY = 'ssafy-pjt-session-active'
+
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null)
   const user = ref<UserResponse | null>(null)
@@ -25,11 +27,18 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     setAuth(response.data)
+    sessionStorage.setItem(SESSION_ACTIVE_KEY, 'true')
     isInitialized.value = true
   }
 
   async function initializeAuth() {
     if (isInitialized.value) {
+      return
+    }
+
+    if (sessionStorage.getItem(SESSION_ACTIVE_KEY) !== 'true') {
+      clearAuth()
+      isInitialized.value = true
       return
     }
 
@@ -55,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authService.logout()
     } finally {
+      sessionStorage.removeItem(SESSION_ACTIVE_KEY)
       clearAuth()
       isInitialized.value = true
     }

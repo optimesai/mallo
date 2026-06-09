@@ -5,8 +5,7 @@ import type { ApiResponse, UserResponse, UserUpdateRequest } from '@/api/authApi
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AxiosError) {
-    const message = error.response?.data?.message
-    return message || fallback
+    return error.response?.data?.message || fallback
   }
 
   return fallback

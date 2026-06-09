@@ -9,6 +9,8 @@ public interface AuthService {
 
     UserResponse signup(SignupRequest request);
 
+    boolean existsByEmployeeNo(String employeeNo);
+
     AuthTokenResult login(LoginRequest request);
 
     LoginResponse refresh(String refreshToken);
