@@ -58,16 +58,20 @@ public class UserController {
 
     @PatchMapping("/{userId}/role")
     public ResponseEntity<ApiResponse<UserResponse>> updateRole(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Integer userId,
             @Valid @RequestBody UserRoleUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("사용자 권한이 수정되었습니다.",
-                userService.updateRole(userId, request)));
+                userService.updateRole(userDetails.getUserId(), userId, request)));
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer userId) {
-        userService.deleteUser(userId);
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer userId
+    ) {
+        userService.deleteUser(userDetails.getUserId(), userId);
         return ResponseEntity.ok(ApiResponse.success("사용자가 삭제되었습니다."));
     }
 }

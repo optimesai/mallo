@@ -12,4 +12,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findByEmployeeNo(String employeeNo);
 
     boolean existsByEmployeeNo(String employeeNo);
+
+    long countByRole(User.Role role);
 }

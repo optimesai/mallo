@@ -16,7 +16,7 @@ public interface UserService {
 
     UserResponse getUser(Integer userId);
 
-    UserResponse updateRole(Integer userId, UserRoleUpdateRequest request);
+    UserResponse updateRole(Integer adminUserId, Integer userId, UserRoleUpdateRequest request);
 
-    void deleteUser(Integer userId);
+    void deleteUser(Integer adminUserId, Integer userId);
 }

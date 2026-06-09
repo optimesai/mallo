@@ -75,8 +75,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateRole(Integer userId, UserRoleUpdateRequest request) {
+    public UserResponse updateRole(Integer adminUserId, Integer userId, UserRoleUpdateRequest request) {
         User user = findUser(userId);
+        validateRoleUpdate(adminUserId, user, request.getRole());
+
         user.setRole(request.getRole());
         revokeRefreshTokens(user);
         userRepository.save(user);
@@ -85,8 +87,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Integer userId) {
+    public void deleteUser(Integer adminUserId, Integer userId) {
         User user = findUser(userId);
+        validateDelete(adminUserId, user);
+
         refreshTokenRepository.deleteByUser(user);
         userRepository.delete(user);
     }
@@ -100,5 +104,27 @@ public class UserServiceImpl implements UserService {
         List<RefreshToken> refreshTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
         refreshTokens.forEach(refreshToken -> refreshToken.setRevoked(true));
         refreshTokenRepository.saveAll(refreshTokens);
+    }
+
+    private void validateRoleUpdate(Integer adminUserId, User user, User.Role nextRole) {
+        if (user.getUserId().equals(adminUserId)) {
+            throw new BusinessException(ErrorCode.USER_SELF_ROLE_CHANGE_FORBIDDEN);
+        }
+        if (user.getRole() == User.Role.ADMIN && nextRole != User.Role.ADMIN && isLastAdmin()) {
+            throw new BusinessException(ErrorCode.LAST_ADMIN_CHANGE_FORBIDDEN);
+        }
+    }
+
+    private void validateDelete(Integer adminUserId, User user) {
+        if (user.getUserId().equals(adminUserId)) {
+            throw new BusinessException(ErrorCode.USER_SELF_DELETE_FORBIDDEN);
+        }
+        if (user.getRole() == User.Role.ADMIN && isLastAdmin()) {
+            throw new BusinessException(ErrorCode.LAST_ADMIN_CHANGE_FORBIDDEN);
+        }
+    }
+
+    private boolean isLastAdmin() {
+        return userRepository.countByRole(User.Role.ADMIN) <= 1;
     }
 }
