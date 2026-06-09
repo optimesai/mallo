@@ -39,6 +39,14 @@ const router = createRouter({
           component: () => import('../views/MyInfoView.vue')
         },
         {
+          path: 'system/users',
+          name: 'system-users',
+          component: () => import('../views/UserManagementView.vue'),
+          meta: {
+            requiresAdmin: true
+          }
+        },
+        {
           path: 'master/items',
           name: 'item-master',
           component: () => import('../views/ItemMasterView.vue')
@@ -120,6 +128,10 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guestOnly && authStore.isLoggedIn) {
+    return { name: 'home' }
+  }
+
+  if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
     return { name: 'home' }
   }
 
