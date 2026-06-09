@@ -15,7 +15,7 @@ function toggleMenu() {
 }
 
 async function handleLogout() {
-  authStore.logout()
+  await authStore.logout()
   isMenuOpen.value = false
   await router.push({ name: 'login' })
 }

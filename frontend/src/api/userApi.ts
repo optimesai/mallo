@@ -1,28 +1,14 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse, UserResponse, UserUpdateRequest } from '@/api/authApi'
-
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
 
 export const userApi = {
   async getMyInfo() {
-    const response = await axios.get<ApiResponse<UserResponse>>('/api/users/me', {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<UserResponse>>('/api/users/me')
     return response.data
   },
 
   async updateMyInfo(request: UserUpdateRequest) {
-    const response = await axios.patch<ApiResponse<UserResponse>>('/api/users/me', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.patch<ApiResponse<UserResponse>>('/api/users/me', request)
     return response.data
   }
 }

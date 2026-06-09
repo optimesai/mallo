@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { userService } from '@/services/userService'
 import { useAuthStore } from '@/state/authStore'
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const userName = ref('')
@@ -50,11 +52,18 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
+    const isPasswordChanged = Boolean(password.value)
     const response = await userService.updateMyInfo({
       userName: userName.value.trim(),
       department: department.value.trim(),
       ...(password.value ? { password: password.value } : {})
     })
+
+    if (isPasswordChanged) {
+      await authStore.logout()
+      await router.push({ name: 'login' })
+      return
+    }
 
     authStore.setUser(response.data)
     password.value = ''

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 
 export type WorkOrderStatus = 'READY' | 'RUN' | 'HOLD' | 'CLOSE'
@@ -104,15 +104,6 @@ export interface ProductionExecutionCreateRequest {
   manHoursMinutes: number
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 function cleanParams(params: WorkOrderSearchParams) {
   return Object.fromEntries(
     Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
@@ -121,81 +112,61 @@ function cleanParams(params: WorkOrderSearchParams) {
 
 export const workOrderApi = {
   async getWorkOrders(params: WorkOrderSearchParams = {}) {
-    const response = await axios.get<ApiResponse<WorkOrderResponse[]>>('/api/work-orders', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<WorkOrderResponse[]>>('/api/work-orders', {
       params: cleanParams(params)
     })
     return response.data
   },
 
   async getWorkOrder(orderKey: string | number) {
-    const response = await axios.get<ApiResponse<WorkOrderDetailResponse>>(`/api/work-orders/${orderKey}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<WorkOrderDetailResponse>>(`/api/work-orders/${orderKey}`)
     return response.data
   },
 
   async createWorkOrder(request: WorkOrderRequest) {
-    const response = await axios.post<ApiResponse<WorkOrderResponse>>('/api/work-orders', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<WorkOrderResponse>>('/api/work-orders', request)
     return response.data
   },
 
   async updateWorkOrder(orderKey: string | number, request: WorkOrderRequest) {
-    const response = await axios.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}`, request)
     return response.data
   },
 
   async deleteWorkOrder(orderKey: string | number) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/work-orders/${orderKey}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/work-orders/${orderKey}`)
     return response.data
   },
 
   async updateStatus(orderKey: string | number, request: WorkOrderStatusUpdateRequest) {
-    const response = await axios.patch<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/status`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.patch<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/status`, request)
     return response.data
   },
 
   async closeWorkOrder(orderKey: string | number, request: WorkOrderCloseRequest = {}) {
-    const response = await axios.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/close`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<WorkOrderResponse>>(`/api/work-orders/${orderKey}/close`, request)
     return response.data
   },
 
   async issueMaterials(orderKey: string | number) {
-    const response = await axios.post<ApiResponse<void>>(`/api/work-orders/${orderKey}/issue-materials`, null, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<void>>(`/api/work-orders/${orderKey}/issue-materials`, null)
     return response.data
   },
 
   async getExecutions(orderKey: string | number) {
-    const response = await axios.get<ApiResponse<ProductionExecutionResponse[]>>('/api/production-executions', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<ProductionExecutionResponse[]>>('/api/production-executions', {
       params: { orderKey }
     })
     return response.data
   },
 
   async createExecution(request: ProductionExecutionCreateRequest) {
-    const response = await axios.post<ApiResponse<ProductionExecutionResponse>>('/api/production-executions', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<ProductionExecutionResponse>>('/api/production-executions', request)
     return response.data
   },
 
   async deleteExecution(executionId: number) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/production-executions/${executionId}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/production-executions/${executionId}`)
     return response.data
   }
 }

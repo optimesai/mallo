@@ -1,33 +1,22 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { configureAuthClient } from '@/api/client'
 import { authService } from '@/services/authService'
-import type { UserResponse } from '@/api/authApi'
-
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-const AUTH_USER_KEY = 'ssafy-pjt-auth-user'
-
-function loadStoredUser() {
-  const storedUser = localStorage.getItem(AUTH_USER_KEY)
-
-  if (!storedUser) {
-    return null
-  }
-
-  try {
-    return JSON.parse(storedUser) as UserResponse
-  } catch {
-    localStorage.removeItem(AUTH_USER_KEY)
-    return null
-  }
-}
+import type { LoginResponse, UserResponse } from '@/api/authApi'
 
 export const useAuthStore = defineStore('auth', () => {
-  const accessToken = ref(localStorage.getItem(AUTH_TOKEN_KEY))
-  const user = ref<UserResponse | null>(loadStoredUser())
+  const accessToken = ref<string | null>(null)
+  const user = ref<UserResponse | null>(null)
+  const isInitialized = ref(false)
 
   const employeeId = computed(() => user.value?.employeeNo ?? null)
-
   const isLoggedIn = computed(() => Boolean(accessToken.value))
+
+  configureAuthClient({
+    getAccessToken: () => accessToken.value,
+    refreshAccessToken,
+    handleUnauthorized: clearAuth
+  })
 
   async function login(inputEmployeeId: string, inputPassword: string) {
     const response = await authService.login({
@@ -35,33 +24,66 @@ export const useAuthStore = defineStore('auth', () => {
       password: inputPassword
     })
 
-    const loginData = response.data
-
-    accessToken.value = loginData.token.accessToken
-    user.value = loginData.user
-    localStorage.setItem(AUTH_TOKEN_KEY, loginData.token.accessToken)
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(loginData.user))
+    setAuth(response.data)
+    isInitialized.value = true
   }
 
-  function logout() {
-    accessToken.value = null
-    user.value = null
-    localStorage.removeItem(AUTH_TOKEN_KEY)
-    localStorage.removeItem(AUTH_USER_KEY)
+  async function initializeAuth() {
+    if (isInitialized.value) {
+      return
+    }
+
+    try {
+      await refreshAccessToken()
+    } finally {
+      isInitialized.value = true
+    }
+  }
+
+  async function refreshAccessToken() {
+    try {
+      const response = await authService.refresh()
+      setAuth(response.data)
+      return true
+    } catch {
+      clearAuth()
+      return false
+    }
+  }
+
+  async function logout() {
+    try {
+      await authService.logout()
+    } finally {
+      clearAuth()
+      isInitialized.value = true
+    }
   }
 
   function setUser(nextUser: UserResponse) {
     user.value = nextUser
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser))
+  }
+
+  function setAuth(loginData: LoginResponse) {
+    accessToken.value = loginData.token.accessToken
+    user.value = loginData.user
+  }
+
+  function clearAuth() {
+    accessToken.value = null
+    user.value = null
   }
 
   return {
     accessToken,
     employeeId,
+    isInitialized,
     isLoggedIn,
     user,
+    initializeAuth,
     login,
     logout,
+    refreshAccessToken,
     setUser
   }
 })

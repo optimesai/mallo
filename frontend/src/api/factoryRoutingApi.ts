@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 
 export interface FactoryRoutingResponse {
@@ -38,84 +38,59 @@ export interface FactoryRoutingSearchParams {
   lineName?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 function encodePath(value: string) {
   return encodeURIComponent(value)
 }
 
 export const factoryRoutingApi = {
   async getRoutings(params: FactoryRoutingSearchParams = {}) {
-    const response = await axios.get<ApiResponse<FactoryRoutingResponse[]>>('/api/routings', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<FactoryRoutingResponse[]>>('/api/routings', {
       params
     })
     return response.data
   },
 
   async getRouting(id: number) {
-    const response = await axios.get<ApiResponse<FactoryRoutingResponse>>(`/api/routings/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<FactoryRoutingResponse>>(`/api/routings/${id}`)
     return response.data
   },
 
   async createRouting(request: FactoryRoutingRequest) {
-    const response = await axios.post<ApiResponse<FactoryRoutingResponse>>('/api/routings', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<FactoryRoutingResponse>>('/api/routings', request)
     return response.data
   },
 
   async updateRouting(id: number, request: FactoryRoutingRequest) {
-    const response = await axios.put<ApiResponse<FactoryRoutingResponse>>(`/api/routings/${id}`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<FactoryRoutingResponse>>(`/api/routings/${id}`, request)
     return response.data
   },
 
   async deleteRouting(id: number) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/routings/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/routings/${id}`)
     return response.data
   },
 
   async getFactories() {
-    const response = await axios.get<ApiResponse<string[]>>('/api/routings/factories', {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<string[]>>('/api/routings/factories')
     return response.data
   },
 
   async getLines(factoryName: string) {
-    const response = await axios.get<ApiResponse<string[]>>(`/api/routings/factories/${encodePath(factoryName)}/lines`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<string[]>>(`/api/routings/factories/${encodePath(factoryName)}/lines`)
     return response.data
   },
 
   async getOperations(factoryName: string, lineName: string) {
-    const response = await axios.get<ApiResponse<FactoryRoutingResponse[]>>(
+    const response = await apiClient.get<ApiResponse<FactoryRoutingResponse[]>>(
       `/api/routings/factories/${encodePath(factoryName)}/lines/${encodePath(lineName)}/operations`,
       {
-        headers: getAuthHeaders()
       }
     )
     return response.data
   },
 
   async getRoutingTree() {
-    const response = await axios.get<ApiResponse<FactoryRoutingTreeResponse[]>>('/api/routings/tree', {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<FactoryRoutingTreeResponse[]>>('/api/routings/tree')
     return response.data
   }
 }

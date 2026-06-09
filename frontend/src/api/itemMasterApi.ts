@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 
 export type ItemType = 'RAW' | 'HALF' | 'FG'
@@ -28,48 +28,31 @@ export interface ItemMasterSearchParams {
   keyword?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 export const itemMasterApi = {
   async getItems(params: ItemMasterSearchParams = {}) {
-    const response = await axios.get<ApiResponse<ItemMasterResponse[]>>('/api/items', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<ItemMasterResponse[]>>('/api/items', {
       params
     })
     return response.data
   },
 
   async getItem(id: number) {
-    const response = await axios.get<ApiResponse<ItemMasterResponse>>(`/api/items/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<ItemMasterResponse>>(`/api/items/${id}`)
     return response.data
   },
 
   async createItem(request: ItemMasterRequest) {
-    const response = await axios.post<ApiResponse<ItemMasterResponse>>('/api/items', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<ItemMasterResponse>>('/api/items', request)
     return response.data
   },
 
   async updateItem(id: number, request: ItemMasterRequest) {
-    const response = await axios.put<ApiResponse<ItemMasterResponse>>(`/api/items/${id}`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<ItemMasterResponse>>(`/api/items/${id}`, request)
     return response.data
   },
 
   async deleteItem(id: number, force = false) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/items/${id}`, {
-      headers: getAuthHeaders(),
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/items/${id}`, {
       params: { force }
     })
     return response.data
