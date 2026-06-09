@@ -52,7 +52,23 @@ export const authApi = {
   },
 
   async login(request: LoginRequest) {
-    const response = await axios.post<ApiResponse<LoginResponse>>('/api/auth/login', request)
+    const response = await axios.post<ApiResponse<LoginResponse>>('/api/auth/login', request, {
+      withCredentials: true
+    })
+    return response.data
+  },
+
+  async refresh() {
+    const response = await axios.post<ApiResponse<LoginResponse>>('/api/auth/refresh', null, {
+      withCredentials: true
+    })
+    return response.data
+  },
+
+  async logout() {
+    const response = await axios.post<ApiResponse<void>>('/api/auth/logout', null, {
+      withCredentials: true
+    })
     return response.data
   }
 }

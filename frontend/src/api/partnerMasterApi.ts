@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 
 export type PartnerType = 'SUPPLIER' | 'CUSTOMER'
@@ -28,49 +28,31 @@ export interface PartnerMasterSearchParams {
   keyword?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 export const partnerMasterApi = {
   async getPartners(params: PartnerMasterSearchParams = {}) {
-    const response = await axios.get<ApiResponse<PartnerMasterResponse[]>>('/api/partners', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<PartnerMasterResponse[]>>('/api/partners', {
       params
     })
     return response.data
   },
 
   async searchPartners(searchValue: string) {
-    const response = await axios.get<ApiResponse<PartnerMasterResponse[]>>(`/api/partners/${searchValue}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<PartnerMasterResponse[]>>(`/api/partners/${searchValue}`)
     return response.data
   },
 
   async createPartner(request: PartnerMasterRequest) {
-    const response = await axios.post<ApiResponse<PartnerMasterResponse>>('/api/partners', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<PartnerMasterResponse>>('/api/partners', request)
     return response.data
   },
 
   async updatePartner(id: number, request: PartnerMasterRequest) {
-    const response = await axios.put<ApiResponse<PartnerMasterResponse>>(`/api/partners/${id}`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<PartnerMasterResponse>>(`/api/partners/${id}`, request)
     return response.data
   },
 
   async deletePartner(id: number) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/partners/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/partners/${id}`)
     return response.data
   }
 }

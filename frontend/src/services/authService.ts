@@ -33,5 +33,31 @@ export const authService = {
 
       throw new Error('로그인에 실패했습니다.')
     }
+  },
+
+  async refresh(): Promise<ApiResponse<LoginResponse>> {
+    try {
+      return await authApi.refresh()
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const message = error.response?.data?.message
+        throw new Error(message || '토큰 재발급에 실패했습니다.')
+      }
+
+      throw new Error('토큰 재발급에 실패했습니다.')
+    }
+  },
+
+  async logout(): Promise<ApiResponse<void>> {
+    try {
+      return await authApi.logout()
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const message = error.response?.data?.message
+        throw new Error(message || '로그아웃에 실패했습니다.')
+      }
+
+      throw new Error('로그아웃에 실패했습니다.')
+    }
   }
 }

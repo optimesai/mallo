@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 import type { PageResponse } from '@/api/types'
 
@@ -40,19 +40,9 @@ export interface HistoryListParams {
   endDate?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 export const inventoryApi = {
   async getInventories(params: InventoryListParams = {}) {
-    const response = await axios.get<ApiResponse<PageResponse<CurrentInventoryResponse>>>('/api/inventory', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<PageResponse<CurrentInventoryResponse>>>('/api/inventory', {
       params: {
         page: params.page ?? 0,
         size: params.size ?? 20,
@@ -64,15 +54,12 @@ export const inventoryApi = {
   },
 
   async getInventory(id: number) {
-    const response = await axios.get<ApiResponse<CurrentInventoryResponse>>(`/api/inventory/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<CurrentInventoryResponse>>(`/api/inventory/${id}`)
     return response.data
   },
 
   async getTransactionHistories(params: HistoryListParams = {}) {
-    const response = await axios.get<ApiResponse<PageResponse<TransactionHistoryResponse>>>('/api/inventory/history', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<PageResponse<TransactionHistoryResponse>>>('/api/inventory/history', {
       params: {
         page: params.page ?? 0,
         size: params.size ?? 20,

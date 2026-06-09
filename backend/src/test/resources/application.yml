@@ -19,4 +19,6 @@ spring:
 
 jwt:
   secret: testsecretkeyfordemoapplocaltesting1234567890
-  expiration-ms: 3600000
+  access-token-expiration-ms: 1800000
+  refresh-token-expiration-ms: 604800000
+  refresh-token-cookie-secure: false

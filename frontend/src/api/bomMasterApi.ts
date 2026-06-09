@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 import type { ItemMasterResponse, ItemType } from '@/api/itemMasterApi'
 
@@ -57,95 +57,71 @@ export interface BomMasterSearchParams {
   bomVersion?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 export const bomMasterApi = {
   async getBoms(params: BomMasterSearchParams = {}) {
-    const response = await axios.get<ApiResponse<BomMasterResponse[]>>('/api/boms', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<BomMasterResponse[]>>('/api/boms', {
       params
     })
     return response.data
   },
 
   async getBom(bomId: number) {
-    const response = await axios.get<ApiResponse<BomMasterResponse>>(`/api/boms/details/${bomId}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<BomMasterResponse>>(`/api/boms/details/${bomId}`)
     return response.data
   },
 
   async createBom(request: BomMasterRequest) {
-    const response = await axios.post<ApiResponse<BomMasterResponse>>('/api/boms', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<BomMasterResponse>>('/api/boms', request)
     return response.data
   },
 
   async updateBom(bomId: number, request: BomMasterRequest) {
-    const response = await axios.put<ApiResponse<BomMasterResponse>>(`/api/boms/${bomId}`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<BomMasterResponse>>(`/api/boms/${bomId}`, request)
     return response.data
   },
 
   async deleteBom(bomId: number) {
-    const response = await axios.delete<ApiResponse<void>>(`/api/boms/${bomId}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/boms/${bomId}`)
     return response.data
   },
 
   async getParentVersions(keyword: string) {
-    const response = await axios.get<ApiResponse<string[]>>('/api/boms/parents/versions', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<string[]>>('/api/boms/parents/versions', {
       params: { keyword }
     })
     return response.data
   },
 
   async getChildVersions(keyword: string) {
-    const response = await axios.get<ApiResponse<string[]>>('/api/boms/children/versions', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<string[]>>('/api/boms/children/versions', {
       params: { keyword }
     })
     return response.data
   },
 
   async getParentTree(keyword: string, bomVersion?: string) {
-    const response = await axios.get<ApiResponse<BomTreeNode[]>>('/api/boms/parents/tree', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<BomTreeNode[]>>('/api/boms/parents/tree', {
       params: { keyword, bomVersion }
     })
     return response.data
   },
 
   async getChildParentTree(keyword: string, bomVersion?: string) {
-    const response = await axios.get<ApiResponse<BomTreeNode[]>>('/api/boms/children/parents/tree', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<BomTreeNode[]>>('/api/boms/children/parents/tree', {
       params: { keyword, bomVersion }
     })
     return response.data
   },
 
   async getChildParents(keyword: string, bomVersion?: string) {
-    const response = await axios.get<ApiResponse<BomReverseResponse[]>>('/api/boms/children/parents', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<BomReverseResponse[]>>('/api/boms/children/parents', {
       params: { keyword, bomVersion }
     })
     return response.data
   },
 
   async getItems(itemType?: ItemType, keyword?: string) {
-    const response = await axios.get<ApiResponse<ItemMasterResponse[]>>('/api/items', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<ItemMasterResponse[]>>('/api/items', {
       params: { itemType, keyword }
     })
     return response.data

@@ -31,4 +31,6 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION_MS}
+  access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:1800000}
+  refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}
+  refresh-token-cookie-secure: ${JWT_REFRESH_TOKEN_COOKIE_SECURE:false}

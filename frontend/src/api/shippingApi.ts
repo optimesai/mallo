@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
 import type { PageResponse } from '@/api/types'
 
@@ -36,19 +36,9 @@ export interface ShippingListParams {
   keyword?: string
 }
 
-const AUTH_TOKEN_KEY = 'ssafy-pjt-access-token'
-
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  return {
-    Authorization: `Bearer ${token}`
-  }
-}
-
 export const shippingApi = {
   async getShippings(params: ShippingListParams = {}) {
-    const response = await axios.get<ApiResponse<PageResponse<ShippingResponse>>>('/api/shippings', {
-      headers: getAuthHeaders(),
+    const response = await apiClient.get<ApiResponse<PageResponse<ShippingResponse>>>('/api/shippings', {
       params: {
         page: params.page ?? 0,
         size: params.size ?? 20,
@@ -61,30 +51,22 @@ export const shippingApi = {
   },
 
   async getShipping(id: number) {
-    const response = await axios.get<ApiResponse<ShippingResponse>>(`/api/shippings/${id}`, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.get<ApiResponse<ShippingResponse>>(`/api/shippings/${id}`)
     return response.data
   },
 
   async registerShipping(request: ShippingCreateRequest) {
-    const response = await axios.post<ApiResponse<ShippingResponse>>('/api/shippings', request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.post<ApiResponse<ShippingResponse>>('/api/shippings', request)
     return response.data
   },
 
   async assignPicking(id: number, request: PickingAssignRequest) {
-    const response = await axios.put<ApiResponse<ShippingResponse>>(`/api/shippings/${id}/assign-picking`, request, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<ShippingResponse>>(`/api/shippings/${id}/assign-picking`, request)
     return response.data
   },
 
   async completeShipping(id: number) {
-    const response = await axios.put<ApiResponse<void>>(`/api/shippings/${id}/complete`, null, {
-      headers: getAuthHeaders()
-    })
+    const response = await apiClient.put<ApiResponse<void>>(`/api/shippings/${id}/complete`, null)
     return response.data
   }
 }
