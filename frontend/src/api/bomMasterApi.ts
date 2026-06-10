@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
+import type { PageResponse } from '@/api/types'
 import type { ItemMasterResponse, ItemType } from '@/api/itemMasterApi'
 
 export interface BomMasterResponse {
@@ -121,8 +122,8 @@ export const bomMasterApi = {
   },
 
   async getItems(itemType?: ItemType, keyword?: string) {
-    const response = await apiClient.get<ApiResponse<ItemMasterResponse[]>>('/api/items', {
-      params: { itemType, keyword }
+    const response = await apiClient.get<ApiResponse<PageResponse<ItemMasterResponse>>>('/api/items', {
+      params: { itemType, keyword, itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }
     })
     return response.data
   }

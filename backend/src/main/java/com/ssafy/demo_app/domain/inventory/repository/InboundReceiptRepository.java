@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface InboundReceiptRepository extends JpaRepository<InboundReceipt, Integer>,
 		JpaSpecificationExecutor<InboundReceipt> {
     boolean existsByItem(ItemMaster item);
+    long countByItem(ItemMaster item);
     boolean existsByPartner(PartnerMaster partner);
     void deleteByItem(ItemMaster item);
 }

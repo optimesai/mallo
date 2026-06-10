@@ -17,5 +17,6 @@ public interface CurrentInventoryRepository extends JpaRepository<CurrentInvento
     boolean existsByLocation(WarehouseLocation location);
     List<CurrentInventory> findByItem(ItemMaster item);
     boolean existsByItem(ItemMaster item);
+    long countByItem(ItemMaster item);
     void deleteByItem(ItemMaster item);
 }

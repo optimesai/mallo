@@ -12,7 +12,9 @@ import java.util.List;
 public interface InventoryTransactionHistoryRepository extends JpaRepository<InventoryTransactionHistory, Integer>,
         JpaSpecificationExecutor<InventoryTransactionHistory> {
     boolean existsByItem(ItemMaster item);
+    long countByItem(ItemMaster item);
     void deleteByItem(ItemMaster item);
     boolean existsByReasonDescContaining(String reasonDesc);
     List<InventoryTransactionHistory> findByReasonDescContainingOrderByTransactionIdAsc(String reasonDesc);
+    List<InventoryTransactionHistory> findTop5ByItemOrderByTransactionIdDesc(ItemMaster item);
 }

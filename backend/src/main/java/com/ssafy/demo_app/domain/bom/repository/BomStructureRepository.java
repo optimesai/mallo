@@ -28,6 +28,8 @@ public interface BomStructureRepository extends JpaRepository<BomStructure, Inte
             Integer bomId
     );
     boolean existsByParentItemOrChildItem(ItemMaster parentItem, ItemMaster childItem);
+    long countByParentItem(ItemMaster parentItem);
+    long countByChildItem(ItemMaster childItem);
     void deleteByParentItemOrChildItem(ItemMaster parentItem, ItemMaster childItem);
 
     @Query("select distinct b.bomVersion from BomStructure b where b.parentItem = :parentItem order by b.bomVersion asc")
