@@ -5,24 +5,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Schema(description = "품목 마스터 생성/수정 요청 객체")
-public class ItemRequest {
-
-    @Schema(description = "품목 코드. 미입력 시 ITEM-0001 형식으로 자동 생성됩니다.", example = "ITEM-0001")
-    @Pattern(regexp = "^[A-Za-z0-9-]*$", message = "품목 코드는 영문, 숫자, 하이픈만 사용할 수 있습니다.")
-    @Size(max = 50, message = "품목 코드는 50자 이하여야 합니다.")
-    private String itemCode;
+@Schema(description = "품목 마스터 수정 요청 객체")
+public class ItemUpdateRequest {
 
     @Schema(description = "품목명", example = "고탄소 탄소강판")
     @NotBlank(message = "품목명은 필수입니다.")
@@ -45,4 +35,7 @@ public class ItemRequest {
     @NotNull(message = "안전 재고량은 필수입니다.")
     @Min(value = 0, message = "안전 재고량은 0 이상이어야 합니다.")
     private Integer safetyStock;
+
+    @Schema(description = "참조 중 품목 분류 변경 경고 확인 여부", example = "false")
+    private Boolean confirmReferenceWarning = false;
 }

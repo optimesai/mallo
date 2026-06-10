@@ -100,7 +100,7 @@ export const bomMasterService = {
   async getItems(itemType?: ItemType, keyword?: string): Promise<ItemMasterResponse[]> {
     try {
       const response = await bomMasterApi.getItems(itemType, keyword)
-      return response.data
+      return response.data.content
     } catch (error) {
       throw new Error(getErrorMessage(error, '품목 목록을 불러오지 못했습니다.'))
     }

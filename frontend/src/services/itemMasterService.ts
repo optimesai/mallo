@@ -1,9 +1,16 @@
 import { AxiosError } from 'axios'
 import { itemMasterApi } from '@/api/itemMasterApi'
+import type { PageResponse } from '@/api/types'
 import type {
+  ItemDuplicateCheckParams,
+  ItemDuplicateCheckResponse,
   ItemMasterRequest,
   ItemMasterResponse,
-  ItemMasterSearchParams
+  ItemMasterSearchParams,
+  ItemMasterUpdateRequest,
+  ItemReferenceResponse,
+  ItemStatus,
+  ItemUsageResponse
 } from '@/api/itemMasterApi'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -14,7 +21,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export const itemMasterService = {
-  async getItems(params: ItemMasterSearchParams = {}): Promise<ItemMasterResponse[]> {
+  async getItems(params: ItemMasterSearchParams = {}): Promise<PageResponse<ItemMasterResponse>> {
     try {
       const response = await itemMasterApi.getItems(params)
       return response.data
@@ -32,6 +39,33 @@ export const itemMasterService = {
     }
   },
 
+  async getItemReferences(id: number): Promise<ItemReferenceResponse> {
+    try {
+      const response = await itemMasterApi.getItemReferences(id)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '품목 참조 현황을 불러오지 못했습니다.'))
+    }
+  },
+
+  async getItemUsages(id: number): Promise<ItemUsageResponse> {
+    try {
+      const response = await itemMasterApi.getItemUsages(id)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '품목 활용 정보를 불러오지 못했습니다.'))
+    }
+  },
+
+  async checkDuplicates(params: ItemDuplicateCheckParams): Promise<ItemDuplicateCheckResponse> {
+    try {
+      const response = await itemMasterApi.checkDuplicates(params)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '중복 품목 검증에 실패했습니다.'))
+    }
+  },
+
   async createItem(request: ItemMasterRequest): Promise<ItemMasterResponse> {
     try {
       const response = await itemMasterApi.createItem(request)
@@ -41,7 +75,7 @@ export const itemMasterService = {
     }
   },
 
-  async updateItem(id: number, request: ItemMasterRequest): Promise<ItemMasterResponse> {
+  async updateItem(id: number, request: ItemMasterUpdateRequest): Promise<ItemMasterResponse> {
     try {
       const response = await itemMasterApi.updateItem(id, request)
       return response.data
@@ -50,9 +84,18 @@ export const itemMasterService = {
     }
   },
 
-  async deleteItem(id: number, force = false): Promise<void> {
+  async updateItemStatus(id: number, itemStatus: ItemStatus): Promise<ItemMasterResponse> {
     try {
-      await itemMasterApi.deleteItem(id, force)
+      const response = await itemMasterApi.updateItemStatus(id, itemStatus)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '품목 상태 변경에 실패했습니다.'))
+    }
+  },
+
+  async deleteItem(id: number): Promise<void> {
+    try {
+      await itemMasterApi.deleteItem(id)
     } catch (error) {
       throw new Error(getErrorMessage(error, '품목 삭제에 실패했습니다.'))
     }

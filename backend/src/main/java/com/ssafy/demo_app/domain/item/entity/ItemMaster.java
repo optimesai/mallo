@@ -37,11 +37,20 @@ public class ItemMaster extends BaseCreatedTimeEntity {
     @Column(name = "safety_stock", nullable = false)
     private Integer safetyStock = 0;
 
+    @Column(name = "item_status", nullable = false, columnDefinition = "varchar(20) default 'ACTIVE'")
+    @Enumerated(EnumType.STRING)
+    private ItemStatus itemStatus = ItemStatus.ACTIVE;
+
     public enum Unit {
         ea, kg, box, L
     }
 
     public enum ItemType {
         RAW, HALF, FG
+    }
+
+    public enum ItemStatus {
+        ACTIVE,
+        INACTIVE
     }
 }

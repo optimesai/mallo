@@ -91,7 +91,7 @@ export const inboundService = {
   async getItems(itemType?: string, keyword?: string): Promise<ItemResponse[]> {
     try {
       const response = await inboundApi.getItems(itemType, keyword)
-      return response.data
+      return response.data.content
     } catch (error) {
       if (error instanceof AxiosError) {
         const message = error.response?.data?.message

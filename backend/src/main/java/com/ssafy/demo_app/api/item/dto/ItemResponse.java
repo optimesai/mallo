@@ -19,6 +19,7 @@ public class ItemResponse {
     private ItemMaster.Unit unit;
     private ItemMaster.ItemType itemType;
     private Integer safetyStock;
+    private ItemMaster.ItemStatus itemStatus;
     private LocalDateTime createdAt;
 
     public static ItemResponse from(ItemMaster item) {
@@ -30,6 +31,7 @@ public class ItemResponse {
         response.setUnit(item.getUnit());
         response.setItemType(item.getItemType());
         response.setSafetyStock(item.getSafetyStock());
+        response.setItemStatus(item.getItemStatus());
         response.setCreatedAt(item.getCreatedAt());
         return response;
     }

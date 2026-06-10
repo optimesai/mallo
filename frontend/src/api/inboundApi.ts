@@ -46,6 +46,7 @@ export interface ItemResponse {
   unit: string
   itemType: 'RAW' | 'HALF' | 'FG'
   safetyStock: number
+  itemStatus: 'ACTIVE' | 'INACTIVE'
   createdAt: string
 }
 
@@ -110,8 +111,8 @@ export const inboundApi = {
   },
 
   async getItems(itemType?: string, keyword?: string) {
-    const response = await apiClient.get<ApiResponse<ItemResponse[]>>('/api/items', {
-      params: { itemType, keyword }
+    const response = await apiClient.get<ApiResponse<PageResponse<ItemResponse>>>('/api/items', {
+      params: { itemType, keyword, itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }
     })
     return response.data
   },

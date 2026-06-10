@@ -12,6 +12,7 @@ public interface OutboundShippingRepository extends JpaRepository<OutboundShippi
 		JpaSpecificationExecutor<OutboundShipping> {
     boolean existsByShippingNo(String shippingNo);
     boolean existsByItem(ItemMaster item);
+    long countByItem(ItemMaster item);
     boolean existsByPartner(PartnerMaster partner);
     void deleteByItem(ItemMaster item);
 }

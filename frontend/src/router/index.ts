@@ -49,6 +49,11 @@ const router = createRouter({
           component: () => import('../views/ItemMasterView.vue')
         },
         {
+          path: 'master/items/:id',
+          name: 'item-master-detail',
+          component: () => import('../views/ItemMasterDetailView.vue')
+        },
+        {
           path: 'master/partners',
           name: 'partner-master',
           component: () => import('../views/PartnerMasterView.vue')

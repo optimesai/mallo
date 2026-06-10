@@ -186,12 +186,12 @@ async function loadInitialData() {
   pageError.value = null
   try {
     const [halfItems, finishedItems, routingList] = await Promise.all([
-      itemMasterService.getItems({ itemType: 'HALF' }),
-      itemMasterService.getItems({ itemType: 'FG' }),
+      itemMasterService.getItems({ itemType: 'HALF', itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }),
+      itemMasterService.getItems({ itemType: 'FG', itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }),
       factoryRoutingService.getRoutings(),
       workOrderStore.loadWorkOrders()
     ])
-    productionItems.value = [...halfItems, ...finishedItems]
+    productionItems.value = [...halfItems.content, ...finishedItems.content]
     routings.value = routingList
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '작업지시 데이터를 불러오지 못했습니다.'
