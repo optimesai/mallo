@@ -115,7 +115,7 @@ const stats = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6 text-slate-800">
+  <div class="app-page">
     <!-- 토스트 알림 -->
     <Transition
       enter-active-class="transform ease-out duration-300 transition"
@@ -127,35 +127,35 @@ const stats = computed(() => {
     >
       <div
         v-if="successToast"
-        class="fixed top-5 right-5 z-50 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3.5 rounded-xl shadow-2xl border border-slate-700/50"
+        class="app-toast app-toast-top-right"
       >
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-        <p class="text-sm font-semibold">{{ successToast }}</p>
+        <span class="app-toast-dot animate-ping"></span>
+        <p class="text-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
     <!-- 에러 배너 -->
     <div
       v-if="pageError"
-      class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-3"
+      class="p-4 app-bg-danger-soft border app-border app-text-danger rounded-xl flex items-start gap-3"
     >
-      <AlertTriangle class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+      <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
       <div>
-        <h4 class="font-bold text-sm">오류가 발생했습니다</h4>
-        <p class="text-xs text-rose-700/90 mt-0.5">{{ pageError }}</p>
+        <h4 class="app-alert-title">오류가 발생했습니다</h4>
+        <p class="text-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
       </div>
     </div>
 
     <!-- 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-black tracking-tight text-slate-900">재고 수불(변동) 이력 추적</h1>
-        <p class="text-sm text-slate-500 mt-1">창고 내에서 발생한 입고, 생산 출고 등 모든 양적 변화의 Audit 타임라인을 조회합니다.</p>
+        <h1 class="app-page-title">재고 수불(변동) 이력 추적</h1>
+        <p class="app-page-subtitle">창고 내에서 발생한 입고, 생산 출고 등 모든 양적 변화의 Audit 타임라인을 조회합니다.</p>
       </div>
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -165,63 +165,63 @@ const stats = computed(() => {
     <!-- 수불 통계 카드 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- 카드 1: 총 변동 횟수 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
-        <div class="p-3.5 bg-indigo-50 rounded-xl text-indigo-600">
+      <div class="app-bg-surface rounded-xl border app-border p-5 shadow-sm flex items-center gap-4">
+        <div class="p-3.5 app-bg-primary-soft rounded-xl app-accent">
           <Clock class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">총 변동 이력 수</span>
-          <span class="text-2xl font-extrabold text-slate-900 mt-0.5 block">{{ stats.totalCount }} 건</span>
+          <span class="text-xs app-font-label app-text-muted block">총 변동 이력 수</span>
+          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalCount }} 건</span>
         </div>
       </div>
 
       <!-- 카드 2: 입고 누적량 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
-        <div class="p-3.5 bg-emerald-50 rounded-xl text-emerald-600">
+      <div class="app-bg-surface rounded-xl border app-border p-5 shadow-sm flex items-center gap-4">
+        <div class="p-3.5 app-bg-success-soft rounded-xl app-text-success">
           <ArrowDownLeft class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">검수완료 입고량 (INBOUND)</span>
-          <span class="text-2xl font-extrabold text-slate-900 mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
+          <span class="text-xs app-font-label app-text-muted block">검수완료 입고량 (INBOUND)</span>
+          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
         </div>
       </div>
 
       <!-- 카드 3: 생산 출고량 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
-        <div class="p-3.5 bg-rose-50 rounded-xl text-rose-600">
+      <div class="app-bg-surface rounded-xl border app-border p-5 shadow-sm flex items-center gap-4">
+        <div class="p-3.5 app-bg-danger-soft rounded-xl app-text-danger">
           <ArrowUpRight class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">생산 자재 불출량 (ISSUE)</span>
-          <span class="text-2xl font-extrabold text-slate-900 mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
+          <span class="text-xs app-font-label app-text-muted block">생산 자재 불출량 (ISSUE)</span>
+          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
         </div>
       </div>
     </div>
 
     <!-- 검색 및 필터 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="app-panel">
       <div
         @click="isSearchExpanded = !isSearchExpanded"
-        class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between cursor-pointer select-none"
+        class="app-panel-head cursor-pointer select-none"
       >
-        <div class="flex items-center gap-2 text-slate-700">
-          <SlidersHorizontal class="w-4.5 h-4.5 text-slate-500" />
-          <span class="text-sm font-bold">검색 필터 상세조회</span>
+        <div class="app-panel-title">
+          <SlidersHorizontal class="w-4.5 h-4.5 app-muted" />
+          <span class="app-panel-title">검색 필터 상세조회</span>
         </div>
         <ChevronDown
-          class="w-4.5 h-4.5 text-slate-500 transition-transform duration-200"
+          class="w-4.5 h-4.5 app-muted transition-transform duration-200"
           :class="{ 'rotate-180': isSearchExpanded }"
         />
       </div>
 
-      <div v-show="isSearchExpanded" class="p-5 space-y-4 border-t border-slate-100">
+      <div v-show="isSearchExpanded" class="app-filter-body">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <!-- 1) 변동 유형 필터 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">수불 유형</label>
+            <label class="app-label mb-1.5">수불 유형</label>
             <select
               v-model="filterType"
-              class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+              class="app-control"
             >
               <option value="ALL">전체 유형</option>
               <option value="INBOUND">입고 적재 (INBOUND)</option>
@@ -231,48 +231,48 @@ const stats = computed(() => {
 
           <!-- 2) 품목 검색 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">품목 검색 (코드/명)</label>
+            <label class="app-label mb-1.5">품목 검색 (코드/명)</label>
             <div class="relative">
               <input
                 v-model="filterItem"
                 type="text"
                 placeholder="품목 코드 또는 품목명 입력"
-                class="w-full h-10 pl-9 pr-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                class="app-control app-control-search"
               />
-              <Search class="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Search class="app-search-icon" />
             </div>
           </div>
 
           <!-- 3) 시작 기간 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">기간 설정 (시작)</label>
+            <label class="app-label mb-1.5">기간 설정 (시작)</label>
             <div class="relative">
               <input
                 v-model="filterDateStart"
                 type="date"
-                class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                class="app-control"
               />
             </div>
           </div>
 
           <!-- 4) 종료 기간 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">기간 설정 (종료)</label>
+            <label class="app-label mb-1.5">기간 설정 (종료)</label>
             <div class="relative">
               <input
                 v-model="filterDateEnd"
                 type="date"
-                class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                class="app-control"
               />
             </div>
           </div>
         </div>
 
         <!-- 필터 초기화 -->
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <div class="flex justify-end gap-2 pt-2 border-t app-border-muted">
           <button
             @click="resetFilters"
-            class="h-9 px-4 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+            class="app-button app-button-subtle h-9"
           >
             필터 초기화
           </button>
@@ -281,9 +281,9 @@ const stats = computed(() => {
     </div>
 
     <!-- 타임라인 데이터 테이블 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <span class="text-sm font-bold text-slate-700">수불(변동) 타임라인 이력 (총 {{ filteredHistories.length }}건)</span>
+    <div class="app-panel">
+      <div class="app-panel-head">
+        <span class="app-panel-title">수불(변동) 타임라인 이력 (총 {{ filteredHistories.length }}건)</span>
       </div>
 
       <div class="overflow-x-auto">
@@ -300,7 +300,7 @@ const stats = computed(() => {
             <col class="w-[180px]" />
           </colgroup>
           <thead>
-            <tr class="bg-slate-50/50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">번호</th>
               <th class="px-5 py-3">품목 코드</th>
               <th class="px-5 py-3">품목명</th>
@@ -316,60 +316,60 @@ const stats = computed(() => {
             <tr
               v-for="item in filteredHistories"
               :key="item.transactionId"
-              class="hover:bg-slate-50 transition select-none"
+              class="app-hover-muted transition select-none"
             >
               <!-- 번호 -->
-              <td class="px-5 py-4 font-mono text-xs text-slate-400">#{{ item.transactionId }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ item.transactionId }}</td>
               <!-- 품목 코드 -->
-              <td class="px-5 py-4 font-bold text-slate-900">{{ item.itemCode }}</td>
+              <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
-              <td class="px-5 py-4 font-medium text-slate-700 truncate" :title="item.itemName">
+              <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="item.itemName">
                 {{ item.itemName }}
               </td>
               <!-- 수불 유형 -->
               <td class="px-5 py-4">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
                   :class="{
-                    'bg-emerald-100 border-emerald-200 text-emerald-800': item.transactionType === 'INBOUND',
-                    'bg-rose-100 border-rose-200 text-rose-800': item.transactionType === 'PRODUCTION_ISSUE'
+                    'app-bg-success-soft app-border app-text-success': item.transactionType === 'INBOUND',
+                    'app-bg-danger-soft app-border app-text-danger': item.transactionType === 'PRODUCTION_ISSUE'
                   }"
                 >
                   <span
                     class="w-1.5 h-1.5 rounded-full"
                     :class="{
-                      'bg-emerald-500': item.transactionType === 'INBOUND',
-                      'bg-rose-500': item.transactionType === 'PRODUCTION_ISSUE'
+                      'app-accent-bg': item.transactionType === 'INBOUND',
+                      'app-bg-danger-soft0': item.transactionType === 'PRODUCTION_ISSUE'
                     }"
                   ></span>
                   {{ item.transactionType === 'INBOUND' ? '입고적재' : '생산불출' }}
                 </span>
               </td>
               <!-- 적재 위치 -->
-              <td class="px-5 py-4 font-mono text-xs text-slate-500">{{ item.locationCode }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode }}</td>
               <!-- 변동 수량 -->
-              <td class="px-5 py-4 text-right font-extrabold" :class="item.transactionType === 'INBOUND' ? 'text-emerald-600' : 'text-rose-600'">
+              <td class="px-5 py-4 text-right app-font-emphasis" :class="item.transactionType === 'INBOUND' ? 'app-text-success' : 'app-text-danger'">
                 {{ item.transactionType === 'INBOUND' ? '+' : '-' }}{{ item.quantity.toLocaleString() }}
               </td>
               <!-- 변동 사유 -->
-              <td class="px-5 py-4 text-xs text-slate-500 truncate" :title="item.reasonDesc">
+              <td class="px-5 py-4 text-xs app-muted truncate" :title="item.reasonDesc">
                 {{ item.reasonDesc }}
               </td>
               <!-- 작업자 -->
-              <td class="px-5 py-4 text-slate-600">
+              <td class="px-5 py-4 app-text-soft">
                 <span class="inline-flex items-center gap-1">
-                  <User class="w-3.5 h-3.5 text-slate-400" />
+                  <User class="w-3.5 h-3.5 app-text-muted" />
                   {{ item.workerName || '-' }}
                 </span>
               </td>
               <!-- 발생 일시 -->
-              <td class="px-5 py-4 text-xs text-slate-400 font-mono">
+              <td class="px-5 py-4 text-xs app-text-muted font-mono">
                 {{ item.createdAt ? item.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
               </td>
             </tr>
             <tr v-if="filteredHistories.length === 0">
-              <td colspan="9" class="px-5 py-12 text-center text-slate-400">
-                <Clock class="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <td colspan="9" class="px-5 py-12 text-center app-text-muted">
+                <Clock class="w-8 h-8 app-text-subtle mx-auto mb-2" />
                 조회 조건에 만족하는 수불 변동 이력이 없습니다.
               </td>
             </tr>
@@ -379,20 +379,20 @@ const stats = computed(() => {
 
       <!-- 페이지네이션 -->
       <div v-if="inventoryStore.histTotalPages > 0"
-        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-        <span class="text-slate-500">
-          총 <span class="font-bold text-slate-700">{{ inventoryStore.histTotalElements.toLocaleString() }}</span>건
+        class="app-pagination">
+        <span class="app-muted">
+          총 <span class="app-count-strong">{{ inventoryStore.histTotalElements.toLocaleString() }}</span>건
           ({{ inventoryStore.histPage + 1 }} / {{ inventoryStore.histTotalPages }} 페이지)
         </span>
         <div class="flex items-center gap-1">
           <button @click="goToPage(0)" :disabled="inventoryStore.histPage === 0"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+            class="app-page-button">««</button>
           <button @click="goToPage(inventoryStore.histPage - 1)" :disabled="inventoryStore.histPage === 0"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+            class="app-page-button">«</button>
           <button @click="goToPage(inventoryStore.histPage + 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+            class="app-page-button">»</button>
           <button @click="goToPage(inventoryStore.histTotalPages - 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+            class="app-page-button">»»</button>
         </div>
       </div>
     </div>

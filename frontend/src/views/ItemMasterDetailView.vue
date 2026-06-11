@@ -228,161 +228,161 @@ function showToast(message: string) {
   <div class="space-y-6 pb-12">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-50" type="button" @click="router.push({ name: 'item-master' })"><ArrowLeft class="h-4 w-4" />목록으로</button>
-        <h1 class="text-2xl font-black tracking-tight text-slate-950">{{ item?.itemName || '품목 상세' }}</h1>
-        <p class="mt-1 font-mono text-sm font-bold text-slate-500">{{ item?.itemCode || '-' }}</p>
+        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 text-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="router.push({ name: 'item-master' })"><ArrowLeft class="h-4 w-4" />목록으로</button>
+        <h1 class="text-2xl app-font-emphasis tracking-tight app-text-strong">{{ item?.itemName || '품목 상세' }}</h1>
+        <p class="mt-1 font-mono text-sm app-font-strong app-text-muted">{{ item?.itemCode || '-' }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <div v-if="toast" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">{{ toast }}</div>
-        <button v-if="canWrite && item" class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white" type="button" @click="openEdit">수정</button>
-        <button v-if="canWrite && item" class="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white" type="button" @click="toggleStatus">
+        <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 text-sm app-font-strong app-text-success">{{ toast }}</div>
+        <button v-if="canWrite && item" class="rounded-xl app-bg-strong px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="openEdit">수정</button>
+        <button v-if="canWrite && item" class="rounded-xl app-bg-warning px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="toggleStatus">
           {{ item.itemStatus === 'ACTIVE' ? '비활성화' : '활성화' }}
         </button>
-        <button v-if="isAdmin && item" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-black text-white" type="button" @click="requestDelete">삭제</button>
+        <button v-if="isAdmin && item" class="rounded-xl app-bg-danger px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="requestDelete">삭제</button>
       </div>
     </div>
 
-    <div v-if="pageError" class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{{ pageError }}</div>
+    <div v-if="pageError" class="rounded-2xl border app-border app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">{{ pageError }}</div>
 
     <div v-if="item" class="grid grid-cols-1 gap-4 md:grid-cols-4">
-      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-black uppercase tracking-widest text-slate-400">분류</p>
-        <strong class="mt-2 block text-xl text-slate-950">{{ getTypeLabel(item.itemType) }}</strong>
+      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">분류</p>
+        <strong class="mt-2 block text-xl app-text-strong">{{ getTypeLabel(item.itemType) }}</strong>
       </div>
-      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-black uppercase tracking-widest text-slate-400">상태</p>
-        <strong class="mt-2 block text-xl" :class="item.itemStatus === 'ACTIVE' ? 'text-emerald-700' : 'text-amber-700'">{{ getStatusLabel(item.itemStatus) }}</strong>
+      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">상태</p>
+        <strong class="mt-2 block text-xl" :class="item.itemStatus === 'ACTIVE' ? 'app-text-success' : 'app-text-warning'">{{ getStatusLabel(item.itemStatus) }}</strong>
       </div>
-      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-black uppercase tracking-widest text-slate-400">현재고 합계</p>
-        <strong class="mt-2 block text-xl text-slate-950">{{ usages?.currentQtyTotal?.toLocaleString() || 0 }} {{ item.unit }}</strong>
+      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">현재고 합계</p>
+        <strong class="mt-2 block text-xl app-text-strong">{{ usages?.currentQtyTotal?.toLocaleString() || 0 }} {{ item.unit }}</strong>
       </div>
-      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-black uppercase tracking-widest text-slate-400">안전재고</p>
-        <strong class="mt-2 block text-xl text-slate-950">{{ item.safetyStock.toLocaleString() }} {{ item.unit }}</strong>
+      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">안전재고</p>
+        <strong class="mt-2 block text-xl app-text-strong">{{ item.safetyStock.toLocaleString() }} {{ item.unit }}</strong>
       </div>
     </div>
 
-    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div class="flex flex-wrap gap-2 border-b border-slate-100 p-4">
-        <button class="rounded-xl px-4 py-2 text-sm font-black" :class="activeTab === 'basic' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'" type="button" @click="activeTab = 'basic'">기본정보</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-black" :class="activeTab === 'usage' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'" type="button" @click="activeTab = 'usage'">활용정보</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-black" :class="activeTab === 'bom' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'" type="button" @click="activeTab = 'bom'">BOM 사용처</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-black" :class="activeTab === 'history' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'" type="button" @click="activeTab = 'history'">최근 수불</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-black" :class="activeTab === 'system' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'" type="button" @click="activeTab = 'system'">시스템</button>
+    <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
+      <div class="flex flex-wrap gap-2 border-b app-border-muted p-4">
+        <button class="rounded-xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'basic' ? 'is-active' : ''" type="button" @click="activeTab = 'basic'">기본정보</button>
+        <button class="rounded-xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'usage' ? 'is-active' : ''" type="button" @click="activeTab = 'usage'">활용정보</button>
+        <button class="rounded-xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'bom' ? 'is-active' : ''" type="button" @click="activeTab = 'bom'">BOM 사용처</button>
+        <button class="rounded-xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'history' ? 'is-active' : ''" type="button" @click="activeTab = 'history'">최근 수불</button>
+        <button class="rounded-xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'system' ? 'is-active' : ''" type="button" @click="activeTab = 'system'">시스템</button>
       </div>
 
       <div class="p-6">
-        <div v-if="!item" class="py-10 text-center font-bold text-slate-400">품목 상세 정보를 불러오는 중입니다.</div>
+        <div v-if="!item" class="py-10 text-center app-font-strong app-text-muted">품목 상세 정보를 불러오는 중입니다.</div>
 
         <dl v-else-if="activeTab === 'basic'" class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">품목 코드</dt><dd class="mt-1 font-mono font-black">{{ item.itemCode }}</dd></div>
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">품목명</dt><dd class="mt-1 font-bold">{{ item.itemName }}</dd></div>
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">규격</dt><dd class="mt-1 font-bold">{{ item.spec || '미지정' }}</dd></div>
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">단위</dt><dd class="mt-1 font-bold">{{ item.unit }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">품목 코드</dt><dd class="mt-1 font-mono app-font-emphasis">{{ item.itemCode }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">품목명</dt><dd class="mt-1 app-font-strong">{{ item.itemName }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">규격</dt><dd class="mt-1 app-font-strong">{{ item.spec || '미지정' }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">단위</dt><dd class="mt-1 app-font-strong">{{ item.unit }}</dd></div>
         </dl>
 
         <div v-else-if="activeTab === 'usage'" class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="rounded-2xl border border-slate-100 p-4"><p class="text-xs font-black text-slate-400">현재고 레코드</p><strong class="mt-1 block text-2xl">{{ references?.inventoryCount || 0 }}</strong></div>
-          <div class="rounded-2xl border border-slate-100 p-4"><p class="text-xs font-black text-slate-400">작업지시 참조</p><strong class="mt-1 block text-2xl">{{ references?.workOrderCount || 0 }}</strong></div>
-          <div class="rounded-2xl border border-slate-100 p-4"><p class="text-xs font-black text-slate-400">출하지시 참조</p><strong class="mt-1 block text-2xl">{{ references?.shippingCount || 0 }}</strong></div>
+          <div class="rounded-2xl border app-border-muted p-4"><p class="text-xs app-font-emphasis app-text-muted">현재고 레코드</p><strong class="mt-1 block text-2xl">{{ references?.inventoryCount || 0 }}</strong></div>
+          <div class="rounded-2xl border app-border-muted p-4"><p class="text-xs app-font-emphasis app-text-muted">작업지시 참조</p><strong class="mt-1 block text-2xl">{{ references?.workOrderCount || 0 }}</strong></div>
+          <div class="rounded-2xl border app-border-muted p-4"><p class="text-xs app-font-emphasis app-text-muted">출하지시 참조</p><strong class="mt-1 block text-2xl">{{ references?.shippingCount || 0 }}</strong></div>
         </div>
 
         <div v-else-if="activeTab === 'bom'" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
-            <h3 class="mb-3 font-black text-slate-900">이 품목으로 구성되는 BOM</h3>
-            <div v-if="!usages?.asParentBoms.length" class="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-400">등록된 하위 BOM이 없습니다.</div>
-            <div v-for="bom in usages?.asParentBoms" :key="`p-${bom.bomId}`" class="mb-2 rounded-2xl border border-slate-100 p-4">
-              <p class="font-bold">{{ bom.childItemCode }} · {{ bom.childItemName }}</p>
-              <p class="text-sm font-semibold text-slate-500">소요량 {{ bom.quantity }} {{ bom.childUnit }} · {{ bom.bomVersion }}</p>
+            <h3 class="mb-3 app-font-emphasis app-text-strong">이 품목으로 구성되는 BOM</h3>
+            <div v-if="!usages?.asParentBoms.length" class="rounded-2xl app-bg-muted p-4 text-sm app-font-strong app-text-muted">등록된 하위 BOM이 없습니다.</div>
+            <div v-for="bom in usages?.asParentBoms" :key="`p-${bom.bomId}`" class="mb-2 rounded-2xl border app-border-muted p-4">
+              <p class="app-font-strong">{{ bom.childItemCode }} · {{ bom.childItemName }}</p>
+              <p class="text-sm app-font-label app-text-muted">소요량 {{ bom.quantity }} {{ bom.childUnit }} · {{ bom.bomVersion }}</p>
             </div>
           </div>
           <div>
-            <h3 class="mb-3 font-black text-slate-900">이 품목이 투입되는 제품</h3>
-            <div v-if="!usages?.asChildBoms.length" class="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-400">상위 BOM 사용처가 없습니다.</div>
-            <div v-for="bom in usages?.asChildBoms" :key="`c-${bom.bomId}`" class="mb-2 rounded-2xl border border-slate-100 p-4">
-              <p class="font-bold">{{ bom.parentItemCode }} · {{ bom.parentItemName }}</p>
-              <p class="text-sm font-semibold text-slate-500">투입량 {{ bom.quantity }} {{ item.unit }} · {{ bom.bomVersion }}</p>
+            <h3 class="mb-3 app-font-emphasis app-text-strong">이 품목이 투입되는 제품</h3>
+            <div v-if="!usages?.asChildBoms.length" class="rounded-2xl app-bg-muted p-4 text-sm app-font-strong app-text-muted">상위 BOM 사용처가 없습니다.</div>
+            <div v-for="bom in usages?.asChildBoms" :key="`c-${bom.bomId}`" class="mb-2 rounded-2xl border app-border-muted p-4">
+              <p class="app-font-strong">{{ bom.parentItemCode }} · {{ bom.parentItemName }}</p>
+              <p class="text-sm app-font-label app-text-muted">투입량 {{ bom.quantity }} {{ item.unit }} · {{ bom.bomVersion }}</p>
             </div>
           </div>
         </div>
 
         <div v-else-if="activeTab === 'history'" class="space-y-2">
-          <div v-if="!usages?.recentTransactions.length" class="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-400">최근 수불 이력이 없습니다.</div>
-          <div v-for="history in usages?.recentTransactions" :key="history.transactionId" class="rounded-2xl border border-slate-100 p-4">
-            <p class="font-black">{{ history.transactionType }} · {{ history.quantity.toLocaleString() }}</p>
-            <p class="text-sm font-semibold text-slate-500">{{ history.locationCode }} · {{ history.reasonDesc }} · {{ formatDate(history.createdAt) }}</p>
+          <div v-if="!usages?.recentTransactions.length" class="rounded-2xl app-bg-muted p-4 text-sm app-font-strong app-text-muted">최근 수불 이력이 없습니다.</div>
+          <div v-for="history in usages?.recentTransactions" :key="history.transactionId" class="rounded-2xl border app-border-muted p-4">
+            <p class="app-font-emphasis">{{ history.transactionType }} · {{ history.quantity.toLocaleString() }}</p>
+            <p class="text-sm app-font-label app-text-muted">{{ history.locationCode }} · {{ history.reasonDesc }} · {{ formatDate(history.createdAt) }}</p>
           </div>
         </div>
 
         <dl v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">품목 ID</dt><dd class="mt-1 font-mono font-black">{{ item.itemId }}</dd></div>
-          <div class="rounded-2xl bg-slate-50 p-4"><dt class="text-xs font-black text-slate-400">등록일</dt><dd class="mt-1 font-bold">{{ formatDate(item.createdAt) }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">품목 ID</dt><dd class="mt-1 font-mono app-font-emphasis">{{ item.itemId }}</dd></div>
+          <div class="rounded-2xl app-bg-muted p-4"><dt class="text-xs app-font-emphasis app-text-muted">등록일</dt><dd class="mt-1 app-font-strong">{{ formatDate(item.createdAt) }}</dd></div>
         </dl>
       </div>
     </section>
 
-    <div v-if="isEditOpen && item" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-      <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
-        <div class="border-b border-slate-100 p-6">
-          <h2 class="text-lg font-black text-slate-950">품목 수정</h2>
-          <div class="mt-3 inline-flex items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 font-mono text-lg font-black text-blue-700">
+    <div v-if="isEditOpen && item" class="fixed inset-0 z-50 flex items-center justify-center app-backdrop p-4">
+      <div class="w-full max-w-2xl rounded-3xl app-bg-surface shadow-2xl">
+        <div class="border-b app-border-muted p-6">
+          <h2 class="text-lg app-font-emphasis app-text-strong">품목 수정</h2>
+          <div class="mt-3 inline-flex items-center rounded-2xl border app-border app-bg-primary-soft px-4 py-2 font-mono text-lg app-font-emphasis app-accent">
             {{ item.itemCode }}
           </div>
         </div>
         <form class="space-y-4 p-6" @submit.prevent="submitEdit(false)">
-          <div v-if="formError" class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{{ formError }}</div>
-          <label class="block text-sm font-black text-slate-700">품목명 *<input v-model="form.itemName" required class="mt-1 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none"></label>
-          <label class="block text-sm font-black text-slate-700">규격<input v-model="form.spec" class="mt-1 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none"></label>
+          <div v-if="formError" class="rounded-2xl border app-border app-bg-danger-soft p-3 text-sm app-font-strong app-text-danger">{{ formError }}</div>
+          <label class="block text-sm app-font-emphasis app-text-soft">품목명 *<input v-model="form.itemName" required class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none"></label>
+          <label class="block text-sm app-font-emphasis app-text-soft">규격<input v-model="form.spec" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none"></label>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <label class="block text-sm font-black text-slate-700">분류<select v-model="form.itemType" class="mt-1 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none"><option v-for="option in itemTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
-            <label class="block text-sm font-black text-slate-700">단위<select v-model="form.unit" class="mt-1 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none"><option v-for="unit in unitOptions" :key="unit" :value="unit">{{ unit }}</option></select></label>
-            <label class="block text-sm font-black text-slate-700">안전재고<input v-model.number="form.safetyStock" min="0" type="number" class="mt-1 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none"></label>
+            <label class="block text-sm app-font-emphasis app-text-soft">분류<select v-model="form.itemType" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none"><option v-for="option in itemTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
+            <label class="block text-sm app-font-emphasis app-text-soft">단위<select v-model="form.unit" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none"><option v-for="unit in unitOptions" :key="unit" :value="unit">{{ unit }}</option></select></label>
+            <label class="block text-sm app-font-emphasis app-text-soft">안전재고<input v-model.number="form.safetyStock" min="0" type="number" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none"></label>
           </div>
-          <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
-            <button class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-black" type="button" @click="closeEdit">취소</button>
-            <button class="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white" type="submit" :disabled="itemMasterStore.isSaving">저장</button>
+          <div class="flex justify-end gap-2 border-t app-border-muted pt-4">
+            <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="closeEdit">취소</button>
+            <button class="rounded-2xl app-accent-bg px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="submit" :disabled="itemMasterStore.isSaving">저장</button>
           </div>
         </form>
       </div>
     </div>
 
-    <div v-if="isReferenceWarningOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4">
-      <div class="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
-        <h2 class="text-lg font-black text-slate-950">참조 중인 품목입니다</h2>
-        <p class="mt-2 text-sm font-semibold text-slate-500">BOM, 재고, 입고, 작업지시, 출하에서 참조 중인 품목의 분류를 변경하려고 합니다.</p>
-        <p class="mt-3 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-800">품목 코드는 변경되지 않지만 업무 문서의 분류 해석이 달라질 수 있습니다.</p>
-        <div class="mt-4 rounded-2xl border border-amber-100 bg-white p-4">
-          <p class="mb-2 text-sm font-black text-slate-800">참조 항목</p>
-          <ul class="space-y-1 text-sm font-bold text-slate-600">
+    <div v-if="isReferenceWarningOpen" class="fixed inset-0 z-[60] flex items-center justify-center app-backdrop p-4">
+      <div class="w-full max-w-xl rounded-3xl app-bg-surface p-6 shadow-2xl">
+        <h2 class="text-lg app-font-emphasis app-text-strong">참조 중인 품목입니다</h2>
+        <p class="mt-2 text-sm app-font-label app-text-muted">BOM, 재고, 입고, 작업지시, 출하에서 참조 중인 품목의 분류를 변경하려고 합니다.</p>
+        <p class="mt-3 rounded-2xl app-bg-warning-soft p-4 text-sm app-font-strong app-text-warning">품목 코드는 변경되지 않지만 업무 문서의 분류 해석이 달라질 수 있습니다.</p>
+        <div class="mt-4 rounded-2xl border app-border-muted app-bg-surface p-4">
+          <p class="mb-2 text-sm app-font-emphasis app-text-strong">참조 항목</p>
+          <ul class="space-y-1 text-sm app-font-strong app-text-soft">
             <li v-for="refItem in referenceItems" :key="refItem.label">- {{ refItem.label }} {{ refItem.count.toLocaleString() }}건</li>
           </ul>
         </div>
         <div class="mt-5 flex justify-end gap-2">
-          <button class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-black" type="button" @click="isReferenceWarningOpen = false">취소</button>
-          <button class="rounded-2xl bg-amber-600 px-5 py-2.5 text-sm font-black text-white" type="button" @click="submitReferenceConfirmed">확인 후 수정</button>
+          <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="isReferenceWarningOpen = false">취소</button>
+          <button class="rounded-2xl app-bg-warning px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="button" @click="submitReferenceConfirmed">확인 후 수정</button>
         </div>
       </div>
     </div>
 
-    <div v-if="isDeleteOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4">
-      <div class="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
-        <h2 class="text-lg font-black text-slate-950">품목 삭제 확인</h2>
-        <div class="mt-4 rounded-2xl border border-slate-100 p-4">
-          <p class="mb-2 text-sm font-black text-slate-800">참조 항목</p>
-          <ul v-if="referenceItems.length > 0" class="space-y-1 text-sm font-bold text-slate-600">
+    <div v-if="isDeleteOpen" class="fixed inset-0 z-[60] flex items-center justify-center app-backdrop p-4">
+      <div class="w-full max-w-xl rounded-3xl app-bg-surface p-6 shadow-2xl">
+        <h2 class="text-lg app-font-emphasis app-text-strong">품목 삭제 확인</h2>
+        <div class="mt-4 rounded-2xl border app-border-muted p-4">
+          <p class="mb-2 text-sm app-font-emphasis app-text-strong">참조 항목</p>
+          <ul v-if="referenceItems.length > 0" class="space-y-1 text-sm app-font-strong app-text-soft">
             <li v-for="refItem in referenceItems" :key="refItem.label">- {{ refItem.label }} {{ refItem.count.toLocaleString() }}건</li>
           </ul>
-          <p v-else class="text-sm font-bold text-slate-400">참조 중인 항목이 없습니다.</p>
+          <p v-else class="text-sm app-font-strong app-text-muted">참조 중인 항목이 없습니다.</p>
         </div>
-        <p v-if="references?.hasReferences" class="mt-4 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-800">참조 중인 품목은 삭제할 수 없습니다. 더 이상 사용하지 않는 품목은 비활성화로 전환하세요.</p>
-        <p v-else class="mt-4 rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">참조 데이터가 없습니다. 삭제 후 복구할 수 없습니다.</p>
+        <p v-if="references?.hasReferences" class="mt-4 rounded-2xl app-bg-warning-soft p-4 text-sm app-font-strong app-text-warning">참조 중인 품목은 삭제할 수 없습니다. 더 이상 사용하지 않는 품목은 비활성화로 전환하세요.</p>
+        <p v-else class="mt-4 rounded-2xl app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">참조 데이터가 없습니다. 삭제 후 복구할 수 없습니다.</p>
         <div class="mt-5 flex justify-end gap-2">
-          <button class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-black" type="button" @click="isDeleteOpen = false">닫기</button>
-          <button v-if="references?.hasReferences" class="rounded-2xl bg-amber-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50" type="button" :disabled="itemMasterStore.isSaving || item?.itemStatus === 'INACTIVE'" @click="deactivateFromDeleteModal">
+          <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
+          <button v-if="references?.hasReferences" class="rounded-2xl app-bg-warning px-5 py-2.5 text-sm app-font-emphasis app-text-inverse disabled:opacity-50" type="button" :disabled="itemMasterStore.isSaving || item?.itemStatus === 'INACTIVE'" @click="deactivateFromDeleteModal">
             {{ item?.itemStatus === 'INACTIVE' ? '이미 비활성화됨' : '비활성화' }}
           </button>
-          <button v-else class="rounded-2xl bg-rose-600 px-5 py-2.5 text-sm font-black text-white" type="button" @click="deleteItem">삭제</button>
+          <button v-else class="rounded-2xl app-bg-danger px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="button" @click="deleteItem">삭제</button>
         </div>
       </div>
     </div>
