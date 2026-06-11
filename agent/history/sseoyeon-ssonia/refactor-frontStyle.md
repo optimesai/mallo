@@ -89,3 +89,20 @@
     - 없음
 
   </details>
+
+### 거래처 마스터 UX 분석 (Codex)
+- **User Intent**: 기준관리 4개 항목 중 거래처 마스터를 먼저 보강하기 위해, 사용자 관점에서 필요한 기능과 편리한 UX 흐름을 분석해달라는 요청
+- **Agent Context**: 거래처 마스터 백엔드 API/서비스/DTO/엔티티와 프론트엔드 API/Service/Store/View를 확인하고, 현재 CRUD 중심 구조에서 운영 편의성을 높이는 보강 후보를 도출했다.
+- **Key Decisions**:
+  - 기능 보강은 거래처 마스터 도메인으로 한정 — 작업 범위 준수 정책에 따라 품목/BOM/라우팅 변경 제안은 직접 수정 범위에서 제외
+  - 사용자 흐름은 등록 전 검증, 목록 탐색, 상세 업무 연계, 안전한 삭제/비활성화 순서로 정리 — 실제 거래처가 입고/출하에서 참조되는 구조를 기준으로 판단
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 거래처 마스터 UX 분석 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
