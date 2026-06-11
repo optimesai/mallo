@@ -123,3 +123,20 @@
     - 없음
 
   </details>
+
+### 실제 공급 이력 설계 정리 (Codex)
+- **User Intent**: 파트너 마스터 공급 부품 기능에서 공급 가능 품목 관리는 제외하고, 실제 공급 이력만 제공하도록 수정 파일과 작업 과정을 다시 정리해달라는 요청
+- **Agent Context**: 별도 공급 가능 품목 매핑 테이블 없이 기존 `InboundReceipt`와 `PartnerMaster`, `ItemMaster` 연계를 기반으로 공급사별 실제 입고 품목 이력을 조회하는 방식으로 범위를 축소했다.
+- **Key Decisions**:
+  - 신규 마스터 매핑 엔티티를 생성하지 않음 — 사용자가 요청한 데이터 의미가 “공급 가능 품목”이 아니라 “실제 공급 이력”이므로 기존 입고 이력 조인으로 충분함
+  - 공급사 전용 조회로 제한 — 고객사는 출하 대상이므로 실제 공급 부품 이력의 주체가 아니며, `SUPPLIER` 타입 검증이 필요함
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 실제 공급 이력 설계 정리 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
