@@ -154,7 +154,7 @@ async function selectRow(item: any) {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6 text-slate-800">
+  <div class="app-page">
     <!-- 토스트 알림 -->
     <Transition
       enter-active-class="transform ease-out duration-300 transition"
@@ -166,42 +166,42 @@ async function selectRow(item: any) {
     >
       <div
         v-if="successToast"
-        class="fixed top-5 right-5 z-50 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3.5 rounded-xl shadow-2xl border border-slate-700/50"
+        class="app-toast app-toast-top-right"
       >
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-        <p class="text-sm font-semibold">{{ successToast }}</p>
+        <span class="app-toast-dot animate-ping"></span>
+        <p class="text-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
     <!-- 에러 배너 -->
     <div
       v-if="pageError"
-      class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-3"
+      class="p-4 app-bg-danger-soft border app-border app-text-danger rounded-xl flex items-start gap-3"
     >
-      <AlertTriangle class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+      <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
       <div>
-        <h4 class="font-bold text-sm">오류가 발생했습니다</h4>
-        <p class="text-xs text-rose-700/90 mt-0.5">{{ pageError }}</p>
+        <h4 class="app-alert-title">오류가 발생했습니다</h4>
+        <p class="text-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
       </div>
     </div>
 
     <!-- 안전재고 부족 긴급 배너 -->
     <div
       v-if="stats.warningCount > 0"
-      class="p-4 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl shadow-lg flex items-center justify-between gap-4 animate-pulse-subtle"
+      class="p-4 bg-gradient-to-r from-rose-500 to-rose-600 app-text-inverse rounded-xl shadow-lg flex items-center justify-between gap-4 animate-pulse-subtle"
     >
       <div class="flex items-center gap-3">
-        <div class="p-2 bg-white/20 rounded-lg">
-          <ShieldAlert class="w-6 h-6 text-white" />
+        <div class="p-2 app-bg-muted rounded-lg">
+          <ShieldAlert class="w-6 h-6 app-text-inverse" />
         </div>
         <div>
-          <h4 class="font-bold text-base">안전 재고 부족 경고 발령 ({{ stats.warningCount }}건)</h4>
-          <p class="text-xs text-white/80 mt-0.5">품목별 안전 재고량 미만으로 떨어진 자재가 존재합니다. 즉시 발주 및 입고 처리를 진행하십시오.</p>
+          <h4 class="app-font-strong text-base">안전 재고 부족 경고 발령 ({{ stats.warningCount }}건)</h4>
+          <p class="text-xs app-text-inverse mt-0.5">품목별 안전 재고량 미만으로 떨어진 자재가 존재합니다. 즉시 발주 및 입고 처리를 진행하십시오.</p>
         </div>
       </div>
       <button
         @click="filterWarningOnly = true"
-        class="px-4 py-2 bg-white text-rose-700 hover:bg-rose-50 font-bold text-xs rounded-lg transition shadow-sm shrink-0"
+        class="px-4 py-2 app-bg-surface app-text-danger hover:app-bg-danger-soft app-font-strong text-xs rounded-lg transition shadow-sm shrink-0"
       >
         경고 대상 필터링
       </button>
@@ -210,13 +210,13 @@ async function selectRow(item: any) {
     <!-- 상단 대시보드 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-black tracking-tight text-slate-900">실시간 현재고 현황 모니터링</h1>
-        <p class="text-sm text-slate-500 mt-1">창고 및 세부 로케이션별 실시간 재고량과 안전 재고 도달 상태를 감시합니다.</p>
+        <h1 class="app-page-title">실시간 현재고 현황 모니터링</h1>
+        <p class="app-page-subtitle">창고 및 세부 로케이션별 실시간 재고량과 안전 재고 도달 상태를 감시합니다.</p>
       </div>
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -226,43 +226,43 @@ async function selectRow(item: any) {
     <!-- 현황 통계 카드 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- 카드 1: 총 재고 품목 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
-        <div class="p-3.5 bg-indigo-50 rounded-xl text-indigo-600">
+      <div class="app-bg-surface rounded-xl border app-border p-5 shadow-sm flex items-center gap-4">
+        <div class="p-3.5 app-bg-primary-soft rounded-xl app-accent">
           <Package class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">재고 품목 종류</span>
-          <span class="text-2xl font-extrabold text-slate-900 mt-0.5 block">{{ stats.totalItems }} 종</span>
+          <span class="text-xs app-font-label app-text-muted block">재고 품목 종류</span>
+          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalItems }} 종</span>
         </div>
       </div>
 
       <!-- 카드 2: 총 재고 수량 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center gap-4">
-        <div class="p-3.5 bg-emerald-50 rounded-xl text-emerald-600">
+      <div class="app-bg-surface rounded-xl border app-border p-5 shadow-sm flex items-center gap-4">
+        <div class="p-3.5 app-bg-success-soft rounded-xl app-text-success">
           <Layers class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">전체 재고 수량</span>
-          <span class="text-2xl font-extrabold text-slate-900 mt-0.5 block">{{ stats.totalStockQty.toLocaleString() }} EA</span>
+          <span class="text-xs app-font-label app-text-muted block">전체 재고 수량</span>
+          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalStockQty.toLocaleString() }} EA</span>
         </div>
       </div>
 
       <!-- 카드 3: 안전 재고 미만 경고 -->
       <div
-        class="bg-white rounded-xl border p-5 shadow-sm flex items-center gap-4 transition"
-        :class="stats.warningCount > 0 ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200'"
+        class="app-bg-surface rounded-xl border p-5 shadow-sm flex items-center gap-4 transition"
+        :class="stats.warningCount > 0 ? 'app-border app-bg-danger-soft' : 'app-border'"
       >
         <div
           class="p-3.5 rounded-xl transition"
-          :class="stats.warningCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500'"
+          :class="stats.warningCount > 0 ? 'app-bg-danger-soft app-text-danger' : 'app-bg-muted app-muted'"
         >
           <AlertTriangle class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs font-medium text-slate-400 block">안전재고 미달 품목</span>
+          <span class="text-xs app-font-label app-text-muted block">안전재고 미달 품목</span>
           <span
-            class="text-2xl font-extrabold mt-0.5 block"
-            :class="stats.warningCount > 0 ? 'text-rose-600 animate-pulse-subtle' : 'text-slate-900'"
+            class="text-2xl app-font-emphasis mt-0.5 block"
+            :class="stats.warningCount > 0 ? 'app-text-danger animate-pulse-subtle' : 'app-text-strong'"
           >
             {{ stats.warningCount }} 건
           </span>
@@ -271,29 +271,29 @@ async function selectRow(item: any) {
     </div>
 
     <!-- 검색 및 필터 패널 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="app-panel">
       <div
         @click="isSearchExpanded = !isSearchExpanded"
-        class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between cursor-pointer select-none"
+        class="app-panel-head cursor-pointer select-none"
       >
-        <div class="flex items-center gap-2 text-slate-700">
-          <SlidersHorizontal class="w-4.5 h-4.5 text-slate-500" />
-          <span class="text-sm font-bold">검색 필터 상세조회</span>
+        <div class="app-panel-title">
+          <SlidersHorizontal class="w-4.5 h-4.5 app-muted" />
+          <span class="app-panel-title">검색 필터 상세조회</span>
         </div>
         <ChevronDown
-          class="w-4.5 h-4.5 text-slate-500 transition-transform duration-200"
+          class="w-4.5 h-4.5 app-muted transition-transform duration-200"
           :class="{ 'rotate-180': isSearchExpanded }"
         />
       </div>
 
-      <div v-show="isSearchExpanded" class="p-5 space-y-4 border-t border-slate-100">
+      <div v-show="isSearchExpanded" class="app-filter-body">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- 1) 창고명 필터 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">창고명</label>
+            <label class="app-label mb-1.5">창고명</label>
             <select
               v-model="filterWarehouse"
-              class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+              class="app-control"
             >
               <option value="">전체 창고</option>
               <option value="원자재 창고">원자재 창고</option>
@@ -304,15 +304,15 @@ async function selectRow(item: any) {
 
           <!-- 2) 품목 검색 -->
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">품목 검색 (코드/명)</label>
+            <label class="app-label mb-1.5">품목 검색 (코드/명)</label>
             <div class="relative">
               <input
                 v-model="filterItem"
                 type="text"
                 placeholder="품목 코드 또는 품목명 입력"
-                class="w-full h-10 pl-9 pr-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                class="app-control app-control-search"
               />
-              <Search class="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Search class="app-search-icon" />
             </div>
           </div>
 
@@ -322,18 +322,18 @@ async function selectRow(item: any) {
               <input
                 v-model="filterWarningOnly"
                 type="checkbox"
-                class="w-4.5 h-4.5 rounded text-rose-600 focus:ring-rose-500 border-slate-300"
+                class="w-4.5 h-4.5 rounded app-text-danger app-border-strong"
               />
-              <span class="text-sm font-semibold text-rose-700">안전재고 미달 품목만 표시</span>
+              <span class="text-sm app-font-label app-text-danger">안전재고 미달 품목만 표시</span>
             </label>
           </div>
         </div>
 
         <!-- 필터 액션 버튼들 -->
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <div class="flex justify-end gap-2 pt-2 border-t app-border-muted">
           <button
             @click="resetFilters"
-            class="h-9 px-4 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+            class="app-button app-button-subtle h-9"
           >
             필터 초기화
           </button>
@@ -342,9 +342,9 @@ async function selectRow(item: any) {
     </div>
 
     <!-- 메인 그리드 테이블 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <span class="text-sm font-bold text-slate-700">실시간 현재고 목록 (총 {{ filteredInventories.length }}건)</span>
+    <div class="app-panel">
+      <div class="app-panel-head">
+        <span class="app-panel-title">실시간 현재고 목록 (총 {{ filteredInventories.length }}건)</span>
       </div>
 
       <div class="overflow-x-auto">
@@ -361,7 +361,7 @@ async function selectRow(item: any) {
             <col class="w-[140px]" />
           </colgroup>
           <thead>
-            <tr class="bg-slate-50/50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">ID</th>
               <th class="px-5 py-3">품목 코드</th>
               <th class="px-5 py-3">품목명</th>
@@ -378,60 +378,60 @@ async function selectRow(item: any) {
               v-for="item in filteredInventories"
               :key="item.inventoryId"
               @click="selectRow(item)"
-              class="hover:bg-slate-50 cursor-pointer transition select-none"
+              class="app-hover-muted cursor-pointer transition select-none"
               :class="{
-                'bg-indigo-50/30': selectedInventory?.inventoryId === item.inventoryId,
-                'bg-rose-50/10': item.isUnderSafety
+                'app-bg-primary-soft': selectedInventory?.inventoryId === item.inventoryId,
+                'app-bg-danger-soft/10': item.isUnderSafety
               }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs text-slate-400">#{{ item.inventoryId }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ item.inventoryId }}</td>
               <!-- 품목 코드 -->
-              <td class="px-5 py-4 font-bold text-slate-900">{{ item.itemCode }}</td>
+              <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
-              <td class="px-5 py-4 font-medium text-slate-700 truncate" :title="item.itemName">
+              <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="item.itemName">
                 {{ item.itemName }}
               </td>
               <!-- 적재 창고 -->
-              <td class="px-5 py-4 text-slate-600">
+              <td class="px-5 py-4 app-text-soft">
                 <span class="inline-flex items-center gap-1.5">
-                  <Home class="w-3.5 h-3.5 text-slate-400" />
+                  <Home class="w-3.5 h-3.5 app-text-muted" />
                   {{ item.warehouseName }}
                 </span>
               </td>
               <!-- 로케이션 코드 -->
-              <td class="px-5 py-4 font-mono text-xs text-slate-500">{{ item.locationCode }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode }}</td>
               <!-- 현재고 수량 -->
-              <td class="px-5 py-4 text-right font-extrabold" :class="item.isUnderSafety ? 'text-rose-600' : 'text-slate-900'">
+              <td class="px-5 py-4 text-right app-font-emphasis" :class="item.isUnderSafety ? 'app-text-danger' : 'app-text-strong'">
                 {{ item.currentQty.toLocaleString() }}
               </td>
               <!-- 안전 재고량 -->
-              <td class="px-5 py-4 text-right font-semibold text-slate-500">
+              <td class="px-5 py-4 text-right app-font-label app-muted">
                 {{ item.safetyStock.toLocaleString() }}
               </td>
               <!-- 안전재고 상태 -->
               <td class="px-5 py-4 text-center">
                 <span
                   v-if="item.isUnderSafety"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 animate-pulse-subtle shadow-sm"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong app-bg-danger-soft app-text-danger border app-border animate-pulse-subtle shadow-sm"
                 >
-                  <AlertTriangle class="w-3.5 h-3.5 text-rose-600" /> 부족
+                  <AlertTriangle class="w-3.5 h-3.5 app-text-danger" /> 부족
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong app-bg-success-soft app-text-success border app-border"
                 >
                   정상
                 </span>
               </td>
               <!-- 최종 수정일시 -->
-              <td class="px-5 py-4 text-xs text-slate-400 font-mono">
+              <td class="px-5 py-4 text-xs app-text-muted font-mono">
                 {{ item.updatedAt ? item.updatedAt.replace('T', ' ').substring(0, 19) : '-' }}
               </td>
             </tr>
             <tr v-if="filteredInventories.length === 0">
-              <td colspan="9" class="px-5 py-12 text-center text-slate-400">
-                <Package class="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <td colspan="9" class="px-5 py-12 text-center app-text-muted">
+                <Package class="w-8 h-8 app-text-subtle mx-auto mb-2" />
                 조회 조건에 만족하는 실시간 재고 정보가 없습니다.
               </td>
             </tr>
@@ -441,20 +441,20 @@ async function selectRow(item: any) {
 
       <!-- 페이지네이션 -->
       <div v-if="inventoryStore.invTotalPages > 0"
-        class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-        <span class="text-slate-500">
-          총 <span class="font-bold text-slate-700">{{ inventoryStore.invTotalElements.toLocaleString() }}</span>건
+        class="app-pagination">
+        <span class="app-muted">
+          총 <span class="app-count-strong">{{ inventoryStore.invTotalElements.toLocaleString() }}</span>건
           ({{ inventoryStore.invPage + 1 }} / {{ inventoryStore.invTotalPages }} 페이지)
         </span>
         <div class="flex items-center gap-1">
           <button @click="goToPage(0)" :disabled="inventoryStore.invPage === 0"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">««</button>
+            class="app-page-button">««</button>
           <button @click="goToPage(inventoryStore.invPage - 1)" :disabled="inventoryStore.invPage === 0"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">«</button>
+            class="app-page-button">«</button>
           <button @click="goToPage(inventoryStore.invPage + 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»</button>
+            class="app-page-button">»</button>
           <button @click="goToPage(inventoryStore.invTotalPages - 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
-            class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition">»»</button>
+            class="app-page-button">»»</button>
         </div>
       </div>
     </div>
@@ -462,16 +462,16 @@ async function selectRow(item: any) {
     <!-- 마스터-디테일 상세 레이아웃 -->
     <div
       v-if="inventoryStore.selectedDetail"
-      class="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden animate-slide-up"
+      class="app-panel animate-slide-up"
     >
-      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+      <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <Package class="w-5 h-5 text-indigo-400" />
-          <h3 class="font-extrabold text-sm">재고 단건 상세 정보 (ID: {{ inventoryStore.selectedDetail.inventoryId }})</h3>
+          <Package class="w-5 h-5 app-accent" />
+          <h3 class="app-font-emphasis text-sm">재고 단건 상세 정보 (ID: {{ inventoryStore.selectedDetail.inventoryId }})</h3>
         </div>
         <button
           @click="selectedInventory = null; inventoryStore.selectedDetail = null"
-          class="text-slate-400 hover:text-white text-xs font-bold bg-slate-800 px-2.5 py-1 rounded"
+          class="app-text-muted text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -480,35 +480,35 @@ async function selectRow(item: any) {
       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- 품목 상세 영역 -->
         <div class="space-y-4">
-          <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
-            <span class="w-1 h-3.5 bg-indigo-600 rounded-full"></span> 품목 마스터 세부 정보
+          <h4 class="app-section-kicker">
+            품목 마스터 세부 정보
           </h4>
-          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3 text-sm">
+          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 text-sm">
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">품목 코드</span>
-              <span class="col-span-2 font-mono font-bold text-slate-800">{{ inventoryStore.selectedDetail.itemCode }}</span>
+              <span class="app-text-muted app-font-strong">품목 코드</span>
+              <span class="col-span-2 font-mono app-font-strong app-text-strong">{{ inventoryStore.selectedDetail.itemCode }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">품목명</span>
-              <span class="col-span-2 text-slate-800 font-semibold">{{ inventoryStore.selectedDetail.itemName }}</span>
+              <span class="app-text-muted app-font-strong">품목명</span>
+              <span class="col-span-2 app-text-strong app-font-label">{{ inventoryStore.selectedDetail.itemName }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">규격 (Spec)</span>
-              <span class="col-span-2 text-slate-800">{{ selectedItemDetail?.spec || '-' }}</span>
+              <span class="app-text-muted app-font-strong">규격 (Spec)</span>
+              <span class="col-span-2 app-text-strong">{{ selectedItemDetail?.spec || '-' }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">관리 단위</span>
-              <span class="col-span-2 text-slate-800 uppercase font-bold">{{ selectedItemDetail?.unit || 'EA' }}</span>
+              <span class="app-text-muted app-font-strong">관리 단위</span>
+              <span class="col-span-2 app-text-strong uppercase app-font-strong">{{ selectedItemDetail?.unit || 'EA' }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">품목 유형</span>
+              <span class="app-text-muted app-font-strong">품목 유형</span>
               <span class="col-span-2">
                 <span
-                  class="px-2 py-0.5 rounded text-xs font-extrabold border"
+                  class="px-2 py-0.5 rounded text-xs app-font-emphasis border"
                   :class="{
-                    'bg-amber-100 border-amber-200 text-amber-800': selectedItemDetail?.itemType === 'RAW',
-                    'bg-blue-100 border-blue-200 text-blue-800': selectedItemDetail?.itemType === 'HALF',
-                    'bg-purple-100 border-purple-200 text-purple-800': selectedItemDetail?.itemType === 'FG'
+                    'app-bg-warning-soft app-border app-text-warning': selectedItemDetail?.itemType === 'RAW',
+                    'app-bg-primary-soft app-border app-accent': selectedItemDetail?.itemType === 'HALF',
+                    'app-status-info': selectedItemDetail?.itemType === 'FG'
                   }"
                 >
                   {{ selectedItemDetail?.itemType || '-' }}
@@ -520,38 +520,38 @@ async function selectRow(item: any) {
 
         <!-- 로케이션 및 경고 영역 -->
         <div class="space-y-4">
-          <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
-            <span class="w-1 h-3.5 bg-indigo-600 rounded-full"></span> 재고 및 보관 정보
+          <h4 class="app-section-kicker">
+            재고 및 보관 정보
           </h4>
-          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3 text-sm">
+          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 text-sm">
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">적재 창고</span>
-              <span class="col-span-2 text-slate-800 font-bold">{{ inventoryStore.selectedDetail.warehouseName }}</span>
+              <span class="app-text-muted app-font-strong">적재 창고</span>
+              <span class="col-span-2 app-text-strong app-font-strong">{{ inventoryStore.selectedDetail.warehouseName }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">로케이션 주소</span>
-              <span class="col-span-2 text-slate-800 font-mono">{{ inventoryStore.selectedDetail.locationCode }}</span>
+              <span class="app-text-muted app-font-strong">로케이션 주소</span>
+              <span class="col-span-2 app-text-strong font-mono">{{ inventoryStore.selectedDetail.locationCode }}</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">현재고 수량</span>
-              <span class="col-span-2 font-extrabold text-slate-900">{{ inventoryStore.selectedDetail.currentQty.toLocaleString() }} EA</span>
+              <span class="app-text-muted app-font-strong">현재고 수량</span>
+              <span class="col-span-2 app-font-emphasis app-text-strong">{{ inventoryStore.selectedDetail.currentQty.toLocaleString() }} EA</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">안전 재고량</span>
-              <span class="col-span-2 font-semibold text-slate-500">{{ detailSafetyStock.toLocaleString() }} EA</span>
+              <span class="app-text-muted app-font-strong">안전 재고량</span>
+              <span class="col-span-2 app-font-label app-muted">{{ detailSafetyStock.toLocaleString() }} EA</span>
             </div>
             <div class="grid grid-cols-3">
-              <span class="text-slate-400 font-bold">보관 상태 분석</span>
+              <span class="app-text-muted app-font-strong">보관 상태 분석</span>
               <span class="col-span-2">
                 <span
                   v-if="isDetailUnderSafety"
-                  class="text-rose-600 font-extrabold flex items-center gap-1.5"
+                  class="app-text-danger app-font-emphasis flex items-center gap-1.5"
                 >
-                  <AlertTriangle class="w-4 h-4 text-rose-500" />
+                  <AlertTriangle class="w-4 h-4 app-text-danger" />
                   안전재고 미달 ({{ (detailSafetyStock - inventoryStore.selectedDetail.currentQty).toLocaleString() }} EA 부족)
                 </span>
-                <span v-else class="text-emerald-600 font-bold flex items-center gap-1.5">
-                  <CheckCircle2 class="w-4 h-4 text-emerald-500" />
+                <span v-else class="app-text-success app-font-strong flex items-center gap-1.5">
+                  <CheckCircle2 class="w-4 h-4 app-text-success" />
                   안전재고 충족 (적정 재고 수준 유지 중)
                 </span>
               </span>

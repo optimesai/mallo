@@ -5,17 +5,17 @@ import AppHeader from './components/AppHeader.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100 flex font-sans">
+  <div class="app-layout font-sans">
     <!-- Modular Sidebar -->
     <AppSidebar />
 
     <!-- Main Container -->
-    <div class="flex-grow flex flex-col min-w-0">
+    <div class="app-main">
       <!-- Modular Header -->
       <AppHeader />
 
       <!-- Content Area (라우터의 자식 컴포넌트들이 위치할 공간) -->
-      <main class="flex-grow p-8 overflow-y-auto">
+      <main class="app-content">
         <RouterView />
       </main>
     </div>

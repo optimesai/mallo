@@ -12,7 +12,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="mockStore.isLoading" class="text-slate-500 text-sm">
+  <div v-if="mockStore.isLoading" class="app-text-muted text-sm">
     Loading dashboard data...
   </div>
 </template>

@@ -948,35 +948,35 @@ function formatDateTime(value: string) {
 
 <style scoped>
 .bom-page {
-  --bom-color-surface: #ffffff;
-  --bom-color-surface-muted: #f8fafc;
-  --bom-color-surface-strong: #f1f5f9;
-  --bom-color-border: #e2e8f0;
-  --bom-color-border-strong: #cbd5e1;
-  --bom-color-text-primary: #1e293b;
-  --bom-color-text-secondary: #475569;
-  --bom-color-text-muted: #94a3b8;
-  --bom-color-primary: #1428A0;
-  --bom-color-primary-hover: #102180;
-  --bom-color-primary-soft: #eef2ff;
-  --bom-color-success: #047857;
-  --bom-color-success-soft: #ecfdf5;
-  --bom-color-warning: #b45309;
-  --bom-color-warning-soft: #fffbeb;
-  --bom-color-danger: #dc2626;
-  --bom-color-danger-soft: #fff1f2;
-  --bom-radius-panel: 0.75rem;
-  --bom-radius-control: 0.5rem;
-  --bom-radius-pill: 999px;
-  --bom-shadow-panel: 0 1px 2px rgb(15 23 42 / 0.06);
+  --bom-color-surface: var(--color-surface);
+  --bom-color-surface-muted: var(--color-page);
+  --bom-color-surface-strong: var(--color-border-muted);
+  --bom-color-border: var(--color-border);
+  --bom-color-border-strong: var(--color-border-strong);
+  --bom-color-text-primary: var(--color-text);
+  --bom-color-text-secondary: var(--color-text-soft);
+  --bom-color-text-muted: var(--color-text-muted);
+  --bom-color-primary: var(--color-primary);
+  --bom-color-primary-hover: var(--color-primary-hover);
+  --bom-color-primary-soft: var(--color-primary-soft);
+  --bom-color-success: var(--color-success);
+  --bom-color-success-soft: var(--color-success-soft);
+  --bom-color-warning: var(--color-warning);
+  --bom-color-warning-soft: var(--color-warning-soft);
+  --bom-color-danger: var(--color-danger);
+  --bom-color-danger-soft: var(--color-danger-soft);
+  --bom-radius-panel: var(--radius-section);
+  --bom-radius-control: var(--radius-control);
+  --bom-radius-pill: var(--radius-pill);
+  --bom-shadow-panel: var(--shadow-panel);
   --bom-font-size-2xs: 0.625rem;
-  --bom-font-size-xs: 0.75rem;
-  --bom-font-size-sm: 0.875rem;
+  --bom-font-size-xs: var(--radius-section);
+  --bom-font-size-sm: var(--radius-panel);
   --bom-font-size-lg: 1.25rem;
   --bom-font-size-xl: 1.5rem;
-  --bom-font-weight-title: 700;
-  --bom-font-weight-label: 600;
-  --bom-font-weight-strong: 700;
+  --bom-font-weight-title: var(--font-weight-title);
+  --bom-font-weight-label: var(--font-weight-label);
+  --bom-font-weight-strong: var(--font-weight-title);
   display: grid;
   gap: 1.5rem;
   padding-bottom: 3rem;
@@ -1034,7 +1034,7 @@ function formatDateTime(value: string) {
 .bom-toast {
   background: var(--bom-color-success-soft);
   color: var(--bom-color-success);
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--color-success-border);
 }
 
 .bom-toast-dot {
@@ -1049,7 +1049,7 @@ function formatDateTime(value: string) {
   justify-content: space-between;
   background: var(--bom-color-danger-soft);
   color: var(--bom-color-danger);
-  border: 1px solid #fecdd3;
+  border: 1px solid var(--color-danger-border);
 }
 
 .bom-alert-close,
@@ -1489,7 +1489,7 @@ function formatDateTime(value: string) {
   padding: 0.375rem 0.625rem;
   color: var(--bom-color-primary);
   background: var(--bom-color-primary-soft);
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--color-info-border);
   border-radius: var(--bom-radius-pill);
   font-size: var(--bom-font-size-xs);
   font-weight: var(--bom-font-weight-label);

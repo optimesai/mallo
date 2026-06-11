@@ -156,7 +156,7 @@ async function handleSubmit() {
               @keydown.enter.prevent="handleEmployeeNoCheck"
             >
             <button
-              class="h-11 shrink-0 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+              class="app-button app-button-primary h-11 shrink-0 disabled:opacity-70"
               type="button"
               :disabled="isCheckingEmployeeNo"
               @click="handleEmployeeNoCheck"
@@ -167,8 +167,8 @@ async function handleSubmit() {
           <p
             class="auth-help"
             :class="{
-              'text-rose-500': employeeNoCheckStatus === 'duplicated' || employeeNoCheckStatus === 'error' || employeeNoCheckStatus === 'required',
-              'text-emerald-600': employeeNoCheckStatus === 'available'
+              'app-text-danger': employeeNoCheckStatus === 'duplicated' || employeeNoCheckStatus === 'error' || employeeNoCheckStatus === 'required',
+              'app-text-success': employeeNoCheckStatus === 'available'
             }"
           >
             {{ employeeNoCheckMessage }}

@@ -49,33 +49,33 @@ import { computed } from 'vue'
 </script>
 
 <template>
-  <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-      <h3 class="font-bold text-slate-700 text-sm">{{ title }}</h3>
+  <div class="app-panel">
+    <div class="app-panel-head px-6">
+      <h3 class="app-panel-title">{{ title }}</h3>
       <span
         v-if="moreText"
-        class="text-xs text-indigo-600 font-semibold cursor-pointer hover:underline"
+        class="app-accent cursor-pointer text-xs hover:underline"
         @click="emit('clickMore')"
       >
         {{ moreText }}
       </span>
     </div>
-    <table class="w-full text-left text-sm text-slate-600">
-      <thead class="bg-slate-100 text-slate-500 text-xs font-semibold uppercase">
+    <table class="app-table">
+      <thead>
         <tr>
-          <th v-for="col in columns" :key="col.key" class="px-6 py-3">
+          <th v-for="col in columns" :key="col.key" class="px-6">
             {{ col.label }}
           </th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-200">
+      <tbody>
         <tr v-for="(row, idx) in data" :key="idx">
-          <td v-for="col in columns" :key="col.key" class="px-6 py-4">
+          <td v-for="col in columns" :key="col.key" class="px-6">
             {{ row[col.key] }}
           </td>
         </tr>
         <tr v-if="data.length === 0">
-          <td :colspan="columns.length" class="px-6 py-8 text-center text-slate-400 text-xs">
+          <td :colspan="columns.length" class="app-empty py-8 text-xs">
             데이터가 없습니다.
           </td>
         </tr>
@@ -85,17 +85,17 @@ import { computed } from 'vue'
     <!-- Pagination -->
     <div
       v-if="showPagination"
-      class="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs"
+      class="app-pagination px-6"
     >
-      <span class="text-slate-500">
-        총 <span class="font-bold text-slate-700">{{ totalElements?.toLocaleString() }}</span>건
+      <span>
+        총 <span class="app-count-strong">{{ totalElements?.toLocaleString() }}</span>건
         ({{ (page ?? 0) + 1 }} / {{ totalPages }} 페이지)
       </span>
-      <div class="flex items-center gap-1">
+      <div class="app-pagination-actions">
         <button
           @click="goToPage(0)"
           :disabled="(page ?? 0) === 0"
-          class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          class="app-page-button"
         >
           <ChevronLeft class="w-3.5 h-3.5" />
           <ChevronLeft class="w-3.5 h-3.5 -ml-2" />
@@ -103,7 +103,7 @@ import { computed } from 'vue'
         <button
           @click="goToPage((page ?? 1) - 1)"
           :disabled="(page ?? 0) === 0"
-          class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          class="app-page-button"
         >
           <ChevronLeft class="w-3.5 h-3.5" />
         </button>
@@ -111,24 +111,22 @@ import { computed } from 'vue'
           v-for="p in pageRange()"
           :key="p"
           @click="goToPage(p)"
-          class="w-7 h-7 rounded text-xs font-bold transition"
-          :class="p === (page ?? 0)
-            ? 'bg-[#1428A0] text-white shadow-sm'
-            : 'text-slate-600 hover:bg-slate-200'"
+          class="app-page-number"
+          :class="{ 'is-active': p === (page ?? 0) }"
         >
           {{ p + 1 }}
         </button>
         <button
           @click="goToPage((page ?? 0) + 1)"
           :disabled="(page ?? 0) >= (totalPages ?? 1) - 1"
-          class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          class="app-page-button"
         >
           <ChevronRight class="w-3.5 h-3.5" />
         </button>
         <button
           @click="goToPage((totalPages ?? 1) - 1)"
           :disabled="(page ?? 0) >= (totalPages ?? 1) - 1"
-          class="px-2 py-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          class="app-page-button"
         >
           <ChevronRight class="w-3.5 h-3.5" />
           <ChevronRight class="w-3.5 h-3.5 -ml-2" />
