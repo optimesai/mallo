@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Building2, CheckCircle2, Copy, Edit3, Loader2, Plus, RefreshCw, Search, Trash2, Users, X } from '@lucide/vue'
+import { Building2, CheckCircle2, Copy, Edit3, Loader2, RefreshCw, Search, Trash2, Users, X } from '@lucide/vue'
 import { usePartnerMasterStore } from '@/state/partnerMasterStore'
 import type { PartnerMasterRequest, PartnerMasterResponse, PartnerStatus, PartnerType } from '@/api/partnerMasterApi'
 
@@ -9,13 +9,6 @@ const partnerMasterStore = usePartnerMasterStore()
 const partnerTypeOptions: Array<{ value: PartnerType; label: string; description: string }> = [
   { value: 'SUPPLIER', label: '공급사', description: '입고 등록에서 납품 공급처로 사용됩니다.' },
   { value: 'CUSTOMER', label: '고객사', description: '출하 지시에서 출하 대상 고객사로 사용됩니다.' }
-]
-
-const sortableFields = [
-  { field: 'createdAt', label: '등록일' },
-  { field: 'lastUsedAt', label: '최근 거래일' },
-  { field: 'partnerName', label: '거래처명' },
-  { field: 'usageCount', label: '사용 건수' }
 ]
 
 const filterKeyword = ref('')
@@ -414,164 +407,134 @@ function showToast(message: string) {
     </div>
 
     <section class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-      <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 class="text-lg font-bold app-text-primary">검색</h2>
-          <p class="mt-1 text-sm app-text-muted">코드, 명칭, 사업자번호, 담당자 정보를 한 번에 검색합니다.</p>
-        </div>
-        <button type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" @click="openCreateForm">
-          <Plus class="h-4 w-4" />
-          신규 등록
-        </button>
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_0.8fr_0.8fr_0.8fr_auto]">
         <div class="relative">
-          <label for="partner-keyword" class="mb-2 block text-sm font-semibold app-text-primary">통합 검색</label>
-          <div class="relative">
-            <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 app-text-muted" />
-            <input
-              id="partner-keyword"
-              v-model="filterKeyword"
-              class="w-full rounded-2xl border app-border app-bg-card py-3 pl-10 pr-4 text-sm app-text-primary outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              placeholder="거래처 코드, 명칭, 사업자번호 검색"
-              @input="handleKeywordInput"
-              @focus="openSuggestions"
-              @keyup.enter="handleSearch"
-            >
-          </div>
-          <div v-if="isSuggestOpen && keywordSuggestions.length > 0" class="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border app-border app-bg-card shadow-xl">
+          <Search class="pointer-events-none absolute left-4 top-3.5 z-10 h-4 w-4 app-text-muted" />
+          <input
+            id="partner-keyword"
+            v-model="filterKeyword"
+            class="h-11 w-full rounded-xl border app-border app-bg-surface pl-11 pr-4 text-sm app-font-label outline-none transition focus:ring-2"
+            placeholder="거래처 ID, 거래처코드, 거래처명, 사업자번호 검색"
+            @input="handleKeywordInput"
+            @focus="openSuggestions"
+            @keyup.enter="handleSearch"
+          >
+          <div v-if="isSuggestOpen && keywordSuggestions.length > 0" class="absolute left-0 right-0 top-[3.1rem] z-30 max-h-80 overflow-y-auto rounded-xl border app-border app-bg-surface py-2 shadow-xl">
             <button
               v-for="suggestion in keywordSuggestions"
               :key="suggestion.partnerId"
               type="button"
-              class="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition hover:bg-slate-50"
+              class="block w-full px-4 py-2.5 text-left transition app-hover-muted"
               @mousedown.prevent="selectSuggestion(suggestion)"
             >
-              <span class="font-semibold app-text-primary">{{ suggestion.partnerCode }} · {{ suggestion.partnerName }}</span>
-              <span class="text-xs app-text-muted">{{ getSuggestionMeta(suggestion) }}</span>
+              <span class="block text-sm app-font-emphasis leading-5 app-text-strong">{{ suggestion.partnerCode }} · {{ suggestion.partnerName }}</span>
+              <span class="mt-0.5 block text-xs app-font-strong app-text-muted">{{ getSuggestionMeta(suggestion) }}</span>
             </button>
           </div>
         </div>
 
-        <div>
-          <label for="partner-type-filter" class="mb-2 block text-sm font-semibold app-text-primary">거래처 구분</label>
-          <select id="partner-type-filter" v-model="filterPartnerType" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100">
-            <option value="ALL">전체</option>
-            <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </div>
+        <select id="partner-type-filter" v-model="filterPartnerType" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+          <option value="ALL">전체 구분</option>
+          <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
 
-        <div>
-          <label for="partner-status-filter" class="mb-2 block text-sm font-semibold app-text-primary">상태</label>
-          <select id="partner-status-filter" v-model="filterPartnerStatus" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100">
-            <option value="ALL">전체</option>
-            <option value="ACTIVE">활성</option>
-            <option value="INACTIVE">비활성</option>
-          </select>
-        </div>
+        <select id="partner-status-filter" v-model="filterPartnerStatus" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+          <option value="ALL">전체 상태</option>
+          <option value="ACTIVE">활성</option>
+          <option value="INACTIVE">비활성</option>
+        </select>
 
-        <div>
-          <label for="partner-business-filter" class="mb-2 block text-sm font-semibold app-text-primary">사업자번호</label>
-          <select id="partner-business-filter" v-model="filterHasBusinessNo" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100">
-            <option value="ALL">전체</option>
-            <option value="YES">등록</option>
-            <option value="NO">미등록</option>
-          </select>
-        </div>
+        <select id="partner-business-filter" v-model="filterHasBusinessNo" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+          <option value="ALL">사업자번호 전체</option>
+          <option value="YES">사업자번호 등록</option>
+          <option value="NO">사업자번호 미등록</option>
+        </select>
 
         <div class="flex gap-2">
-          <button type="button" class="rounded-2xl border app-border px-4 py-3 text-sm font-semibold app-text-primary hover:bg-slate-50" @click="resetFilters">초기화</button>
-          <button type="button" class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800" @click="handleSearch">조회</button>
+          <button class="h-11 rounded-2xl app-bg-strong px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="handleSearch">조회</button>
+          <button class="h-11 rounded-2xl app-bg-muted px-5 text-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
+          <button class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
         </div>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
-      <div class="flex flex-col gap-4 border-b app-border px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 class="text-lg font-bold app-text-primary">전체 목록</h2>
-          <p class="mt-1 text-sm app-text-muted">행을 선택하면 아래 상세 정보에서 수정, 삭제, 비활성화를 처리할 수 있습니다.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="field in sortableFields"
-            :key="field.field"
-            type="button"
-            class="rounded-2xl border px-3 py-2 text-xs font-semibold transition"
-            :class="sortField === field.field ? 'border-slate-900 bg-slate-900 text-white' : 'app-border app-text-primary hover:bg-slate-50'"
-            @click="changeSort(field.field)"
-          >
-            {{ field.label }}
-            <span v-if="sortField === field.field">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
-          </button>
-        </div>
-      </div>
-
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y app-border text-sm">
-          <thead class="bg-slate-50/80">
-            <tr class="text-left text-xs font-bold uppercase tracking-wide app-text-muted">
-              <th class="px-5 py-3">No</th>
-              <th class="px-5 py-3">거래처 코드</th>
-              <th class="px-5 py-3">거래처명</th>
-              <th class="px-5 py-3">구분</th>
+        <table class="w-full min-w-[1120px] text-left text-sm">
+          <thead class="app-bg-muted text-xs uppercase tracking-widest app-text-muted">
+            <tr>
+              <th class="px-4 py-3">No</th>
+              <th class="cursor-pointer px-4 py-3" @click="changeSort('partnerCode')">
+                거래처 코드
+                <span v-if="sortField === 'partnerCode'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="cursor-pointer px-4 py-3" @click="changeSort('partnerName')">
+                거래처명
+                <span v-if="sortField === 'partnerName'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-4 py-3">구분</th>
               <th class="px-5 py-3">상태</th>
-              <th class="px-5 py-3">사업자등록번호</th>
-              <th class="px-5 py-3">담당자</th>
-              <th class="px-5 py-3 text-right">사용 건수</th>
-              <th class="px-5 py-3">최근 거래 일시</th>
-              <th class="px-5 py-3">등록 일시</th>
+              <th class="px-4 py-3">사업자등록번호</th>
+              <th class="px-4 py-3">담당자</th>
+              <th class="cursor-pointer px-4 py-3 text-right" @click="changeSort('usageCount')">
+                사용 건수
+                <span v-if="sortField === 'usageCount'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="cursor-pointer px-4 py-3" @click="changeSort('lastUsedAt')">
+                최근 거래 일시
+                <span v-if="sortField === 'lastUsedAt'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="cursor-pointer px-4 py-3" @click="changeSort('createdAt')">
+                등록 일시
+                <span v-if="sortField === 'createdAt'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
             </tr>
           </thead>
-          <tbody class="divide-y app-border">
+          <tbody>
             <tr v-if="partnerMasterStore.isLoading">
-              <td colspan="10" class="px-5 py-10 text-center app-text-muted">
+              <td colspan="10" class="px-4 py-10 text-center app-font-strong app-text-muted">
                 <Loader2 class="mx-auto mb-2 h-5 w-5 animate-spin" />
                 거래처 데이터를 가져오고 있습니다.
               </td>
             </tr>
             <tr v-else-if="partnerMasterStore.partners.length === 0">
-              <td colspan="10" class="px-5 py-10 text-center app-text-muted">조회된 거래처가 없습니다.</td>
+              <td colspan="10" class="px-4 py-10 text-center app-font-strong app-text-muted">조회된 거래처가 없습니다.</td>
             </tr>
             <tr
               v-for="(partner, index) in partnerMasterStore.partners"
               v-else
               :key="partner.partnerId"
-              class="cursor-pointer transition hover:bg-slate-50"
-              :class="selectedPartner?.partnerId === partner.partnerId ? 'bg-slate-50' : ''"
+              class="cursor-pointer border-t app-border-muted transition app-hover-muted"
               @click="selectPartner(partner)"
             >
-              <td class="px-5 py-4 app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
-              <td class="px-5 py-4 font-mono text-xs font-semibold app-text-primary">{{ partner.partnerCode }}</td>
-              <td class="px-5 py-4 font-semibold app-text-primary">{{ partner.partnerName }}</td>
-              <td class="px-5 py-4">
-                <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="partner.partnerType === 'SUPPLIER' ? 'bg-blue-50 text-blue-700' : 'bg-violet-50 text-violet-700'">
-                  {{ getPartnerTypeLabel(partner.partnerType) }}
-                </span>
+              <td class="px-4 py-3 font-mono text-xs app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
+              <td class="px-4 py-3 font-mono app-font-emphasis app-text-strong">{{ partner.partnerCode }}</td>
+              <td class="px-4 py-3 app-font-strong app-text-strong">{{ partner.partnerName }}</td>
+              <td class="px-4 py-3">
+                {{ getPartnerTypeLabel(partner.partnerType) }}
               </td>
-              <td class="px-5 py-4">
-                <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="partner.partnerStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+              <td class="px-4 py-3">
+                <span class="rounded-full px-2.5 py-1 text-xs app-font-emphasis" :class="partner.partnerStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
                   {{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}
                 </span>
               </td>
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">{{ partner.businessNo || '미등록' }}</td>
-              <td class="px-5 py-4 app-text-muted">{{ partner.representative || '-' }}</td>
-              <td class="px-5 py-4 text-right font-semibold app-text-primary">{{ partner.usageCount }}건</td>
-              <td class="px-5 py-4 app-text-muted">{{ formatDateTime(partner.lastUsedAt) }}</td>
-              <td class="px-5 py-4 app-text-muted">{{ formatDateTime(partner.createdAt) }}</td>
+              <td class="px-4 py-3 font-mono text-xs app-text-muted">{{ partner.businessNo || '미등록' }}</td>
+              <td class="px-4 py-3 app-text-muted">{{ partner.representative || '-' }}</td>
+              <td class="px-4 py-3 text-right app-font-strong app-text-strong">{{ partner.usageCount }}건</td>
+              <td class="px-4 py-3 text-xs app-text-muted">{{ formatDateTime(partner.lastUsedAt) }}</td>
+              <td class="px-4 py-3 text-xs app-text-muted">{{ formatDateTime(partner.createdAt) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="flex flex-col gap-3 border-t app-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-sm app-text-muted">전체 {{ partnerMasterStore.totalElements }}건 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지</p>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" class="rounded-2xl border app-border px-3 py-2 text-sm font-semibold app-text-primary disabled:opacity-40" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
-          <button type="button" class="rounded-2xl border app-border px-3 py-2 text-sm font-semibold app-text-primary disabled:opacity-40" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
-          <button type="button" class="rounded-2xl border app-border px-3 py-2 text-sm font-semibold app-text-primary disabled:opacity-40" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
-          <button type="button" class="rounded-2xl border app-border px-3 py-2 text-sm font-semibold app-text-primary disabled:opacity-40" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
+      <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm app-font-strong app-text-muted">총 {{ partnerMasterStore.totalElements.toLocaleString() }}건 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지</p>
+        <div class="flex gap-2">
+          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
         </div>
       </div>
     </section>

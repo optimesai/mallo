@@ -16,3 +16,21 @@
     - 없음
 
   </details>
+
+### 거래처 목록 스타일 변수 통일 (Codex)
+- **User Intent**: 품목 마스터와 비교했을 때 거래처 마스터 목록에 검정 행 구분선과 별도 정렬 버튼이 보여 UI가 다르므로, 품목 마스터와 같은 프론트 변수와 목록 정렬 흐름으로 통일 요청
+- **Agent Context**: 거래처 마스터는 이전 수정 후에도 `divide-y`, `bg-slate-900` 정렬 버튼, 직접 색상 클래스가 남아 있어 품목 마스터의 회색 테이블 헤더/행 경계와 달랐음. 검색·목록 영역을 품목 마스터의 `app-*` 변수 기반 클래스와 헤더 클릭 정렬 방식으로 맞춤.
+- **Key Decisions**:
+  - 정렬 버튼 그룹 제거 — 품목 마스터처럼 정렬 가능한 컬럼 헤더를 클릭해 정렬하도록 변경하여 목록 안에서 선택하는 흐름으로 통일함
+  - `app-border-muted`, `app-bg-muted`, `app-hover-muted`, `app-font-*` 클래스 사용 — 직접 색상/진한 테두리 대신 기존 디자인 토큰을 사용해 기준정보 화면 간 일관성을 맞춤
+  - 검색 폼 높이와 버튼 스타일을 품목 마스터와 같은 `h-11`, `app-bg-strong`, `app-bg-muted`, `app-accent-bg` 조합으로 변경 — 상단 필터 영역의 시각적 밀도와 버튼 색상을 통일함
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/PartnerMasterView.vue` (+83/-120) — 검색 폼, 정렬 방식, 테이블 헤더/행/페이지네이션 스타일을 품목 마스터 변수 기준으로 정리
+  - **Deleted**:
+    - 없음
+
+  </details>
