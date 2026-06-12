@@ -48,6 +48,7 @@ public class InboundReceipt extends BaseCreatedTimeEntity {
 
     public enum InboundStatus {
         READY,
-        COMPLETED
+        COMPLETED,
+        STACKED
     }
 }
