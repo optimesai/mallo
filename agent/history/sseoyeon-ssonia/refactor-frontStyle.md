@@ -140,3 +140,44 @@
     - 없음
 
   </details>
+
+### 거래처 마스터 기능 보강 구현 (Codex)
+- **User Intent**: 거래처 마스터에 상태 관리, 사용 현황, 사전 검증, 검색/목록 개선, 상세 업무 맥락, 실제 공급 이력 기능을 1번부터 6번까지 모두 반영해달라는 요청
+- **Agent Context**: 기존 거래처 CRUD 구조를 확장하여 `ACTIVE/INACTIVE` 상태, 페이징 목록, 사용 현황, 코드 중복 확인, 공급사 실제 입고 품목 이력, 입고/출하 신규 업무의 활성 거래처 제한을 구현했다.
+- **Key Decisions**:
+  - 공급 품목은 별도 매핑 테이블 없이 기존 입고 이력에서 집계 — 사용자가 공급 가능 품목이 아닌 실제 공급 이력만 요구했기 때문
+  - 삭제보다 비활성화를 우선하는 UI 흐름 적용 — 입고/출하 참조 이력 보존과 신규 업무 투입 차단을 동시에 만족하기 위함
+  - 거래처 목록은 `PageResponse` 기반 서버 페이징으로 전환 — 대량 기준정보 조회 시 프론트 전체 배열 로딩을 피하기 위함
+- **Affected Files**: <details><summary>26개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerDuplicateCheckResponse.java` — 거래처 코드 중복 확인 응답 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerStatusUpdateRequest.java` — 거래처 상태 변경 요청 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerSuppliedItemResponse.java` — 실제 공급 품목 이력 응답 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerUsageResponse.java` — 거래처 사용 현황 응답 DTO
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` — 페이징 목록, 중복 확인, 상태 변경, 사용 현황, 공급 이력 API 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerController.java` — 신규 거래처 API 위임 구현
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerRequest.java` — 코드/연락처 형식 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerResponse.java` — 상태 및 사용 건수 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/repository/InboundReceiptRepository.java` — 거래처별 입고 집계/최근/공급 이력 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceImpl.java` — 활성 공급사만 입고 등록 가능하도록 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/entity/PartnerMaster.java` — `PartnerStatus` 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/repository/PartnerMasterRepository.java` — Specification 페이징 조회 지원 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerService.java` — 거래처 보강 기능 서비스 계약 확장
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` — 상태, 페이징, 사용 현황, 실제 공급 이력 구현
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/repository/OutboundShippingRepository.java` — 거래처별 출하 집계/최근 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceImpl.java` — 활성 고객사만 출하 지시 등록 가능하도록 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/global/exception/ErrorCode.java` — 비활성/거래처 구분 오류 코드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceTest.java` — 신규 거래처 검증 조건에 맞는 테스트 fixture 수정
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` — 페이징 거래처 조회 계약에 맞춰 테스트 수정
+    - `backend/src/test/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceTest.java` — 출하 등록용 고객사 fixture 조회 수정
+    - `frontend/src/api/inboundApi.ts` — 입고/출하 공용 거래처 선택 목록을 활성 거래처 페이징 응답에 맞게 변환
+    - `frontend/src/api/partnerMasterApi.ts` — 거래처 상태, 사용 현황, 공급 이력 API 타입/호출 추가
+    - `frontend/src/services/partnerMasterService.ts` — 거래처 보강 기능 서비스 래핑 추가
+    - `frontend/src/state/partnerMasterStore.ts` — 페이징, 사용 현황, 공급 이력, 상태 변경 상태 관리 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 상태/필터/페이징/중복확인/비활성화/업무연계/공급이력 UX 반영
+  - **Deleted**:
+    - 없음
+
+  </details>

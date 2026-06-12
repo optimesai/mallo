@@ -15,7 +15,7 @@ import {
   X
 } from '@lucide/vue'
 import { usePartnerMasterStore } from '@/state/partnerMasterStore'
-import type { PartnerMasterRequest, PartnerMasterResponse, PartnerType } from '@/api/partnerMasterApi'
+import type { PartnerMasterRequest, PartnerMasterResponse, PartnerStatus, PartnerType } from '@/api/partnerMasterApi'
 
 const partnerMasterStore = usePartnerMasterStore()
 
@@ -27,9 +27,13 @@ const partnerTypeOptions: Array<{ value: PartnerType; label: string; description
 const isSearchExpanded = ref(true)
 const filterKeyword = ref('')
 const filterPartnerType = ref<'ALL' | PartnerType>('ALL')
-const activeDetailTab = ref<'profile' | 'system'>('profile')
+const filterPartnerStatus = ref<'ALL' | PartnerStatus>('ALL')
+const filterHasBusinessNo = ref<'ALL' | 'YES' | 'NO'>('ALL')
+const sortOption = ref('createdAt,desc')
+const activeDetailTab = ref<'profile' | 'system' | 'supply'>('profile')
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
+const duplicateMessage = ref<string | null>(null)
 
 const isFormOpen = ref(false)
 const formMode = ref<'create' | 'edit'>('create')
@@ -45,6 +49,7 @@ const form = reactive<PartnerMasterRequest>({
 })
 
 const selectedPartner = computed(() => partnerMasterStore.selectedPartner)
+const selectedUsage = computed(() => partnerMasterStore.selectedUsage)
 
 const stats = computed(() => {
   const partners = partnerMasterStore.partners
@@ -52,7 +57,8 @@ const stats = computed(() => {
     total: partners.length,
     supplier: partners.filter((partner) => partner.partnerType === 'SUPPLIER').length,
     customer: partners.filter((partner) => partner.partnerType === 'CUSTOMER').length,
-    withBusinessNo: partners.filter((partner) => Boolean(partner.businessNo)).length
+    withBusinessNo: partners.filter((partner) => Boolean(partner.businessNo)).length,
+    inactive: partners.filter((partner) => partner.partnerStatus === 'INACTIVE').length
   }
 })
 
@@ -69,7 +75,12 @@ async function fetchPartners() {
   try {
     pageError.value = null
     await partnerMasterStore.loadPartners({
+      page: partnerMasterStore.page,
+      size: partnerMasterStore.size,
+      sort: sortOption.value,
       partnerType: filterPartnerType.value === 'ALL' ? undefined : filterPartnerType.value,
+      partnerStatus: filterPartnerStatus.value === 'ALL' ? undefined : filterPartnerStatus.value,
+      hasBusinessNo: filterHasBusinessNo.value === 'ALL' ? undefined : filterHasBusinessNo.value === 'YES',
       keyword: filterKeyword.value.trim() || undefined
     })
   } catch (err) {
@@ -77,22 +88,29 @@ async function fetchPartners() {
   }
 }
 
-function resetFilters() {
+async function resetFilters() {
   filterKeyword.value = ''
   filterPartnerType.value = 'ALL'
+  filterPartnerStatus.value = 'ALL'
+  filterHasBusinessNo.value = 'ALL'
+  sortOption.value = 'createdAt,desc'
+  await goToPage(0)
 }
 
 async function handleSearch() {
   partnerMasterStore.selectPartner(null)
+  partnerMasterStore.page = 0
   await fetchPartners()
 }
 
-function selectRow(partner: PartnerMasterResponse) {
+async function selectRow(partner: PartnerMasterResponse) {
   if (selectedPartner.value?.partnerId === partner.partnerId) {
     partnerMasterStore.selectPartner(null)
     return
   }
   partnerMasterStore.selectPartner(partner)
+  activeDetailTab.value = 'profile'
+  await loadSelectedPartnerContext(partner)
 }
 
 function openCreateForm() {
@@ -100,6 +118,7 @@ function openCreateForm() {
   editingPartnerId.value = null
   resetForm()
   formError.value = null
+  duplicateMessage.value = null
   isFormOpen.value = true
 }
 
@@ -113,6 +132,7 @@ function openEditForm(partner: PartnerMasterResponse) {
   form.representative = partner.representative || ''
   form.contactPhone = partner.contactPhone || ''
   formError.value = null
+  duplicateMessage.value = null
   isFormOpen.value = true
 }
 
@@ -140,6 +160,13 @@ async function submitForm() {
 
   try {
     formError.value = null
+    if (formMode.value === 'create' || payload.partnerCode !== selectedPartner.value?.partnerCode) {
+      const duplicated = await partnerMasterStore.checkDuplicate(payload.partnerCode)
+      if (duplicated) {
+        formError.value = '이미 사용 중인 거래처 코드입니다.'
+        return
+      }
+    }
     if (formMode.value === 'create') {
       await partnerMasterStore.createPartner(payload)
       showToast('신규 거래처 마스터가 등록되었습니다.')
@@ -172,16 +199,25 @@ function normalizeOptionalText(value: string | null | undefined) {
 
 function validateForm(payload: PartnerMasterRequest) {
   if (!payload.partnerCode) return '거래처 코드를 입력해주세요.'
+  if (!/^[A-Z0-9-]+$/.test(payload.partnerCode)) return '거래처 코드는 대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.'
   if (payload.partnerCode.length > 50) return '거래처 코드는 50자 이하여야 합니다.'
   if (!payload.partnerName) return '거래처명을 입력해주세요.'
   if (payload.partnerName.length > 100) return '거래처명은 100자 이하여야 합니다.'
   if (payload.businessNo && payload.businessNo.length > 50) return '사업자등록번호는 50자 이하여야 합니다.'
   if (payload.representative && payload.representative.length > 50) return '대표자명은 50자 이하여야 합니다.'
   if (payload.contactPhone && payload.contactPhone.length > 50) return '담당자 연락처는 50자 이하여야 합니다.'
+  if (payload.contactPhone && !/^[0-9+()\-\s]{7,50}$/.test(payload.contactPhone)) return '담당자 연락처 형식이 올바르지 않습니다.'
   return null
 }
 
 async function requestDelete(partner: PartnerMasterResponse) {
+  const usage = await partnerMasterStore.loadPartnerUsage(partner.partnerId)
+  if (!usage.canDelete) {
+    if (!confirm(`${usage.deleteBlockedReason}\n[${partner.partnerCode}] ${partner.partnerName} 거래처를 비활성화하시겠습니까?`)) return
+    await updateStatus(partner, 'INACTIVE')
+    return
+  }
+
   if (!confirm(`[${partner.partnerCode}] ${partner.partnerName} 거래처를 삭제하시겠습니까?`)) return
 
   try {
@@ -192,6 +228,61 @@ async function requestDelete(partner: PartnerMasterResponse) {
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '거래처 삭제에 실패했습니다.'
   }
+}
+
+async function updateStatus(partner: PartnerMasterResponse, partnerStatus: PartnerStatus) {
+  try {
+    pageError.value = null
+    await partnerMasterStore.updatePartnerStatus(partner.partnerId, partnerStatus)
+    showToast(partnerStatus === 'ACTIVE' ? '거래처가 활성화되었습니다.' : '거래처가 비활성화되었습니다.')
+    await fetchPartners()
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '거래처 상태 변경에 실패했습니다.'
+  }
+}
+
+async function checkPartnerCodeDuplicate() {
+  const code = form.partnerCode.trim()
+  if (!code) {
+    duplicateMessage.value = '거래처 코드를 입력해주세요.'
+    return
+  }
+  if (!/^[A-Z0-9-]+$/.test(code)) {
+    duplicateMessage.value = '대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.'
+    return
+  }
+  const duplicated = await partnerMasterStore.checkDuplicate(code)
+  duplicateMessage.value = duplicated ? '이미 사용 중인 코드입니다.' : '사용 가능한 코드입니다.'
+}
+
+function applyCodeSuggestion() {
+  const prefix = form.partnerType === 'SUPPLIER' ? 'SUP-' : 'CUS-'
+  if (!form.partnerCode || form.partnerCode === 'SUP-' || form.partnerCode === 'CUS-') {
+    form.partnerCode = prefix
+  }
+}
+
+async function loadSelectedPartnerContext(partner: PartnerMasterResponse) {
+  try {
+    await partnerMasterStore.loadPartnerUsage(partner.partnerId)
+    if (partner.partnerType === 'SUPPLIER') {
+      await partnerMasterStore.loadSuppliedItems(partner.partnerId)
+    }
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '거래처 상세 정보를 불러오지 못했습니다.'
+  }
+}
+
+async function goToPage(nextPage: number) {
+  const safePage = Math.max(0, Math.min(nextPage, Math.max(partnerMasterStore.totalPages - 1, 0)))
+  partnerMasterStore.page = safePage
+  await fetchPartners()
+}
+
+async function copyText(value: string | null, label: string) {
+  if (!value) return
+  await navigator.clipboard.writeText(value)
+  showToast(`${label}이 복사되었습니다.`)
 }
 
 function getPartnerTypeLabel(partnerType: PartnerType) {
@@ -258,9 +349,18 @@ function showToast(message: string) {
         <div class="partner-master-stat-icon partner-master-stat-icon-success">
           <FileSpreadsheet class="partner-master-icon-md" />
         </div>
-        <div>
+      <div>
           <p class="partner-master-stat-label">사업자번호 등록</p>
           <p class="partner-master-stat-value">{{ stats.withBusinessNo }} 사</p>
+        </div>
+      </div>
+      <div class="partner-master-stat-card">
+        <div class="partner-master-stat-icon partner-master-stat-icon-neutral">
+          <Users class="partner-master-icon-md" />
+        </div>
+        <div>
+          <p class="partner-master-stat-label">비활성 거래처</p>
+          <p class="partner-master-stat-value">{{ stats.inactive }} 사</p>
         </div>
       </div>
     </div>
@@ -296,6 +396,33 @@ function showToast(message: string) {
             </option>
           </select>
         </div>
+        <div class="partner-master-field">
+          <label class="partner-master-label" for="partner-status-filter">거래처 상태</label>
+          <select id="partner-status-filter" v-model="filterPartnerStatus" class="partner-master-input">
+            <option value="ALL">전체 상태</option>
+            <option value="ACTIVE">활성 (ACTIVE)</option>
+            <option value="INACTIVE">비활성 (INACTIVE)</option>
+          </select>
+        </div>
+        <div class="partner-master-field">
+          <label class="partner-master-label" for="partner-business-filter">사업자번호</label>
+          <select id="partner-business-filter" v-model="filterHasBusinessNo" class="partner-master-input">
+            <option value="ALL">전체</option>
+            <option value="YES">등록</option>
+            <option value="NO">미등록</option>
+          </select>
+        </div>
+        <div class="partner-master-field">
+          <label class="partner-master-label" for="partner-sort">정렬</label>
+          <select id="partner-sort" v-model="sortOption" class="partner-master-input">
+            <option value="createdAt,desc">등록일 최신순</option>
+            <option value="createdAt,asc">등록일 오래된순</option>
+            <option value="partnerName,asc">거래처명 오름차순</option>
+            <option value="partnerName,desc">거래처명 내림차순</option>
+            <option value="usageCount,desc">사용 건수 많은순</option>
+            <option value="usageCount,asc">사용 건수 적은순</option>
+          </select>
+        </div>
         <div class="partner-master-search-actions">
           <button class="partner-master-secondary-button" type="button" @click="resetFilters">초기화</button>
           <button class="partner-master-primary-button" type="button" @click="handleSearch">조회</button>
@@ -326,22 +453,24 @@ function showToast(message: string) {
               <th>거래처코드</th>
               <th>거래처명</th>
               <th class="partner-master-cell-center">구분</th>
+              <th class="partner-master-cell-center">상태</th>
               <th>사업자등록번호</th>
               <th>대표자</th>
               <th>담당자 연락처</th>
+              <th class="partner-master-cell-center">사용 건수</th>
               <th class="partner-master-cell-center">등록일시</th>
               <th class="partner-master-cell-center">액션</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="partnerMasterStore.isLoading">
-              <td colspan="9" class="partner-master-empty-cell">
+              <td colspan="11" class="partner-master-empty-cell">
                 <Loader2 class="partner-master-spinner" />
                 거래처 데이터를 가져오고 있습니다...
               </td>
             </tr>
             <tr v-else-if="partnerMasterStore.partners.length === 0">
-              <td colspan="9" class="partner-master-empty-cell">조회된 거래처 마스터가 없습니다.</td>
+              <td colspan="11" class="partner-master-empty-cell">조회된 거래처 마스터가 없습니다.</td>
             </tr>
             <tr
               v-for="(partner, index) in partnerMasterStore.partners"
@@ -359,9 +488,15 @@ function showToast(message: string) {
                   {{ getPartnerTypeLabel(partner.partnerType) }}
                 </span>
               </td>
+              <td class="partner-master-cell-center">
+                <span class="partner-master-type-badge" :data-type="partner.partnerStatus">
+                  {{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}
+                </span>
+              </td>
               <td class="partner-master-code-muted">{{ partner.businessNo || '미등록' }}</td>
               <td>{{ partner.representative || '-' }}</td>
               <td class="partner-master-code-muted">{{ partner.contactPhone || '-' }}</td>
+              <td class="partner-master-cell-center">{{ partner.usageCount }}건</td>
               <td class="partner-master-cell-center partner-master-date">{{ formatDateTime(partner.createdAt) }}</td>
               <td class="partner-master-cell-center" @click.stop>
                 <div class="partner-master-row-actions">
@@ -371,7 +506,7 @@ function showToast(message: string) {
                   </button>
                   <button class="partner-master-table-danger-button" type="button" @click="requestDelete(partner)">
                     <Trash2 class="partner-master-icon-xs" />
-                    삭제
+                    {{ partner.usageCount > 0 ? '비활성화' : '삭제' }}
                   </button>
                 </div>
               </td>
@@ -379,11 +514,22 @@ function showToast(message: string) {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="4">현재 조회 목록: {{ partnerMasterStore.partners.length }}건</td>
-              <td colspan="5" class="partner-master-cell-right">공급사 {{ stats.supplier }}건 / 고객사 {{ stats.customer }}건</td>
+              <td colspan="5">현재 페이지: {{ partnerMasterStore.partners.length }}건 / 전체 {{ partnerMasterStore.totalElements }}건</td>
+              <td colspan="6" class="partner-master-cell-right">공급사 {{ stats.supplier }}건 / 고객사 {{ stats.customer }}건</td>
             </tr>
           </tfoot>
         </table>
+      </div>
+      <div class="partner-master-toolbar">
+        <div class="partner-master-detail-code">
+          {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지
+        </div>
+        <div class="partner-master-toolbar-actions">
+          <button class="partner-master-secondary-button" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
+          <button class="partner-master-secondary-button" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
+          <button class="partner-master-secondary-button" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
+          <button class="partner-master-secondary-button" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
+        </div>
       </div>
     </section>
 
@@ -399,9 +545,16 @@ function showToast(message: string) {
             <Edit3 class="partner-master-icon-xs" />
             수정
           </button>
+          <button
+            class="partner-master-table-button"
+            type="button"
+            @click="updateStatus(selectedPartner, selectedPartner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')"
+          >
+            {{ selectedPartner.partnerStatus === 'ACTIVE' ? '비활성화' : '활성화' }}
+          </button>
           <button class="partner-master-table-danger-button" type="button" @click="requestDelete(selectedPartner)">
             <Trash2 class="partner-master-icon-xs" />
-            삭제
+            {{ selectedPartner.usageCount > 0 ? '비활성화' : '삭제' }}
           </button>
         </div>
       </div>
@@ -429,6 +582,15 @@ function showToast(message: string) {
             >
               업무 연계
             </button>
+            <button
+              v-if="selectedPartner.partnerType === 'SUPPLIER'"
+              type="button"
+              class="partner-master-tab-button"
+              :class="{ 'partner-master-tab-button-active': activeDetailTab === 'supply' }"
+              @click="activeDetailTab = 'supply'"
+            >
+              공급 이력
+            </button>
           </div>
 
           <div v-if="activeDetailTab === 'profile'" class="partner-master-detail-grid">
@@ -441,6 +603,8 @@ function showToast(message: string) {
                 <dd>{{ selectedPartner.partnerName }}</dd>
                 <dt>거래처 구분</dt>
                 <dd>{{ selectedTypeOption?.label }} ({{ selectedPartner.partnerType }})</dd>
+                <dt>거래처 상태</dt>
+                <dd>{{ selectedPartner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }} ({{ selectedPartner.partnerStatus }})</dd>
               </dl>
             </div>
             <div class="partner-master-detail-section">
@@ -451,12 +615,15 @@ function showToast(message: string) {
                 <dt>대표자</dt>
                 <dd>{{ selectedPartner.representative || '-' }}</dd>
                 <dt>담당자 연락처</dt>
-                <dd class="partner-master-code">{{ selectedPartner.contactPhone || '-' }}</dd>
+                <dd class="partner-master-code">
+                  {{ selectedPartner.contactPhone || '-' }}
+                  <button v-if="selectedPartner.contactPhone" class="partner-master-table-button" type="button" @click="copyText(selectedPartner.contactPhone, '담당자 연락처')">복사</button>
+                </dd>
               </dl>
             </div>
           </div>
 
-          <div v-else class="partner-master-detail-grid">
+          <div v-else-if="activeDetailTab === 'system'" class="partner-master-detail-grid">
             <div class="partner-master-detail-section">
               <h3>업무 사용 기준</h3>
               <dl class="partner-master-description-list">
@@ -464,9 +631,56 @@ function showToast(message: string) {
                 <dd>{{ selectedPartner.partnerType === 'SUPPLIER' ? '입고 등록 공급사' : '출하 지시 고객사' }}</dd>
                 <dt>설명</dt>
                 <dd>{{ selectedTypeOption?.description }}</dd>
+                <dt>입고 참조</dt>
+                <dd>{{ selectedUsage?.inboundCount ?? selectedPartner.inboundCount }}건</dd>
+                <dt>출하 참조</dt>
+                <dd>{{ selectedUsage?.shippingCount ?? selectedPartner.shippingCount }}건</dd>
+                <dt>최근 사용일</dt>
+                <dd>{{ selectedUsage?.lastUsedAt ? formatDateTime(selectedUsage.lastUsedAt) : '-' }}</dd>
+                <dt>삭제 가능 여부</dt>
+                <dd>{{ selectedUsage?.canDelete ? '삭제 가능' : (selectedUsage?.deleteBlockedReason || '참조 현황 확인 필요') }}</dd>
                 <dt>등록일시</dt>
                 <dd>{{ formatDateTime(selectedPartner.createdAt) }}</dd>
               </dl>
+            </div>
+            <div class="partner-master-detail-section">
+              <h3>업무 화면 안내</h3>
+              <dl class="partner-master-description-list">
+                <dt>신규 업무 투입</dt>
+                <dd>{{ selectedPartner.partnerStatus === 'ACTIVE' ? '입고/출하 선택 목록에 표시됩니다.' : '비활성 상태라 신규 업무 선택 목록에서 제외됩니다.' }}</dd>
+                <dt>연계 화면</dt>
+                <dd>{{ selectedPartner.partnerType === 'SUPPLIER' ? '입고 등록 화면' : '출하 지시 화면' }}</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div v-else class="partner-master-detail-grid">
+            <div class="partner-master-detail-section">
+              <h3>실제 공급 품목 이력</h3>
+              <div v-if="partnerMasterStore.isSuppliedItemsLoading" class="partner-master-empty-detail">공급 이력을 불러오고 있습니다...</div>
+              <div v-else-if="partnerMasterStore.suppliedItems.length === 0" class="partner-master-empty-detail">입고 이력 기준 실제 공급 품목이 없습니다.</div>
+              <table v-else class="partner-master-table">
+                <thead>
+                  <tr>
+                    <th>품목코드</th>
+                    <th>품목명</th>
+                    <th class="partner-master-cell-center">구분</th>
+                    <th class="partner-master-cell-center">누적 입고</th>
+                    <th class="partner-master-cell-center">입고 건수</th>
+                    <th class="partner-master-cell-center">최근 입고일</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in partnerMasterStore.suppliedItems" :key="item.itemCode">
+                    <td class="partner-master-code">{{ item.itemCode }}</td>
+                    <td>{{ item.itemName }}</td>
+                    <td class="partner-master-cell-center">{{ item.itemType }}</td>
+                    <td class="partner-master-cell-center">{{ item.totalInboundQty }} {{ item.unit }}</td>
+                    <td class="partner-master-cell-center">{{ item.inboundCount }}건</td>
+                    <td class="partner-master-cell-center">{{ item.lastInboundDate || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </template>
@@ -494,11 +708,18 @@ function showToast(message: string) {
             <div class="partner-master-form-grid">
               <div class="partner-master-field">
                 <label class="partner-master-label" for="partner-code">거래처 코드 *</label>
-                <input id="partner-code" v-model="form.partnerCode" class="partner-master-input" maxlength="50" placeholder="예: SUP-POSCO-01" required>
+                <input id="partner-code" v-model="form.partnerCode" class="partner-master-input" maxlength="50" placeholder="예: SUP-POSCO-01" required @input="duplicateMessage = null">
+                <div class="partner-master-toolbar-actions">
+                  <button class="partner-master-secondary-button" type="button" @click="applyCodeSuggestion">
+                    {{ form.partnerType === 'SUPPLIER' ? 'SUP- 추천' : 'CUS- 추천' }}
+                  </button>
+                  <button class="partner-master-secondary-button" type="button" @click="checkPartnerCodeDuplicate">중복 확인</button>
+                </div>
+                <p v-if="duplicateMessage" class="partner-master-subtitle">{{ duplicateMessage }}</p>
               </div>
               <div class="partner-master-field">
                 <label class="partner-master-label" for="partner-type">거래처 구분 *</label>
-                <select id="partner-type" v-model="form.partnerType" class="partner-master-input" required>
+                <select id="partner-type" v-model="form.partnerType" class="partner-master-input" required @change="applyCodeSuggestion">
                   <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">
                     {{ option.label }} ({{ option.value }})
                   </option>

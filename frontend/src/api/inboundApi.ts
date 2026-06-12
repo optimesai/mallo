@@ -55,6 +55,7 @@ export interface PartnerResponse {
   partnerCode: string
   partnerName: string
   partnerType: 'SUPPLIER' | 'CUSTOMER'
+  partnerStatus: 'ACTIVE' | 'INACTIVE'
   businessNo: string
   representative: string
   contactPhone: string
@@ -118,10 +119,13 @@ export const inboundApi = {
   },
 
   async getPartners(partnerType?: string, keyword?: string) {
-    const response = await apiClient.get<ApiResponse<PartnerResponse[]>>('/api/partners', {
-      params: { partnerType, keyword }
+    const response = await apiClient.get<ApiResponse<PageResponse<PartnerResponse>>>('/api/partners', {
+      params: { partnerType, keyword, partnerStatus: 'ACTIVE', page: 0, size: 100, sort: 'partnerName,asc' }
     })
-    return response.data
+    return {
+      ...response.data,
+      data: response.data.data.content
+    }
   },
 
   async getLocations() {

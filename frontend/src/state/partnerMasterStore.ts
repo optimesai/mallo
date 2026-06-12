@@ -4,21 +4,39 @@ import { partnerMasterService } from '@/services/partnerMasterService'
 import type {
   PartnerMasterRequest,
   PartnerMasterResponse,
-  PartnerMasterSearchParams
+  PartnerMasterSearchParams,
+  PartnerStatus,
+  PartnerSuppliedItemResponse,
+  PartnerUsageResponse
 } from '@/api/partnerMasterApi'
 
 export const usePartnerMasterStore = defineStore('partnerMaster', () => {
   const partners = ref<PartnerMasterResponse[]>([])
   const selectedPartner = ref<PartnerMasterResponse | null>(null)
+  const selectedUsage = ref<PartnerUsageResponse | null>(null)
+  const suppliedItems = ref<PartnerSuppliedItemResponse[]>([])
+  const page = ref(0)
+  const size = ref(20)
+  const totalElements = ref(0)
+  const totalPages = ref(0)
+  const sort = ref('createdAt,desc')
   const isLoading = ref(false)
   const isSaving = ref(false)
+  const isUsageLoading = ref(false)
+  const isSuppliedItemsLoading = ref(false)
   const error = ref<string | null>(null)
 
   async function loadPartners(params: PartnerMasterSearchParams = {}) {
     isLoading.value = true
     error.value = null
     try {
-      partners.value = await partnerMasterService.getPartners(params)
+      const response = await partnerMasterService.getPartners(params)
+      partners.value = response.content
+      page.value = response.page
+      size.value = response.size
+      totalElements.value = response.totalElements
+      totalPages.value = response.totalPages
+      sort.value = response.sort
     } catch (err) {
       error.value = err instanceof Error ? err.message : '거래처 목록을 불러오지 못했습니다.'
       throw err
@@ -76,6 +94,57 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     }
   }
 
+  async function updatePartnerStatus(id: number, partnerStatus: PartnerStatus) {
+    isSaving.value = true
+    error.value = null
+    try {
+      const updated = await partnerMasterService.updatePartnerStatus(id, partnerStatus)
+      const index = partners.value.findIndex((partner) => partner.partnerId === id)
+      if (index !== -1) {
+        partners.value[index] = updated
+      }
+      selectedPartner.value = updated
+      return updated
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '거래처 상태 변경에 실패했습니다.'
+      throw err
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  async function loadPartnerUsage(id: number) {
+    isUsageLoading.value = true
+    error.value = null
+    try {
+      selectedUsage.value = await partnerMasterService.getPartnerUsage(id)
+      return selectedUsage.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '거래처 사용 현황을 불러오지 못했습니다.'
+      throw err
+    } finally {
+      isUsageLoading.value = false
+    }
+  }
+
+  async function loadSuppliedItems(id: number) {
+    isSuppliedItemsLoading.value = true
+    error.value = null
+    try {
+      suppliedItems.value = await partnerMasterService.getSuppliedItems(id)
+      return suppliedItems.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '공급 품목 이력을 불러오지 못했습니다.'
+      throw err
+    } finally {
+      isSuppliedItemsLoading.value = false
+    }
+  }
+
+  async function checkDuplicate(partnerCode: string) {
+    return partnerMasterService.checkDuplicate(partnerCode)
+  }
+
   async function deletePartner(id: number) {
     isSaving.value = true
     error.value = null
@@ -95,18 +164,33 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
 
   function selectPartner(partner: PartnerMasterResponse | null) {
     selectedPartner.value = partner
+    selectedUsage.value = null
+    suppliedItems.value = []
   }
 
   return {
     partners,
     selectedPartner,
+    selectedUsage,
+    suppliedItems,
+    page,
+    size,
+    totalElements,
+    totalPages,
+    sort,
     isLoading,
     isSaving,
+    isUsageLoading,
+    isSuppliedItemsLoading,
     error,
     loadPartners,
     searchPartners,
     createPartner,
     updatePartner,
+    updatePartnerStatus,
+    loadPartnerUsage,
+    loadSuppliedItems,
+    checkDuplicate,
     deletePartner,
     selectPartner
   }

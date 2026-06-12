@@ -84,6 +84,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
         PartnerMaster partner = partnerMasterRepository.findByPartnerCode(request.getPartnerCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTNER_NOT_FOUND));
+        validateInboundPartner(partner);
         WarehouseLocation location = warehouseLocationRepository.findByLocationCode(request.getLocationCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
 
@@ -387,6 +388,15 @@ public class InventoryServiceImpl implements InventoryService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private void validateInboundPartner(PartnerMaster partner) {
+        if (partner.getPartnerType() != PartnerMaster.PartnerType.SUPPLIER) {
+            throw new BusinessException(ErrorCode.PARTNER_TYPE_INVALID);
+        }
+        if (partner.getPartnerStatus() != PartnerMaster.PartnerStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.PARTNER_STATUS_INACTIVE);
+        }
     }
 
     private Specification<CurrentInventory> buildInventorySpec(String keyword) {

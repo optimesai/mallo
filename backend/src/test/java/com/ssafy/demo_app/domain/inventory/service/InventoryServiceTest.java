@@ -80,6 +80,8 @@ class InventoryServiceTest {
         partner.setPartnerId(1);
         partner.setPartnerCode("PART-001");
         partner.setPartnerName("공급사A");
+        partner.setPartnerType(PartnerMaster.PartnerType.SUPPLIER);
+        partner.setPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE);
 
         location = new WarehouseLocation();
         location.setLocationId(1);

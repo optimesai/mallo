@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface OutboundShippingRepository extends JpaRepository<OutboundShipping, Integer>,
 		JpaSpecificationExecutor<OutboundShipping> {
@@ -14,5 +16,7 @@ public interface OutboundShippingRepository extends JpaRepository<OutboundShippi
     boolean existsByItem(ItemMaster item);
     long countByItem(ItemMaster item);
     boolean existsByPartner(PartnerMaster partner);
+    long countByPartner(PartnerMaster partner);
+    Optional<OutboundShipping> findTopByPartnerOrderByCreatedAtDesc(PartnerMaster partner);
     void deleteByItem(ItemMaster item);
 }

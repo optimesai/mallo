@@ -15,7 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -78,7 +82,7 @@ class PartnerServiceTest {
                 "031-200-1114"
         );
 
-        given(partnerMasterRepository.existsByPartnerCode(" SUP-SAMSUNG-E ")).willReturn(false);
+        given(partnerMasterRepository.existsByPartnerCode("SUP-SAMSUNG-E")).willReturn(false);
         given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
             PartnerMaster partner = invocation.getArgument(0);
             partner.setPartnerId(3);
@@ -117,9 +121,11 @@ class PartnerServiceTest {
     @Test
     @DisplayName("거래처 목록 조회 성공")
     void getPartners_success() {
-        given(partnerMasterRepository.findAll(any(Sort.class))).willReturn(List.of(supplier, customer));
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier, customer), pageable, 2));
 
-        List<PartnerResponse> responses = partnerService.getPartners(null, null);
+        List<PartnerResponse> responses = partnerService.getPartners(pageable, null, null, null, null).getContent();
 
         assertThat(responses).hasSize(2);
         assertThat(responses).extracting(PartnerResponse::getPartnerCode)
@@ -129,10 +135,13 @@ class PartnerServiceTest {
     @Test
     @DisplayName("거래처 타입 필터 조회 성공")
     void getPartners_filterByType() {
-        given(partnerMasterRepository.findByPartnerTypeOrderByPartnerIdAsc(PartnerMaster.PartnerType.SUPPLIER))
-                .willReturn(List.of(supplier));
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier), pageable, 1));
 
-        List<PartnerResponse> responses = partnerService.getPartners(PartnerMaster.PartnerType.SUPPLIER, null);
+        List<PartnerResponse> responses = partnerService
+                .getPartners(pageable, PartnerMaster.PartnerType.SUPPLIER, null, null, null)
+                .getContent();
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getPartnerType()).isEqualTo(PartnerMaster.PartnerType.SUPPLIER);
@@ -141,13 +150,11 @@ class PartnerServiceTest {
     @Test
     @DisplayName("거래처 키워드 검색 성공")
     void getPartners_searchByKeyword() {
-        given(partnerMasterRepository.findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrBusinessNoContainingIgnoreCaseOrderByPartnerIdAsc(
-                "포스코",
-                "포스코",
-                "포스코"
-        )).willReturn(List.of(supplier));
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier), pageable, 1));
 
-        List<PartnerResponse> responses = partnerService.getPartners(null, "포스코");
+        List<PartnerResponse> responses = partnerService.getPartners(pageable, null, null, null, "포스코").getContent();
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getPartnerCode()).isEqualTo("SUP-POSCO-01");
@@ -298,5 +305,10 @@ class PartnerServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_HAS_REFERENCES);
 
         verify(partnerMasterRepository, never()).delete(any(PartnerMaster.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Specification<PartnerMaster> anyPartnerSpec() {
+        return any(Specification.class);
     }
 }

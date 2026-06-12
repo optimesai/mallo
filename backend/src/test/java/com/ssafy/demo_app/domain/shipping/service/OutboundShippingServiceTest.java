@@ -42,7 +42,13 @@ class OutboundShippingServiceTest {
     @DisplayName("출하 지시 등록 및 조회 성공 검증")
     void registerAndGetShipping_success() {
         // Given
-        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        PartnerMaster partner = em.createQuery(
+                        "select p from PartnerMaster p where p.partnerType = :partnerType",
+                        PartnerMaster.class
+                )
+                .setParameter("partnerType", PartnerMaster.PartnerType.CUSTOMER)
+                .getResultList()
+                .get(0);
         ItemMaster item = createItem("SH-ITEM-01", "완제품A", ItemMaster.ItemType.FG);
 
         ShippingCreateRequest request = new ShippingCreateRequest();

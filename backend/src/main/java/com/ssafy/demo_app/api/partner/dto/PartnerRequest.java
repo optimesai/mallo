@@ -4,6 +4,7 @@ import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class PartnerRequest {
     @Schema(description = "거래처 고유 코드", example = "SUP-POSCO-01")
     @NotBlank(message = "거래처 코드는 필수입니다.")
     @Size(max = 50, message = "거래처 코드는 50자 이하여야 합니다.")
+    @Pattern(regexp = "^[A-Z0-9-]+$", message = "거래처 코드는 대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.")
     private String partnerCode;
 
     @Schema(description = "거래처명", example = "(주)포스코 인터내셔널")
@@ -41,5 +43,6 @@ public class PartnerRequest {
 
     @Schema(description = "담당자 연락처", example = "02-3457-1114")
     @Size(max = 50, message = "담당자 연락처는 50자 이하여야 합니다.")
+    @Pattern(regexp = "^$|^[0-9+()\\-\\s]{7,50}$", message = "담당자 연락처 형식이 올바르지 않습니다.")
     private String contactPhone;
 }

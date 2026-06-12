@@ -24,6 +24,8 @@ public enum ErrorCode {
     PARTNER_NOT_FOUND(HttpStatus.NOT_FOUND, "거래처를 찾을 수 없습니다."),
     PARTNER_CODE_DUPLICATE(HttpStatus.CONFLICT, "이미 사용 중인 거래처 코드입니다."),
     PARTNER_HAS_REFERENCES(HttpStatus.CONFLICT, "입고 또는 출하 이력에서 참조 중인 거래처입니다."),
+    PARTNER_STATUS_INACTIVE(HttpStatus.BAD_REQUEST, "비활성 거래처는 신규 업무에 사용할 수 없습니다."),
+    PARTNER_TYPE_INVALID(HttpStatus.BAD_REQUEST, "거래처 구분이 업무 유형과 일치하지 않습니다."),
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "로케이션을 찾을 수 없습니다."),
     INBOUND_NOT_FOUND(HttpStatus.NOT_FOUND, "입고 정보를 찾을 수 없습니다."),
     INBOUND_STATUS_INVALID(HttpStatus.BAD_REQUEST, "입고 상태가 올바르지 않습니다."),
