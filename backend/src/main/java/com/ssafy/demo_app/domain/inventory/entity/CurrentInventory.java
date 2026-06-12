@@ -6,11 +6,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "current_inventory", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"item_id", "location_id"})
+    @UniqueConstraint(columnNames = {"item_id", "location_id", "lot_number"})
 })
 @Getter
 @Setter
@@ -30,8 +31,14 @@ public class CurrentInventory {
     @JoinColumn(name = "location_id", nullable = false)
     private WarehouseLocation location;
 
+    @Column(name = "lot_number")
+    private String lotNumber;
+
     @Column(name = "current_qty", nullable = false)
     private Integer currentQty = 0;
+
+    @Column(name = "first_inbound_date")
+    private LocalDate firstInboundDate;
 
     @LastModifiedDate
     @Column(name = "updated_at")

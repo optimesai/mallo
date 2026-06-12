@@ -33,16 +33,10 @@ public class InventoryTransactionHistory extends BaseCreatedTimeEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "reason_desc")
+    @Column(name = "reason_desc", nullable = false)
     private String reasonDesc;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id")
     private User worker;
-
-    public enum TransactionType {
-        INBOUND,
-        OUTBOUND,
-        PRODUCTION_ISSUE
-    }
 }

@@ -1,4 +1,5 @@
 package com.ssafy.demo_app.domain.shipping.service;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
@@ -121,7 +122,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         InventoryTransactionHistory history = new InventoryTransactionHistory();
         history.setItem(shipping.getItem());
         history.setLocation(shipping.getPickingLocation());
-        history.setTransactionType(InventoryTransactionHistory.TransactionType.OUTBOUND);
+        history.setTransactionType(TransactionType.OUTBOUND);
         history.setQuantity(shipping.getRequestQty());
         history.setReasonDesc("Outbound shipping complete. ShippingNo: " + shipping.getShippingNo());
         history.setWorker(worker);
