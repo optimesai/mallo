@@ -188,3 +188,23 @@
     - 없음
 
   </details>
+
+### 거래처 마스터 권한 정책 적용 (Codex)
+- **User Intent**: 거래처 관리 CRUD 권한을 역할별로 제한하도록 요청. 생성/수정/상태변경은 `ADMIN`, `MANAGER`, 삭제는 `ADMIN`, 조회는 로그인 사용자 전체가 가능해야 함.
+- **Agent Context**: 품목 마스터는 `SecurityConfig`에서 HTTP 메서드별 권한이 분리되어 있었지만 거래처 마스터는 `anyRequest().authenticated()`에 의해 모든 로그인 사용자가 CRUD를 호출할 수 있었음. 프론트에서도 거래처 생성/수정/상태변경/삭제 버튼이 모든 로그인 사용자에게 노출되고 있었음.
+- **Key Decisions**:
+  - 백엔드 API 인가를 우선 적용 — 프론트 우회 호출을 막기 위해 `/api/partners` 메서드별 Spring Security matcher를 추가함
+  - 프론트는 역할 기반 액션 노출로 정리 — `WORKER`는 조회 화면만 사용하고, `MANAGER`는 생성/수정/상태변경까지만, `ADMIN`은 삭제까지 가능하도록 버튼과 함수 가드를 맞춤
+  - 품목 마스터 권한 구조와 동일한 패턴 사용 — 도메인별 권한 정책이 일관되도록 기존 `items` 보안 규칙 형태를 거래처에 적용함
+- **Affected Files**: <details><summary>3개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/infrastructure/security/config/SecurityConfig.java` (+5/-0) — 거래처 조회/생성/수정/상태변경/삭제 API 권한 규칙 추가
+    - `frontend/src/views/PartnerMasterView.vue` (+5/-1) — `ADMIN`, `MANAGER`에게만 신규 등록 버튼 노출 및 생성 함수 가드 추가
+    - `frontend/src/views/PartnerMasterDetailView.vue` (+11/-3) — 수정/상태변경은 `ADMIN`, `MANAGER`, 삭제는 `ADMIN`에게만 노출하고 함수 가드 추가
+  - **Deleted**:
+    - 없음
+
+  </details>

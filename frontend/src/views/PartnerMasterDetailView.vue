@@ -2,11 +2,13 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Copy, Edit3, Trash2, X } from '@lucide/vue'
+import { useAuthStore } from '@/state/authStore'
 import { usePartnerMasterStore } from '@/state/partnerMasterStore'
 import type { PartnerMasterRequest, PartnerMasterResponse, PartnerStatus, PartnerType } from '@/api/partnerMasterApi'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const partnerMasterStore = usePartnerMasterStore()
 
 const partnerTypeOptions: Array<{ value: PartnerType; label: string; description: string }> = [
@@ -43,6 +45,8 @@ const referenceItems = computed(() => {
     { label: '출하 참조', count: currentUsage.shippingCount }
   ].filter((item) => item.count > 0)
 })
+const canWrite = computed(() => ['ADMIN', 'MANAGER'].includes(authStore.user?.role || ''))
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
 
 onMounted(() => {
   loadDetail()
@@ -87,6 +91,7 @@ async function loadPartnerHistory(selected: PartnerMasterResponse) {
 }
 
 function openEditForm() {
+  if (!canWrite.value) return
   if (!partner.value) return
   form.partnerCode = partner.value.partnerCode
   form.partnerName = partner.value.partnerName
@@ -156,6 +161,7 @@ function validateForm(payload: PartnerMasterRequest) {
 }
 
 async function updateStatus(nextStatus: PartnerStatus) {
+  if (!canWrite.value) return
   if (!partner.value) return
   try {
     pageError.value = null
@@ -168,6 +174,7 @@ async function updateStatus(nextStatus: PartnerStatus) {
 }
 
 async function requestDelete() {
+  if (!isAdmin.value) return
   if (!partner.value) return
   try {
     pageError.value = null
@@ -179,6 +186,7 @@ async function requestDelete() {
 }
 
 async function deletePartner() {
+  if (!isAdmin.value) return
   if (!partner.value) return
   if (!confirm(`[${partner.value.partnerCode}] ${partner.value.partnerName} 거래처를 삭제하시겠습니까?`)) return
 
@@ -192,6 +200,7 @@ async function deletePartner() {
 }
 
 async function deactivateFromDeleteModal() {
+  if (!isAdmin.value) return
   if (!partner.value) return
   if (partner.value.partnerStatus === 'INACTIVE') {
     isDeleteOpen.value = false
@@ -247,11 +256,11 @@ function showToast(message: string) {
       </div>
       <div class="flex flex-wrap gap-2">
         <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 text-sm app-font-strong app-text-success">{{ toast }}</div>
-        <button v-if="partner" class="rounded-xl app-bg-strong px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="openEditForm">수정</button>
-        <button v-if="partner" class="rounded-xl app-bg-warning px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="updateStatus(partner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')">
+        <button v-if="canWrite && partner" class="rounded-xl app-bg-strong px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="openEditForm">수정</button>
+        <button v-if="canWrite && partner" class="rounded-xl app-bg-warning px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="updateStatus(partner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')">
           {{ partner.partnerStatus === 'ACTIVE' ? '비활성화' : '활성화' }}
         </button>
-        <button v-if="partner" class="rounded-xl app-bg-danger px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="requestDelete">삭제</button>
+        <button v-if="isAdmin && partner" class="rounded-xl app-bg-danger px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="requestDelete">삭제</button>
       </div>
     </div>
 

@@ -2,9 +2,11 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Building2, CheckCircle2, Loader2, RefreshCw, Search, Users, X } from '@lucide/vue'
+import { useAuthStore } from '@/state/authStore'
 import { usePartnerMasterStore } from '@/state/partnerMasterStore'
 import type { PartnerMasterRequest, PartnerMasterResponse, PartnerStatus, PartnerType } from '@/api/partnerMasterApi'
 
+const authStore = useAuthStore()
 const partnerMasterStore = usePartnerMasterStore()
 const router = useRouter()
 
@@ -42,6 +44,8 @@ const stats = computed(() => ({
   active: partnerMasterStore.partners.filter((partner) => partner.partnerStatus === 'ACTIVE').length,
   inactive: partnerMasterStore.partners.filter((partner) => partner.partnerStatus === 'INACTIVE').length
 }))
+
+const canWrite = computed(() => ['ADMIN', 'MANAGER'].includes(authStore.user?.role || ''))
 
 const keywordSuggestions = computed(() => {
   const keyword = filterKeyword.value.trim().toLowerCase()
@@ -140,6 +144,7 @@ async function goToDetail(partner: PartnerMasterResponse) {
 }
 
 function openCreateForm() {
+  if (!canWrite.value) return
   resetForm()
   formError.value = null
   isFormOpen.value = true
@@ -371,7 +376,7 @@ function showToast(message: string) {
         <div class="flex gap-2">
           <button class="h-11 rounded-2xl app-bg-strong px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="handleSearch">조회</button>
           <button class="h-11 rounded-2xl app-bg-muted px-5 text-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
-          <button class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
+          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
         </div>
       </div>
     </section>
