@@ -8,6 +8,7 @@ import com.ssafy.demo_app.api.shipping.dto.ShippingUpdateRequest;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
 import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
+import com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation;
 import com.ssafy.demo_app.domain.inventory.repository.CurrentInventoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.InventoryTransactionHistoryRepository;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
@@ -67,7 +68,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         shipping.setItem(item);
         shipping.setRequestQty(request.getRequestQty());
         if (request.getShippingType() != null) {
-            shipping.setShippingType(OutboundShipping.ShippingType.valueOf(request.getShippingType()));
+            shipping.setShippingType(com.ssafy.demo_app.domain.shipping.entity.ShippingType.valueOf(request.getShippingType()));
         }
         shipping.setStatus(OutboundShipping.ShippingStatus.READY);
 
