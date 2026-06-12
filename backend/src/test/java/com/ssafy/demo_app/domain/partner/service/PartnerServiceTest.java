@@ -101,6 +101,32 @@ class PartnerServiceTest {
     }
 
     @Test
+    @DisplayName("거래처 등록 성공 - 비고 저장")
+    void createPartner_successWithNote() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-NOTE-01",
+                "비고 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null,
+                null,
+                " 월말 정산 대상 "
+        );
+
+        given(partnerMasterRepository.existsByPartnerCode("SUP-NOTE-01")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(10);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getNote()).isEqualTo("월말 정산 대상");
+    }
+
+    @Test
     @DisplayName("거래처 등록 실패 - 거래처 코드 중복")
     void createPartner_duplicateCode() {
         PartnerRequest request = new PartnerRequest(

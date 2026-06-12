@@ -51,10 +51,14 @@ onMounted(() => {
 async function loadDetail() {
   try {
     pageError.value = null
+    const cachedPartner = partner.value?.partnerId === partnerId.value ? partner.value : null
     const partners = await partnerMasterStore.searchPartners(String(partnerId.value))
     const found = partners.find((item) => item.partnerId === partnerId.value) || partners[0]
     if (!found) throw new Error('거래처 정보를 찾을 수 없습니다.')
-    partnerMasterStore.selectPartner(found)
+    partnerMasterStore.selectPartner({
+      ...found,
+      note: found.note ?? cachedPartner?.note ?? null
+    })
     await loadPartnerContext(found)
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '거래처 상세 정보를 불러오지 못했습니다.'

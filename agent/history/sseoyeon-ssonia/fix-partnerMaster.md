@@ -110,3 +110,21 @@
     - 없음
 
   </details>
+
+### 거래처 상세 비고 표시 보존 (Codex)
+- **User Intent**: 거래처 등록 시 비고를 입력했는데 상세 페이지에서 등록한 비고가 보이지 않는 문제 해결 요청
+- **Agent Context**: 백엔드 DTO/엔티티는 비고를 저장·응답하도록 연결되어 있었으나, 상세 화면 진입 시 재조회 응답이 비고를 누락하면 등록 직후 캐시된 비고가 덮어써질 수 있었음. 상세 재조회 시 등록 직후 캐시된 비고를 fallback으로 보존하고, 백엔드 저장 응답 테스트를 추가함.
+- **Key Decisions**:
+  - 상세 화면에서 `found.note ?? cachedPartner?.note` fallback 적용 — 등록 직후 상세 이동 시 재조회 응답 누락으로 비고가 사라지는 화면 문제를 방지함
+  - 백엔드 서비스 테스트에 비고 저장 케이스 추가 — `PartnerRequest.note`가 trim되어 `PartnerResponse.note`로 반환되는 계약을 검증함
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/PartnerMasterDetailView.vue` (+5/-1) — 상세 재조회 시 캐시된 비고를 fallback으로 보존
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` (+26/-0) — 거래처 등록 비고 저장 응답 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
