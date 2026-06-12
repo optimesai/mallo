@@ -56,4 +56,26 @@ public interface OutboundShippingApi {
             @Parameter(description = "출하 ID", required = true) @PathVariable Integer id,
             @Valid @RequestBody com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest request
     );
+
+    @Operation(summary = "출하 취소", description = "READY 상태의 출하 지시를 취소합니다.")
+    @PostMapping("/{id}/cancel")
+    ResponseEntity<ApiResponse<Void>> cancelShipping(
+            @Parameter(description = "출하 ID", required = true) @PathVariable Integer id,
+            @Valid @RequestBody com.ssafy.demo_app.api.shipping.dto.CancelShippingRequest request
+    );
+
+    @Operation(summary = "출하 지시 수정", description = "READY 상태의 출하 지시 정보를 수정합니다.")
+    @PutMapping("/{id}")
+    ResponseEntity<ApiResponse<ShippingResponse>> updateShipping(
+            @Parameter(description = "출하 ID", required = true) @PathVariable Integer id,
+            @Valid @RequestBody com.ssafy.demo_app.api.shipping.dto.ShippingUpdateRequest request
+    );
+
+    @Operation(summary = "부분 출하 처리", description = "PICKING 이상 상태의 출하를 부분 완료 처리합니다.")
+    @PostMapping("/{id}/partial-ship")
+    ResponseEntity<ApiResponse<Void>> partialShip(
+            @AuthenticationPrincipal com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            @Parameter(description = "출하 ID", required = true) @PathVariable Integer id,
+            @Valid @RequestBody com.ssafy.demo_app.api.shipping.dto.PartialShipRequest request
+    );
 }

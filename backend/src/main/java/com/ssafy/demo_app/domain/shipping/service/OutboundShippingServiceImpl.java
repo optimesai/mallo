@@ -1,7 +1,10 @@
 package com.ssafy.demo_app.domain.shipping.service;
+import com.ssafy.demo_app.api.shipping.dto.CancelShippingRequest;
+import com.ssafy.demo_app.api.shipping.dto.PartialShipRequest;
 import com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
+import com.ssafy.demo_app.api.shipping.dto.ShippingUpdateRequest;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
 import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
@@ -12,6 +15,7 @@ import com.ssafy.demo_app.domain.item.repository.ItemMasterRepository;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import com.ssafy.demo_app.domain.partner.repository.PartnerMasterRepository;
 import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
+import com.ssafy.demo_app.domain.shipping.entity.ShippingType;
 import com.ssafy.demo_app.domain.shipping.repository.OutboundShippingRepository;
 import com.ssafy.demo_app.domain.user.entity.User;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
@@ -185,6 +189,86 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
         OutboundShipping savedShipping = outboundShippingRepository.save(shipping);
         return ShippingResponse.from(savedShipping);
+    }
+
+    @Override
+    @Transactional
+    public void cancelShipping(Integer shippingId, CancelShippingRequest request) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.READY) {
+            throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
+        }
+
+        shipping.setStatus(OutboundShipping.ShippingStatus.CANCELED);
+        shipping.setCancelReason(request.getCancelReason());
+        outboundShippingRepository.save(shipping);
+    }
+
+    @Override
+    @Transactional
+    public ShippingResponse updateShipping(Integer shippingId, ShippingUpdateRequest request) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.READY) {
+            throw new BusinessException(ErrorCode.SHIPPING_CANNOT_MODIFY);
+        }
+
+        if (request.getRequestQty() != null) shipping.setRequestQty(request.getRequestQty());
+        if (request.getShippingType() != null) shipping.setShippingType(ShippingType.valueOf(request.getShippingType()));
+        if (request.getCarrier() != null) shipping.setCarrier(request.getCarrier());
+        if (request.getTrackingNo() != null) shipping.setTrackingNo(request.getTrackingNo());
+        if (request.getEstimatedDelivery() != null) shipping.setEstimatedDelivery(request.getEstimatedDelivery());
+
+        return ShippingResponse.from(outboundShippingRepository.save(shipping));
+    }
+
+    @Override
+    @Transactional
+    public void partialShip(Integer shippingId, Integer workerId, PartialShipRequest request) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.PICKING
+                && shipping.getStatus() != OutboundShipping.ShippingStatus.PACKING
+                && shipping.getStatus() != OutboundShipping.ShippingStatus.INSPECTING) {
+            throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
+        }
+
+        int shippedSoFar = shipping.getShippedQty() != null ? shipping.getShippedQty() : 0;
+        int newShipped = shippedSoFar + request.getShipQty();
+        if (newShipped > shipping.getRequestQty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+
+        shipping.setShippedQty(newShipped);
+        if (request.getCarrier() != null) shipping.setCarrier(request.getCarrier());
+        if (request.getTrackingNo() != null) shipping.setTrackingNo(request.getTrackingNo());
+        if (request.getEstimatedDelivery() != null) shipping.setEstimatedDelivery(request.getEstimatedDelivery());
+        shipping.setWorker(worker);
+
+        if (newShipped >= shipping.getRequestQty()) {
+            shipping.setStatus(OutboundShipping.ShippingStatus.SHIPPED);
+        } else {
+            shipping.setStatus(OutboundShipping.ShippingStatus.PARTIALLY_SHIPPED);
+        }
+        shipping.setShippedAt(java.time.LocalDateTime.now());
+        outboundShippingRepository.save(shipping);
+
+        // Log partial shipment as OUTBOUND transaction
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(shipping.getItem());
+        history.setLocation(shipping.getPickingLocation());
+        history.setTransactionType(TransactionType.OUTBOUND);
+        history.setQuantity(request.getShipQty());
+        history.setReasonDesc("Partial shipment. ShippingNo: " + shipping.getShippingNo());
+        history.setWorker(worker);
+        transactionHistoryRepository.save(history);
     }
 
     // --- Specification builder ---
