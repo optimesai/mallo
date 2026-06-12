@@ -150,6 +150,9 @@ public class PartnerServiceImpl implements PartnerService {
         Map<Integer, PartnerShippedItemResponse> shippedItems = new LinkedHashMap<>();
         for (OutboundShipping shipping : outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(partner)) {
             ItemMaster item = shipping.getItem();
+            if (item == null || item.getItemId() == null) {
+                continue;
+            }
             LocalDateTime shippingAt = getShippingReferenceAt(shipping);
             PartnerShippedItemResponse response = shippedItems.computeIfAbsent(item.getItemId(), key -> {
                 PartnerShippedItemResponse created = new PartnerShippedItemResponse();
@@ -160,7 +163,7 @@ public class PartnerServiceImpl implements PartnerService {
                 created.setLastShippingAt(shippingAt);
                 return created;
             });
-            response.setTotalShippingQty(response.getTotalShippingQty() + shipping.getRequestQty());
+            response.setTotalShippingQty(response.getTotalShippingQty() + getShippingQty(shipping));
             response.setShippingCount(response.getShippingCount() + 1);
             LocalDateTime lastShippingAt = response.getLastShippingAt();
             if (lastShippingAt == null || (shippingAt != null && shippingAt.isAfter(lastShippingAt))) {
@@ -393,5 +396,12 @@ public class PartnerServiceImpl implements PartnerService {
             return shipping.getShippedAt();
         }
         return shipping.getCreatedAt();
+    }
+
+    private int getShippingQty(OutboundShipping shipping) {
+        if (shipping.getRequestQty() == null) {
+            return 0;
+        }
+        return shipping.getRequestQty();
     }
 }

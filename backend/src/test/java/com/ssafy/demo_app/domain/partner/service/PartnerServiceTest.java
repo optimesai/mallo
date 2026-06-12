@@ -339,6 +339,23 @@ class PartnerServiceTest {
         assertThat(responses.get(0).getLastShippingAt()).isNull();
     }
 
+    @Test
+    @DisplayName("고객사 출하 품목 이력 조회 성공 - 품목 정보 없음")
+    void getShippedItems_successWithMissingItem() {
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingId(1);
+        shipping.setPartner(customer);
+        shipping.setRequestQty(10);
+
+        given(partnerMasterRepository.findById(2)).willReturn(Optional.of(customer));
+        given(outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(customer))
+                .willReturn(List.of(shipping));
+
+        List<PartnerShippedItemResponse> responses = partnerService.getShippedItems(2);
+
+        assertThat(responses).isEmpty();
+    }
+
     @SuppressWarnings("unchecked")
     private Specification<PartnerMaster> anyPartnerSpec() {
         return any(Specification.class);

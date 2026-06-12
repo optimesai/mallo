@@ -53,10 +53,22 @@ async function loadDetail() {
 
 async function loadPartnerContext(selected: PartnerMasterResponse) {
   await partnerMasterStore.loadPartnerUsage(selected.partnerId)
-  if (selected.partnerType === 'SUPPLIER') {
-    await partnerMasterStore.loadSuppliedItems(selected.partnerId)
-  } else {
-    await partnerMasterStore.loadShippedItems(selected.partnerId)
+  await loadPartnerHistory(selected)
+}
+
+async function loadPartnerHistory(selected: PartnerMasterResponse) {
+  try {
+    if (selected.partnerType === 'SUPPLIER') {
+      await partnerMasterStore.loadSuppliedItems(selected.partnerId)
+    } else {
+      await partnerMasterStore.loadShippedItems(selected.partnerId)
+    }
+  } catch (err) {
+    if (selected.partnerType === 'SUPPLIER') {
+      partnerMasterStore.suppliedItems = []
+    } else {
+      partnerMasterStore.shippedItems = []
+    }
   }
 }
 

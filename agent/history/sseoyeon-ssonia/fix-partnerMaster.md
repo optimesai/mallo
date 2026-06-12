@@ -72,3 +72,23 @@
     - 없음
 
   </details>
+
+### 고객사 상세 이력 실패 격리 (Codex)
+- **User Intent**: 고객사 상세에서 출하 이력이 null이거나 불완전하면 서버 오류로 표시하지 말고 “이력이 없습니다” 상태로 끝내도록 요청
+- **Agent Context**: 고객사 상세 로딩은 기본 정보, 사용 현황, 출하 이력을 한 흐름에서 처리해 출하 이력 API 실패가 상세 전체 오류로 승격될 수 있었음. 백엔드에서 불완전 출하 데이터를 건너뛰고, 프론트에서 이력 조회 실패를 빈 이력으로 격리함.
+- **Key Decisions**:
+  - 프론트 상세 화면에서 이력 조회 실패를 catch 처리 — 고객사 기본 정보와 사용 현황은 유지하고 출하 이력 테이블만 빈 상태로 표시하기 위함
+  - 백엔드 출하 이력 집계에서 품목이 없는 출하 레코드 건너뛰기 — 비정상/레거시 데이터가 있어도 API가 500으로 실패하지 않도록 함
+  - 출하 수량 null은 0으로 집계 — 집계 응답 생성 자체를 막지 않고 사용자에게 이력 없음 또는 안전한 수치를 제공함
+- **Affected Files**: <details><summary>3개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` (+12/-1) — 출하 이력 집계의 품목/수량 null 방어 처리
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` (+17/-0) — 품목 정보가 없는 출하 이력은 빈 목록으로 처리하는 테스트 추가
+    - `frontend/src/views/PartnerMasterDetailView.vue` (+20/-4) — 출하/공급 이력 조회 실패를 상세 전체 오류가 아닌 빈 이력 상태로 격리
+  - **Deleted**:
+    - 없음
+
+  </details>
