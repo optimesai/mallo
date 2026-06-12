@@ -30,6 +30,33 @@
 - 직접 `dev`에 push하는 행위는 절대 금지한다.
 - 태스크 시작 시 `[TASK-XX] chore: start task-XX` 커밋을 반드시 작성한다.
 
+## PR 완료 후 절차
+
+PR 머지 직후, 아래 순서로 Notion 태스크를 업데이트한다:
+
+1. **상태 변경**: `진행 중` → `완료`
+2. **사유 작성**: PR 번호와 머지 완료 사실을 간략히 기록 (예: `PR #44 머지 완료. TransactionType 확장 및 재고 조정/이동/폐기 API 구현`)
+3. **Results 섹션 작성**: 아래 형식을 따른다:
+   ```markdown
+   > *결과물 문서(팀 위키), Pull Request, 스크린샷, 배포 링크 등 참고할 수 있는 자료를 적어주세요.*
+
+   ✅ **PR #{번호} 머지 완료** — `wsssafy/ssafy-pjt`
+
+   - 브랜치: task/{번호} → dev (merge)
+   - 변경: N개 파일, +N/-N
+   - 핵심: 변경사항 요약
+
+   **커밋 내역:**
+   - `{sha}` — {메시지}
+   - ...
+
+   **관련 링크:**
+   - PR: https://github.com/wsssafy/ssafy-pjt/pull/{번호}
+   - WIKI-{번호}: https://app.notion.com/p/{page_id}
+   - 작업 이력: agent/history/{user}/{branch}.md
+   ```
+4. **작업 히스토리 로그**: `agent/history/`에 템플릿에 맞춰 기록한다. 상세 규칙은 [history-logging.md](../history-logging.md) 참조.
+
 ---
 
 # 환경 변수 파일

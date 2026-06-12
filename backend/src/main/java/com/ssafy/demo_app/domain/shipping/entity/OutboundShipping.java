@@ -8,6 +8,7 @@ import com.ssafy.demo_app.global.common.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -35,12 +36,31 @@ public class OutboundShipping extends BaseCreatedTimeEntity {
     @Column(name = "request_qty", nullable = false)
     private Integer requestQty;
 
+    @Column(name = "shipped_qty")
+    private Integer shippedQty;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipping_type")
+    private ShippingType shippingType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "picking_location_id")
     private WarehouseLocation pickingLocation;
 
     @Column(name = "vehicle_no")
     private String vehicleNo;
+
+    @Column(name = "carrier")
+    private String carrier;
+
+    @Column(name = "tracking_no")
+    private String trackingNo;
+
+    @Column(name = "estimated_delivery")
+    private LocalDate estimatedDelivery;
+
+    @Column(name = "cancel_reason")
+    private String cancelReason;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -56,6 +76,10 @@ public class OutboundShipping extends BaseCreatedTimeEntity {
     public enum ShippingStatus {
         READY,
         PICKING,
-        SHIPPED
+        PACKING,
+        INSPECTING,
+        SHIPPED,
+        PARTIALLY_SHIPPED,
+        CANCELED
     }
 }

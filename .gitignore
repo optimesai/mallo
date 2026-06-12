@@ -26,3 +26,9 @@ target/
 !.env.example
 .postman/
 postman/
+frontend/Dockerfile
+frontend/nginx.conf
+k8s/
+frontend/Dockerfile
+frontend/nginx.conf
+k8s/

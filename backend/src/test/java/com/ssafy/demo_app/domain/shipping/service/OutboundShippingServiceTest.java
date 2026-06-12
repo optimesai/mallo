@@ -102,14 +102,7 @@ class OutboundShippingServiceTest {
         outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId());
 
         // Then
-        // 1. 재고 차감 확인 (100 - 40 = 60)
-        CurrentInventory updatedInv = em.createQuery(
-                "select ci from CurrentInventory ci where ci.item = :item and ci.location = :location", CurrentInventory.class)
-                .setParameter("item", item)
-                .setParameter("location", location)
-                .getSingleResult();
-        assertThat(updatedInv.getCurrentQty()).isEqualTo(60);
-
+        // 1. 재고 차감 확인 — inventory deducted at PICKING stage, not at completeShipping
         // 2. 출하 지시 상태가 SHIPPED로 변경되었는지 확인
         OutboundShipping updatedShipping = em.find(OutboundShipping.class, shipping.getShippingId());
         assertThat(updatedShipping.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.SHIPPED);
@@ -127,22 +120,15 @@ class OutboundShippingServiceTest {
     }
 
     @Test
-    @DisplayName("출하 완료 실패 - 완제품 재고 부족 시 INSUFFICIENT_STOCK 예외 발생")
-    void completeShipping_insufficientStock() {
+    @DisplayName("출하 완료 성공 - 재고는 PICKING 단계에서 이미 차감되었으므로 완료 시 재고 확인 불필요")
+    void completeShipping_success_afterPicking() {
         // Given
         User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
         PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
         ItemMaster item = createItem("SH-ITEM-03", "완제품C", ItemMaster.ItemType.FG);
 
-        // 재고 설정 (현재고 10개)
-        CurrentInventory inventory = new CurrentInventory();
-        inventory.setItem(item);
-        inventory.setLocation(location);
-        inventory.setCurrentQty(10);
-        em.persist(inventory);
-
-        // 출하 지시 생성 및 피킹 위치 배정 (PICKING 상태, 요청량 30개)
+        // 출하 지시 생성 (PICKING 상태, 재고는 이미 PICKING 단계에서 차감됨)
         OutboundShipping shipping = new OutboundShipping();
         shipping.setShippingNo("SH-2026-TEST-888");
         shipping.setPartner(partner);
@@ -155,10 +141,12 @@ class OutboundShippingServiceTest {
         em.flush();
         em.clear();
 
-        // When & Then
-        assertThatThrownBy(() -> outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId()))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
+        // When & Then — INSUFFICIENT_STOCK이 발생하지 않고 정상 완료되어야 함
+        outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId());
+
+        OutboundShipping updated = em.find(OutboundShipping.class, shipping.getShippingId());
+        assertThat(updated.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.SHIPPED);
+        assertThat(updated.getShippedAt()).isNotNull();
     }
 
     @Test

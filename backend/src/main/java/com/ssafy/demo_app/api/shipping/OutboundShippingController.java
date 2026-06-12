@@ -1,7 +1,6 @@
 package com.ssafy.demo_app.api.shipping;
 
-import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
-import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
+import com.ssafy.demo_app.api.shipping.dto.*;
 import com.ssafy.demo_app.domain.shipping.service.OutboundShippingService;
 import com.ssafy.demo_app.global.response.ApiResponse;
 import com.ssafy.demo_app.global.response.PageResponse;
@@ -60,5 +59,51 @@ public class OutboundShippingController implements OutboundShippingApi {
     ) {
         ShippingResponse response = outboundShippingService.assignPicking(id, request);
         return ResponseEntity.ok(ApiResponse.success("차량 및 피킹 로케이션 배정이 완료되었습니다.", response));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> cancelShipping(
+            Integer id,
+            CancelShippingRequest request
+    ) {
+        outboundShippingService.cancelShipping(id, request);
+        return ResponseEntity.ok(ApiResponse.success("출하 지시가 취소되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<ShippingResponse>> updateShipping(
+            Integer id,
+            ShippingUpdateRequest request
+    ) {
+        ShippingResponse response = outboundShippingService.updateShipping(id, request);
+        return ResponseEntity.ok(ApiResponse.success("출하 지시 정보가 수정되었습니다.", response));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> partialShip(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id,
+            PartialShipRequest request
+    ) {
+        outboundShippingService.partialShip(id, userDetails.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success("부분 출하가 처리되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> packShipping(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id
+    ) {
+        outboundShippingService.packShipping(id, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("포장이 완료되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> inspectShipping(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id
+    ) {
+        outboundShippingService.inspectShipping(id, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("검수가 완료되었습니다."));
     }
 }
