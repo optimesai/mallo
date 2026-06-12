@@ -72,3 +72,142 @@
 
 ### 비고
 - 사용자가 커밋 제외를 요청하여 커밋은 수행하지 않았다.
+
+### 구현 기능 현황 분석 (Codex)
+- **User Intent**: README, 구현 파일, 사용자가 제공한 기능 목록을 대조하여 도메인별 백엔드/프론트엔드 구현 여부와 사용자 관점 기능을 정리해달라는 요청
+- **Agent Context**: 코드 변경 요청이 아닌 구현 현황 분석 요청으로 판단하여 README, `agent/project/` 지식 베이스, 백엔드 컨트롤러/서비스/엔티티, 프론트엔드 라우트/API/스토어/화면을 대조했다.
+- **Key Decisions**:
+  - 실제 구현 파일을 기준으로 구현 여부를 판정 — `agent/project/backend.md`, `agent/project/frontend.md`의 “실제 코드 우선” 원칙 준수
+  - AI/배치/시각화 기능은 엔티티나 mock만 존재하는 경우 사용자 기능 미구현으로 분류 — API/서비스/화면이 연결되어야 사용자 관점 구현 기능으로 볼 수 있기 때문
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 구현 기능 현황 분석 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 거래처 마스터 UX 분석 (Codex)
+- **User Intent**: 기준관리 4개 항목 중 거래처 마스터를 먼저 보강하기 위해, 사용자 관점에서 필요한 기능과 편리한 UX 흐름을 분석해달라는 요청
+- **Agent Context**: 거래처 마스터 백엔드 API/서비스/DTO/엔티티와 프론트엔드 API/Service/Store/View를 확인하고, 현재 CRUD 중심 구조에서 운영 편의성을 높이는 보강 후보를 도출했다.
+- **Key Decisions**:
+  - 기능 보강은 거래처 마스터 도메인으로 한정 — 작업 범위 준수 정책에 따라 품목/BOM/라우팅 변경 제안은 직접 수정 범위에서 제외
+  - 사용자 흐름은 등록 전 검증, 목록 탐색, 상세 업무 연계, 안전한 삭제/비활성화 순서로 정리 — 실제 거래처가 입고/출하에서 참조되는 구조를 기준으로 판단
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 거래처 마스터 UX 분석 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 거래처 마스터 보강 설계 분석 (Codex)
+- **User Intent**: 거래처 상태, 사용 현황, 사전 검증, 목록 개선, 업무 맥락, 공급 부품, 거래 로그 기능을 구현하기 전에 수정 파일과 절차를 분석해달라는 요청
+- **Agent Context**: 거래처 마스터 도메인과 입고/출하 연계 파일을 확인하여, 기존 CRUD 구조를 확장하는 백엔드/프론트엔드 수정 범위와 구현 순서를 도출했다.
+- **Key Decisions**:
+  - 상태/사용현황/페이징은 거래처 API의 계약 변경으로 우선 처리 — 프론트 목록과 입고/출하 선택 목록이 동일 API를 공유하고 있어 백엔드 응답 구조 정리가 선행되어야 함
+  - 공급 가능 부품은 거래 이력 조인과 별도 마스터 매핑을 구분 — 과거 거래 품목과 앞으로 공급 가능한 품목은 데이터 의미가 달라 혼합하면 운영 기준정보가 불명확해짐
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 거래처 마스터 보강 설계 분석 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 실제 공급 이력 설계 정리 (Codex)
+- **User Intent**: 파트너 마스터 공급 부품 기능에서 공급 가능 품목 관리는 제외하고, 실제 공급 이력만 제공하도록 수정 파일과 작업 과정을 다시 정리해달라는 요청
+- **Agent Context**: 별도 공급 가능 품목 매핑 테이블 없이 기존 `InboundReceipt`와 `PartnerMaster`, `ItemMaster` 연계를 기반으로 공급사별 실제 입고 품목 이력을 조회하는 방식으로 범위를 축소했다.
+- **Key Decisions**:
+  - 신규 마스터 매핑 엔티티를 생성하지 않음 — 사용자가 요청한 데이터 의미가 “공급 가능 품목”이 아니라 “실제 공급 이력”이므로 기존 입고 이력 조인으로 충분함
+  - 공급사 전용 조회로 제한 — 고객사는 출하 대상이므로 실제 공급 부품 이력의 주체가 아니며, `SUPPLIER` 타입 검증이 필요함
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/refactor-frontStyle.md` — 실제 공급 이력 설계 정리 작업 히스토리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 거래처 마스터 기능 보강 구현 (Codex)
+- **User Intent**: 거래처 마스터에 상태 관리, 사용 현황, 사전 검증, 검색/목록 개선, 상세 업무 맥락, 실제 공급 이력 기능을 1번부터 6번까지 모두 반영해달라는 요청
+- **Agent Context**: 기존 거래처 CRUD 구조를 확장하여 `ACTIVE/INACTIVE` 상태, 페이징 목록, 사용 현황, 코드 중복 확인, 공급사 실제 입고 품목 이력, 입고/출하 신규 업무의 활성 거래처 제한을 구현했다.
+- **Key Decisions**:
+  - 공급 품목은 별도 매핑 테이블 없이 기존 입고 이력에서 집계 — 사용자가 공급 가능 품목이 아닌 실제 공급 이력만 요구했기 때문
+  - 삭제보다 비활성화를 우선하는 UI 흐름 적용 — 입고/출하 참조 이력 보존과 신규 업무 투입 차단을 동시에 만족하기 위함
+  - 거래처 목록은 `PageResponse` 기반 서버 페이징으로 전환 — 대량 기준정보 조회 시 프론트 전체 배열 로딩을 피하기 위함
+- **Affected Files**: <details><summary>26개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerDuplicateCheckResponse.java` — 거래처 코드 중복 확인 응답 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerStatusUpdateRequest.java` — 거래처 상태 변경 요청 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerSuppliedItemResponse.java` — 실제 공급 품목 이력 응답 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerUsageResponse.java` — 거래처 사용 현황 응답 DTO
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` — 페이징 목록, 중복 확인, 상태 변경, 사용 현황, 공급 이력 API 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerController.java` — 신규 거래처 API 위임 구현
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerRequest.java` — 코드/연락처 형식 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerResponse.java` — 상태 및 사용 건수 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/repository/InboundReceiptRepository.java` — 거래처별 입고 집계/최근/공급 이력 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceImpl.java` — 활성 공급사만 입고 등록 가능하도록 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/entity/PartnerMaster.java` — `PartnerStatus` 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/repository/PartnerMasterRepository.java` — Specification 페이징 조회 지원 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerService.java` — 거래처 보강 기능 서비스 계약 확장
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` — 상태, 페이징, 사용 현황, 실제 공급 이력 구현
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/repository/OutboundShippingRepository.java` — 거래처별 출하 집계/최근 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceImpl.java` — 활성 고객사만 출하 지시 등록 가능하도록 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/global/exception/ErrorCode.java` — 비활성/거래처 구분 오류 코드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceTest.java` — 신규 거래처 검증 조건에 맞는 테스트 fixture 수정
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` — 페이징 거래처 조회 계약에 맞춰 테스트 수정
+    - `backend/src/test/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceTest.java` — 출하 등록용 고객사 fixture 조회 수정
+    - `frontend/src/api/inboundApi.ts` — 입고/출하 공용 거래처 선택 목록을 활성 거래처 페이징 응답에 맞게 변환
+    - `frontend/src/api/partnerMasterApi.ts` — 거래처 상태, 사용 현황, 공급 이력 API 타입/호출 추가
+    - `frontend/src/services/partnerMasterService.ts` — 거래처 보강 기능 서비스 래핑 추가
+    - `frontend/src/state/partnerMasterStore.ts` — 페이징, 사용 현황, 공급 이력, 상태 변경 상태 관리 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 상태/필터/페이징/중복확인/비활성화/업무연계/공급이력 UX 반영
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 거래처 마스터 UX 후속 수정 (Codex)
+- **User Intent**: 거래처 마스터 화면을 품목 마스터 흐름처럼 검색 상단, 전체 목록/세부 정보 탭 구조로 바꾸고, 검색 추천, 고객사 출하 이력, 정렬 위치 변경, 상세 전용 액션, 코드 정책, 비고/메일/최근 거래 일시를 추가해달라는 요청
+- **Agent Context**: 기존 세로 스크롤형 거래처 화면을 목록/상세 탭 기반으로 재구성하고, 백엔드에는 담당자 이메일·비고·최근 거래 일시·고객사 출하 품목 이력 API를 추가했다.
+- **Key Decisions**:
+  - 목록 행 액션을 제거하고 상세 탭에서만 수정/삭제/상태 변경을 허용 — 사용자가 요청한 업무 흐름과 품목 마스터식 상세 진입 패턴을 맞추기 위함
+  - 거래처 수정 시 코드는 백엔드에서도 변경하지 않음 — 프론트 비활성화만으로는 API 직접 호출을 막을 수 없기 때문
+  - 고객사 출하 이력은 기존 `OutboundShipping` 이력 집계로 구현 — 별도 마스터 매핑 없이 실제 거래 이력만 제공하기 위함
+- **Affected Files**: <details><summary>15개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerShippedItemResponse.java` — 고객사 출하 품목 이력 응답 DTO
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` — 고객사 출하 이력 API 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerController.java` — 출하 이력 API 위임 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerRequest.java` — 담당자 이메일, 비고 필드 및 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerResponse.java` — 담당자 이메일, 비고, 최근 거래 일시 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/entity/PartnerMaster.java` — 담당자 이메일, 비고 컬럼 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerService.java` — 고객사 출하 이력 조회 계약 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` — 코드 prefix 검증, 수정 시 코드 보존, 최근 거래 정렬, 출하 이력 집계 구현
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/repository/OutboundShippingRepository.java` — 고객사별 출하 이력 조회 메서드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` — 코드 수정 불가 정책에 맞춰 테스트 수정
+    - `frontend/src/api/partnerMasterApi.ts` — 이메일/비고/최근 거래/출하 이력 타입과 API 추가
+    - `frontend/src/services/partnerMasterService.ts` — 출하 이력 서비스 추가
+    - `frontend/src/state/partnerMasterStore.ts` — 검색 추천과 출하 이력 상태 관리 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 검색 추천, 목록/상세 탭, 상세 전용 액션, 고객사 출하 이력, 등록/수정 폼 정책 반영
+  - **Deleted**:
+    - 없음
+
+  </details>

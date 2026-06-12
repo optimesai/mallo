@@ -16,10 +16,17 @@ public class PartnerResponse {
     private String partnerCode;
     private String partnerName;
     private PartnerMaster.PartnerType partnerType;
+    private PartnerMaster.PartnerStatus partnerStatus;
     private String businessNo;
     private String representative;
     private String contactPhone;
+    private String contactEmail;
+    private String note;
     private LocalDateTime createdAt;
+    private LocalDateTime lastUsedAt;
+    private long inboundCount;
+    private long shippingCount;
+    private long usageCount;
 
     public static PartnerResponse from(PartnerMaster partner) {
         PartnerResponse response = new PartnerResponse();
@@ -27,9 +34,12 @@ public class PartnerResponse {
         response.setPartnerCode(partner.getPartnerCode());
         response.setPartnerName(partner.getPartnerName());
         response.setPartnerType(partner.getPartnerType());
+        response.setPartnerStatus(partner.getPartnerStatus());
         response.setBusinessNo(partner.getBusinessNo());
         response.setRepresentative(partner.getRepresentative());
         response.setContactPhone(partner.getContactPhone());
+        response.setContactEmail(partner.getContactEmail());
+        response.setNote(partner.getNote());
         response.setCreatedAt(partner.getCreatedAt());
         return response;
     }

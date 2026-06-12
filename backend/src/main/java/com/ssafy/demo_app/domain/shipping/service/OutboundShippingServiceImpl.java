@@ -58,6 +58,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
         PartnerMaster partner = partnerMasterRepository.findByPartnerCode(request.getPartnerCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTNER_NOT_FOUND));
+        validateShippingPartner(partner);
 
         ItemMaster item = itemMasterRepository.findByItemCode(request.getItemCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
@@ -326,5 +327,14 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private void validateShippingPartner(PartnerMaster partner) {
+        if (partner.getPartnerType() != PartnerMaster.PartnerType.CUSTOMER) {
+            throw new BusinessException(ErrorCode.PARTNER_TYPE_INVALID);
+        }
+        if (partner.getPartnerStatus() != PartnerMaster.PartnerStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.PARTNER_STATUS_INACTIVE);
+        }
     }
 }
