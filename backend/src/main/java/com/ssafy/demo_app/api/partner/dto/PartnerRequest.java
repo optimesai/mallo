@@ -18,10 +18,9 @@ import lombok.Setter;
 @Schema(description = "거래처 마스터 생성/수정 요청 객체")
 public class PartnerRequest {
 
-    @Schema(description = "거래처 고유 코드", example = "SUP-POSCO-01")
-    @NotBlank(message = "거래처 코드는 필수입니다.")
+    @Schema(description = "거래처 고유 코드. 미입력 시 거래처 구분에 따라 SUP-0001 또는 CUS-0001 형식으로 자동 생성됩니다.", example = "SUP-POSCO-01")
     @Size(max = 50, message = "거래처 코드는 50자 이하여야 합니다.")
-    @Pattern(regexp = "^[A-Z0-9-]+$", message = "거래처 코드는 대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.")
+    @Pattern(regexp = "^[A-Z0-9-]*$", message = "거래처 코드는 대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.")
     private String partnerCode;
 
     @Schema(description = "거래처명", example = "(주)포스코 인터내셔널")

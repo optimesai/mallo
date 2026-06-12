@@ -127,6 +127,62 @@ class PartnerServiceTest {
     }
 
     @Test
+    @DisplayName("거래처 등록 성공 - 공급사 코드 자동 생성")
+    void createPartner_generateSupplierCode() {
+        PartnerRequest request = new PartnerRequest(
+                "",
+                "자동 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null
+        );
+
+        PartnerMaster existing = new PartnerMaster();
+        existing.setPartnerCode("SUP-0003");
+
+        given(partnerMasterRepository.findByPartnerCodeStartingWith("SUP-")).willReturn(List.of(existing));
+        given(partnerMasterRepository.existsByPartnerCode("SUP-0004")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(11);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-0004");
+    }
+
+    @Test
+    @DisplayName("거래처 등록 성공 - 고객사 코드 자동 생성")
+    void createPartner_generateCustomerCode() {
+        PartnerRequest request = new PartnerRequest(
+                "CUS-",
+                "자동 고객사",
+                PartnerMaster.PartnerType.CUSTOMER,
+                null,
+                null,
+                null
+        );
+
+        PartnerMaster existing = new PartnerMaster();
+        existing.setPartnerCode("CUS-0007");
+
+        given(partnerMasterRepository.findByPartnerCodeStartingWith("CUS-")).willReturn(List.of(existing));
+        given(partnerMasterRepository.existsByPartnerCode("CUS-0008")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(12);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("CUS-0008");
+    }
+
+    @Test
     @DisplayName("거래처 등록 실패 - 거래처 코드 중복")
     void createPartner_duplicateCode() {
         PartnerRequest request = new PartnerRequest(

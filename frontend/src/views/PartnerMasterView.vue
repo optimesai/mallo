@@ -151,7 +151,7 @@ function closeForm() {
 }
 
 function resetForm() {
-  form.partnerCode = 'SUP-'
+  form.partnerCode = ''
   form.partnerName = ''
   form.partnerType = 'SUPPLIER'
   form.businessNo = ''
@@ -162,11 +162,7 @@ function resetForm() {
 }
 
 function handleFormTypeChange() {
-  const nextPrefix = form.partnerType === 'SUPPLIER' ? 'SUP-' : 'CUS-'
-  const previousPrefix = form.partnerType === 'SUPPLIER' ? 'CUS-' : 'SUP-'
-  if (!form.partnerCode || form.partnerCode === previousPrefix || form.partnerCode === 'SUP-' || form.partnerCode === 'CUS-') {
-    form.partnerCode = nextPrefix
-  }
+  if (form.partnerCode === 'SUP-' || form.partnerCode === 'CUS-') form.partnerCode = ''
 }
 
 async function submitForm() {
@@ -179,10 +175,12 @@ async function submitForm() {
 
   try {
     formError.value = null
-    const duplicated = await partnerMasterStore.checkDuplicate(payload.partnerCode)
-    if (duplicated) {
-      formError.value = '이미 사용 중인 거래처 코드입니다.'
-      return
+    if (payload.partnerCode) {
+      const duplicated = await partnerMasterStore.checkDuplicate(payload.partnerCode)
+      if (duplicated) {
+        formError.value = '이미 사용 중인 거래처 코드입니다.'
+        return
+      }
     }
     const created = await partnerMasterStore.createPartner(payload)
     showToast('신규 거래처 마스터가 등록되었습니다.')
@@ -214,7 +212,8 @@ function normalizeOptionalText(value: string | null | undefined) {
 
 function validateForm(payload: PartnerMasterRequest) {
   const expectedPrefix = payload.partnerType === 'SUPPLIER' ? 'SUP-' : 'CUS-'
-  if (!payload.partnerCode) return '거래처 코드를 입력해주세요.'
+  if (!payload.partnerCode) return null
+  if (payload.partnerCode === expectedPrefix) return null
   if (!payload.partnerCode.startsWith(expectedPrefix)) return `거래처 코드는 ${expectedPrefix}로 시작해야 합니다.`
   if (!/^[A-Z0-9-]+$/.test(payload.partnerCode)) return '거래처 코드는 대문자 영문, 숫자, 하이픈만 사용할 수 있습니다.'
   if (payload.partnerCode.length > 50) return '거래처 코드는 50자 이하여야 합니다.'
@@ -459,7 +458,7 @@ function showToast(message: string) {
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 class="text-2xl font-bold app-text-primary">신규 거래처 등록</h2>
-            <p class="mt-1 text-sm app-text-muted">거래처 코드는 구분에 따라 SUP- 또는 CUS-로 시작해야 합니다.</p>
+            <p class="mt-1 text-sm app-text-muted">거래처 코드는 미입력 시 구분에 따라 SUP-____ 또는 CUS-____ 형식으로 자동 생성됩니다.</p>
           </div>
           <button type="button" class="rounded-full p-2 hover:bg-slate-100" @click="closeForm">
             <X class="h-5 w-5" />
@@ -479,7 +478,7 @@ function showToast(message: string) {
           </div>
           <div>
             <label for="partner-form-code" class="mb-2 block text-sm font-semibold app-text-primary">거래처 코드</label>
-            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="SUP- 또는 CUS-로 시작">
+            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="미입력 시 자동 생성">
           </div>
           <div>
             <label for="partner-form-name" class="mb-2 block text-sm font-semibold app-text-primary">거래처명</label>

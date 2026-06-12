@@ -128,3 +128,25 @@
     - 없음
 
   </details>
+
+### 거래처 코드 자동 생성 적용 (Codex)
+- **User Intent**: 거래처 신규 등록 시 코드 미입력 또는 `SUP-`/`CUS-`만 입력해도 그대로 저장되는 문제를 막고, 품목 마스터처럼 미입력 시 자동 코드가 생성되도록 요청
+- **Agent Context**: 프론트가 신규 등록 기본값으로 `SUP-`를 넣고 있었고, 백엔드는 접두어만 있는 코드도 유효 코드로 저장하고 있었음. 품목 마스터의 `resolveItemCode`/`generateItemCode` 흐름을 거래처에 맞게 적용해 공급사와 고객사 시퀀스를 분리함.
+- **Key Decisions**:
+  - 백엔드에서 자동 생성 책임 처리 — 프론트 조작과 무관하게 빈 값 또는 접두어만 입력된 값은 서버에서 안전하게 자동 생성되도록 함
+  - 공급사/고객사 prefix별 독립 시퀀스 사용 — `SUP-0001`, `CUS-0001` 형태로 각각 최신 번호를 찾아 다음 번호를 생성함
+  - 프론트 기본값 제거 — 품목 마스터와 동일하게 코드 입력란은 비워두고 “미입력 시 자동 생성” 안내만 표시함
+- **Affected Files**: <details><summary>5개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerRequest.java` (+2/-3) — 거래처 코드 미입력 허용 및 자동 생성 설명 반영
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/repository/PartnerMasterRepository.java` (+1/-0) — prefix 기반 거래처 코드 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` (+47/-8) — 거래처 코드 자동 생성 및 prefix별 번호 추출 로직 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` (+56/-0) — 공급사/고객사 자동 코드 생성 테스트 추가
+    - `frontend/src/views/PartnerMasterView.vue` (+13/-12) — 신규 등록 코드 기본값 제거, 빈 코드 중복확인 생략, 자동 생성 안내 문구 반영
+  - **Deleted**:
+    - 없음
+
+  </details>

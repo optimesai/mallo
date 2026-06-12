@@ -40,6 +40,9 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class PartnerServiceImpl implements PartnerService {
 
+    private static final String SUPPLIER_CODE_PREFIX = "SUP-";
+    private static final String CUSTOMER_CODE_PREFIX = "CUS-";
+
     private final PartnerMasterRepository partnerMasterRepository;
     private final InboundReceiptRepository inboundReceiptRepository;
     private final OutboundShippingRepository outboundShippingRepository;
@@ -75,11 +78,8 @@ public class PartnerServiceImpl implements PartnerService {
     @Override
     @Transactional
     public PartnerResponse createPartner(PartnerRequest request) {
-        validatePartnerCodePrefix(request.getPartnerCode(), request.getPartnerType());
-        validatePartnerCodeNotUsed(request.getPartnerCode());
-
         PartnerMaster partner = new PartnerMaster();
-        applyRequest(partner, request);
+        applyRequest(partner, request, resolvePartnerCode(request.getPartnerCode(), request.getPartnerType()));
         partner.setPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE);
 
         return toResponse(partnerMasterRepository.save(partner));
@@ -203,15 +203,26 @@ public class PartnerServiceImpl implements PartnerService {
         }
     }
 
+    private String resolvePartnerCode(String requestedPartnerCode, PartnerMaster.PartnerType partnerType) {
+        String prefix = getPartnerCodePrefix(partnerType);
+        if (requestedPartnerCode == null || requestedPartnerCode.isBlank() || requestedPartnerCode.trim().equals(prefix)) {
+            return generatePartnerCode(prefix);
+        }
+        String partnerCode = requestedPartnerCode.trim();
+        validatePartnerCodePrefix(partnerCode, partnerType);
+        validatePartnerCodeNotUsed(partnerCode);
+        return partnerCode;
+    }
+
     private void validatePartnerCodePrefix(String partnerCode, PartnerMaster.PartnerType partnerType) {
-        String prefix = partnerType == PartnerMaster.PartnerType.SUPPLIER ? "SUP-" : "CUS-";
+        String prefix = getPartnerCodePrefix(partnerType);
         if (partnerCode == null || !partnerCode.trim().startsWith(prefix)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
     }
 
-    private void applyRequest(PartnerMaster partner, PartnerRequest request) {
-        partner.setPartnerCode(trimRequired(request.getPartnerCode()));
+    private void applyRequest(PartnerMaster partner, PartnerRequest request, String partnerCode) {
+        partner.setPartnerCode(partnerCode);
         partner.setPartnerName(trimRequired(request.getPartnerName()));
         partner.setPartnerType(request.getPartnerType());
         partner.setBusinessNo(trimToNull(request.getBusinessNo()));
@@ -219,6 +230,36 @@ public class PartnerServiceImpl implements PartnerService {
         partner.setContactPhone(trimToNull(request.getContactPhone()));
         partner.setContactEmail(trimToNull(request.getContactEmail()));
         partner.setNote(trimToNull(request.getNote()));
+    }
+
+    private String getPartnerCodePrefix(PartnerMaster.PartnerType partnerType) {
+        return partnerType == PartnerMaster.PartnerType.SUPPLIER ? SUPPLIER_CODE_PREFIX : CUSTOMER_CODE_PREFIX;
+    }
+
+    private String generatePartnerCode(String prefix) {
+        int latestNo = partnerMasterRepository
+                .findByPartnerCodeStartingWith(prefix)
+                .stream()
+                .map(PartnerMaster::getPartnerCode)
+                .mapToInt(code -> extractPartnerCodeNo(code, prefix))
+                .max()
+                .orElse(0);
+        String partnerCode = prefix + String.format("%04d", latestNo + 1);
+
+        validatePartnerCodeNotUsed(partnerCode);
+        return partnerCode;
+    }
+
+    private int extractPartnerCodeNo(String partnerCode, String prefix) {
+        if (partnerCode == null || !partnerCode.startsWith(prefix)) {
+            return 0;
+        }
+
+        try {
+            return Integer.parseInt(partnerCode.substring(prefix.length()));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
     }
 
     private void applyUpdateRequest(PartnerMaster partner, PartnerRequest request) {
