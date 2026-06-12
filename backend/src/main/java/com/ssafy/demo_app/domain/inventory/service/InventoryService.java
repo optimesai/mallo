@@ -2,7 +2,10 @@ package com.ssafy.demo_app.domain.inventory.service;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.api.inventory.dto.InventoryAdjustRequest;
+import com.ssafy.demo_app.api.inventory.dto.InventoryScrapRequest;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
+import com.ssafy.demo_app.api.inventory.dto.InventoryTransferRequest;
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
@@ -27,6 +30,12 @@ public interface InventoryService {
     void stackInventory(Integer workerId, Integer inboundId, InventoryStackRequest request);
 
     void deleteInbound(Integer inboundId);
+
+    void adjustInventory(Integer workerId, InventoryAdjustRequest request);
+
+    void transferInventory(Integer workerId, InventoryTransferRequest request);
+
+    void scrapInventory(Integer workerId, InventoryScrapRequest request);
 
     PageResponse<CurrentInventoryResponse> getInventories(Pageable pageable, String keyword);
 

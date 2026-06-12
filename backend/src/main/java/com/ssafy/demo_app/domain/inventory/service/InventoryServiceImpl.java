@@ -2,7 +2,10 @@ package com.ssafy.demo_app.domain.inventory.service;
 
 import com.ssafy.demo_app.api.inventory.dto.InboundCreateRequest;
 import com.ssafy.demo_app.api.inventory.dto.InboundReceiptResponse;
+import com.ssafy.demo_app.api.inventory.dto.InventoryAdjustRequest;
+import com.ssafy.demo_app.api.inventory.dto.InventoryScrapRequest;
 import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
+import com.ssafy.demo_app.api.inventory.dto.InventoryTransferRequest;
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.LocationRequest;
@@ -237,6 +240,120 @@ public class InventoryServiceImpl implements InventoryService {
             throw new BusinessException(ErrorCode.LOCATION_HAS_INVENTORY);
         }
         warehouseLocationRepository.delete(location);
+    }
+
+    @Override
+    @Transactional
+    public void adjustInventory(Integer workerId, InventoryAdjustRequest request) {
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        ItemMaster item = itemMasterRepository.findByItemCode(request.getItemCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+        WarehouseLocation location = warehouseLocationRepository.findByLocationCode(request.getLocationCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+
+        CurrentInventory inventory = currentInventoryRepository.findByItemAndLocation(item, location)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVENTORY_NOT_FOUND));
+
+        int adjustQty = "INCREASE".equalsIgnoreCase(request.getAdjustType())
+                ? request.getAdjustQty() : -request.getAdjustQty();
+        int newQty = inventory.getCurrentQty() + adjustQty;
+        if (newQty < 0) {
+            throw new BusinessException(ErrorCode.INVENTORY_QTY_NEGATIVE);
+        }
+        inventory.setCurrentQty(newQty);
+        currentInventoryRepository.save(inventory);
+
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(item);
+        history.setLocation(location);
+        history.setTransactionType(TransactionType.ADJUSTMENT);
+        history.setQuantity(adjustQty);
+        history.setReasonDesc(request.getReasonDesc());
+        history.setWorker(worker);
+        transactionHistoryRepository.save(history);
+    }
+
+    @Override
+    @Transactional
+    public void transferInventory(Integer workerId, InventoryTransferRequest request) {
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        ItemMaster item = itemMasterRepository.findByItemCode(request.getItemCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+        WarehouseLocation fromLocation = warehouseLocationRepository.findByLocationCode(request.getFromLocationCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+        WarehouseLocation toLocation = warehouseLocationRepository.findByLocationCode(request.getToLocationCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+
+        // 출발 로케이션 차감
+        CurrentInventory fromInventory = currentInventoryRepository.findByItemAndLocation(item, fromLocation)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVENTORY_NOT_FOUND));
+        if (fromInventory.getCurrentQty() < request.getTransferQty()) {
+            throw new BusinessException(ErrorCode.INVENTORY_QTY_NEGATIVE);
+        }
+        fromInventory.setCurrentQty(fromInventory.getCurrentQty() - request.getTransferQty());
+        currentInventoryRepository.save(fromInventory);
+
+        // 도착 로케이션 증가
+        CurrentInventory toInventory = currentInventoryRepository.findByItemAndLocation(item, toLocation)
+                .orElseGet(() -> {
+                    CurrentInventory ci = new CurrentInventory();
+                    ci.setItem(item);
+                    ci.setLocation(toLocation);
+                    ci.setCurrentQty(0);
+                    return ci;
+                });
+        toInventory.setCurrentQty(toInventory.getCurrentQty() + request.getTransferQty());
+        currentInventoryRepository.save(toInventory);
+
+        // TRANSFER_OUT 이력
+        InventoryTransactionHistory outHistory = new InventoryTransactionHistory();
+        outHistory.setItem(item);
+        outHistory.setLocation(fromLocation);
+        outHistory.setTransactionType(TransactionType.TRANSFER_OUT);
+        outHistory.setQuantity(-request.getTransferQty());
+        outHistory.setReasonDesc(request.getReasonDesc());
+        outHistory.setWorker(worker);
+        transactionHistoryRepository.save(outHistory);
+
+        // TRANSFER_IN 이력
+        InventoryTransactionHistory inHistory = new InventoryTransactionHistory();
+        inHistory.setItem(item);
+        inHistory.setLocation(toLocation);
+        inHistory.setTransactionType(TransactionType.TRANSFER_IN);
+        inHistory.setQuantity(request.getTransferQty());
+        inHistory.setReasonDesc(request.getReasonDesc());
+        inHistory.setWorker(worker);
+        transactionHistoryRepository.save(inHistory);
+    }
+
+    @Override
+    @Transactional
+    public void scrapInventory(Integer workerId, InventoryScrapRequest request) {
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        ItemMaster item = itemMasterRepository.findByItemCode(request.getItemCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+        WarehouseLocation location = warehouseLocationRepository.findByLocationCode(request.getLocationCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.LOCATION_NOT_FOUND));
+
+        CurrentInventory inventory = currentInventoryRepository.findByItemAndLocation(item, location)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVENTORY_NOT_FOUND));
+        if (inventory.getCurrentQty() < request.getScrapQty()) {
+            throw new BusinessException(ErrorCode.INVENTORY_QTY_NEGATIVE);
+        }
+        inventory.setCurrentQty(inventory.getCurrentQty() - request.getScrapQty());
+        currentInventoryRepository.save(inventory);
+
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(item);
+        history.setLocation(location);
+        history.setTransactionType(TransactionType.SCRAP);
+        history.setQuantity(-request.getScrapQty());
+        history.setReasonDesc(request.getReasonDesc());
+        history.setWorker(worker);
+        transactionHistoryRepository.save(history);
     }
 
     // --- Specification builders ---
