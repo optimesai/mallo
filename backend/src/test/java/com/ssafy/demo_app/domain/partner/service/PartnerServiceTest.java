@@ -2,9 +2,12 @@ package com.ssafy.demo_app.domain.partner.service;
 
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
 import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
+import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
 import com.ssafy.demo_app.domain.partner.repository.PartnerMasterRepository;
+import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
 import com.ssafy.demo_app.domain.shipping.repository.OutboundShippingRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
@@ -305,6 +308,35 @@ class PartnerServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_HAS_REFERENCES);
 
         verify(partnerMasterRepository, never()).delete(any(PartnerMaster.class));
+    }
+
+    @Test
+    @DisplayName("고객사 출하 품목 이력 조회 성공 - 출하 일시 없음")
+    void getShippedItems_successWithNullShippingDate() {
+        ItemMaster item = new ItemMaster();
+        item.setItemId(1);
+        item.setItemCode("FG-0001");
+        item.setItemName("완제품");
+        item.setItemType(ItemMaster.ItemType.FG);
+        item.setUnit(ItemMaster.Unit.ea);
+
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingId(1);
+        shipping.setPartner(customer);
+        shipping.setItem(item);
+        shipping.setRequestQty(10);
+
+        given(partnerMasterRepository.findById(2)).willReturn(Optional.of(customer));
+        given(outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(customer))
+                .willReturn(List.of(shipping));
+
+        List<PartnerShippedItemResponse> responses = partnerService.getShippedItems(2);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getItemCode()).isEqualTo("FG-0001");
+        assertThat(responses.get(0).getTotalShippingQty()).isEqualTo(10);
+        assertThat(responses.get(0).getShippingCount()).isEqualTo(1);
+        assertThat(responses.get(0).getLastShippingAt()).isNull();
     }
 
     @SuppressWarnings("unchecked")

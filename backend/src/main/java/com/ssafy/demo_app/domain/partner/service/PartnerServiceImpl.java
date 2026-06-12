@@ -150,20 +150,21 @@ public class PartnerServiceImpl implements PartnerService {
         Map<Integer, PartnerShippedItemResponse> shippedItems = new LinkedHashMap<>();
         for (OutboundShipping shipping : outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(partner)) {
             ItemMaster item = shipping.getItem();
+            LocalDateTime shippingAt = getShippingReferenceAt(shipping);
             PartnerShippedItemResponse response = shippedItems.computeIfAbsent(item.getItemId(), key -> {
                 PartnerShippedItemResponse created = new PartnerShippedItemResponse();
                 created.setItemCode(item.getItemCode());
                 created.setItemName(item.getItemName());
                 created.setItemType(item.getItemType());
                 created.setUnit(item.getUnit());
-                created.setLastShippingAt(shipping.getCreatedAt());
+                created.setLastShippingAt(shippingAt);
                 return created;
             });
             response.setTotalShippingQty(response.getTotalShippingQty() + shipping.getRequestQty());
             response.setShippingCount(response.getShippingCount() + 1);
             LocalDateTime lastShippingAt = response.getLastShippingAt();
-            if (lastShippingAt == null || shipping.getCreatedAt().isAfter(lastShippingAt)) {
-                response.setLastShippingAt(shipping.getCreatedAt());
+            if (lastShippingAt == null || (shippingAt != null && shippingAt.isAfter(lastShippingAt))) {
+                response.setLastShippingAt(shippingAt);
             }
         }
         return shippedItems.values().stream()
@@ -351,7 +352,7 @@ public class PartnerServiceImpl implements PartnerService {
                 .map(InboundReceipt::getCreatedAt)
                 .orElse(null);
         LocalDateTime lastShippingAt = outboundShippingRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
-                .map(OutboundShipping::getCreatedAt)
+                .map(this::getShippingReferenceAt)
                 .orElse(null);
         response.setLastUsedAt(maxDateTime(lastInboundAt, lastShippingAt));
         return response;
@@ -364,7 +365,7 @@ public class PartnerServiceImpl implements PartnerService {
                 .map(InboundReceipt::getCreatedAt)
                 .orElse(null);
         LocalDateTime lastShippingAt = outboundShippingRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
-                .map(OutboundShipping::getCreatedAt)
+                .map(this::getShippingReferenceAt)
                 .orElse(null);
 
         PartnerUsageResponse response = new PartnerUsageResponse();
@@ -385,5 +386,12 @@ public class PartnerServiceImpl implements PartnerService {
         if (first == null) return second;
         if (second == null) return first;
         return first.isAfter(second) ? first : second;
+    }
+
+    private LocalDateTime getShippingReferenceAt(OutboundShipping shipping) {
+        if (shipping.getShippedAt() != null) {
+            return shipping.getShippedAt();
+        }
+        return shipping.getCreatedAt();
     }
 }

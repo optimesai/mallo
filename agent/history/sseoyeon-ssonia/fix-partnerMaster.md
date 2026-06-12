@@ -53,3 +53,22 @@
     - 없음
 
   </details>
+
+### 고객사 상세 출하 이력 오류 수정 (Codex)
+- **User Intent**: 공급사 상세는 정상인데 고객사 상세로 들어가면 서버 오류가 표시되는 문제를 해결 요청
+- **Agent Context**: 고객사 상세 진입 시에만 호출되는 출하 품목 이력 API에서 `OutboundShipping.createdAt`이 null인 기존 데이터에 대해 `isAfter`를 직접 호출해 500 오류가 발생할 수 있었음. 출하 기준 시간을 `shippedAt` 우선, 없으면 `createdAt`, 둘 다 없으면 null로 처리하도록 방어 로직을 추가함.
+- **Key Decisions**:
+  - 백엔드 서비스에서 널 안전 처리 — 프론트에서 오류를 숨기지 않고 API가 정상 응답을 보장하도록 도메인 집계 로직을 수정함
+  - 출하 기준 일시는 `shippedAt`을 우선 사용 — 실제 출하 완료 시간이 있으면 업무적으로 더 정확하고, 없을 때만 생성 시간을 fallback으로 사용함
+  - null 출하 일시 케이스 테스트 추가 — 기존 데이터나 테스트 데이터의 감사 시간이 비어 있어도 고객사 상세가 500으로 깨지지 않도록 회귀를 방지함
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` (+13/-5) — 고객사 출하 이력 집계 시 출하 기준 일시 널 안전 처리
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` (+32/-0) — 출하 일시가 없는 고객사 출하 이력 조회 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
