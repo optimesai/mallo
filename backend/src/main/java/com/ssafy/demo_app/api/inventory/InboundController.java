@@ -53,12 +53,12 @@ public class InboundController implements InboundApi {
     public ResponseEntity<ApiResponse<Void>> stackInventory(
             CustomUserDetails userDetails, Integer id, InventoryStackRequest request) {
         inboundService.stackInventory(userDetails.getUserId(), id, request);
-        return ResponseEntity.ok(ApiResponse.success());
+        return ResponseEntity.ok(ApiResponse.success("재고 적재가 완료되었습니다."));
     }
 
     @Override
     public ResponseEntity<ApiResponse<Void>> deleteInbound(Integer id) {
         inboundService.deleteInbound(id);
-        return ResponseEntity.ok(ApiResponse.success());
+        return ResponseEntity.ok(ApiResponse.success("입고 정보가 삭제되었습니다."));
     }
 }
