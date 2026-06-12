@@ -14,4 +14,6 @@ public interface OutboundShippingService {
     void cancelShipping(Integer shippingId, CancelShippingRequest request);
     ShippingResponse updateShipping(Integer shippingId, ShippingUpdateRequest request);
     void partialShip(Integer shippingId, Integer workerId, PartialShipRequest request);
+    void packShipping(Integer shippingId, Integer workerId);
+    void inspectShipping(Integer shippingId, Integer workerId);
 }

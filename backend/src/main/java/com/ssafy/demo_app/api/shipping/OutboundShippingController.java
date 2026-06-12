@@ -88,4 +88,22 @@ public class OutboundShippingController implements OutboundShippingApi {
         outboundShippingService.partialShip(id, userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("부분 출하가 처리되었습니다."));
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> packShipping(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id
+    ) {
+        outboundShippingService.packShipping(id, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("포장이 완료되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> inspectShipping(
+            com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails userDetails,
+            Integer id
+    ) {
+        outboundShippingService.inspectShipping(id, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("검수가 완료되었습니다."));
+    }
 }

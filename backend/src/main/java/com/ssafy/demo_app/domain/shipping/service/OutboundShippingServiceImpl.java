@@ -271,6 +271,36 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         transactionHistoryRepository.save(history);
     }
 
+    @Override
+    @Transactional
+    public void packShipping(Integer shippingId, Integer workerId) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.PICKING) {
+            throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
+        }
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        shipping.setStatus(OutboundShipping.ShippingStatus.PACKING);
+        shipping.setWorker(worker);
+        outboundShippingRepository.save(shipping);
+    }
+
+    @Override
+    @Transactional
+    public void inspectShipping(Integer shippingId, Integer workerId) {
+        OutboundShipping shipping = outboundShippingRepository.findById(shippingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHIPPING_NOT_FOUND));
+        if (shipping.getStatus() != OutboundShipping.ShippingStatus.PACKING) {
+            throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
+        }
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        shipping.setStatus(OutboundShipping.ShippingStatus.INSPECTING);
+        shipping.setWorker(worker);
+        outboundShippingRepository.save(shipping);
+    }
+
     // --- Specification builder ---
 
     private Specification<OutboundShipping> buildShippingSpec(String status, String keyword) {
