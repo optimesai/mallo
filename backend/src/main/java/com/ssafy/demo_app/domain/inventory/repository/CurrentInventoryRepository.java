@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface CurrentInventoryRepository extends JpaRepository<CurrentInventory, Integer>,
         JpaSpecificationExecutor<CurrentInventory> {
     Optional<CurrentInventory> findByItemAndLocation(ItemMaster item, WarehouseLocation location);
+    Optional<CurrentInventory> findByItemAndLocationAndLotNumber(ItemMaster item, WarehouseLocation location, String lotNumber);
     boolean existsByLocation(WarehouseLocation location);
     List<CurrentInventory> findByItem(ItemMaster item);
     boolean existsByItem(ItemMaster item);

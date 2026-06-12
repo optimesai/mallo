@@ -21,6 +21,9 @@ public class WarehouseLocation {
     @Column(name = "warehouse_name", nullable = false)
     private String warehouseName;
 
+    @Column(name = "max_capacity")
+    private Integer maxCapacity;
+
     @Column(name = "rack_row")
     private String rackRow;
 
