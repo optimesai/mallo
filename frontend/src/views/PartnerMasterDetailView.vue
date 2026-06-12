@@ -21,6 +21,7 @@ const activeTab = ref<'profile' | 'system' | 'history'>('profile')
 const pageError = ref<string | null>(null)
 const toast = ref<string | null>(null)
 const isFormOpen = ref(false)
+const isDeleteOpen = ref(false)
 const formError = ref<string | null>(null)
 
 const form = reactive<PartnerMasterRequest>({
@@ -32,6 +33,15 @@ const form = reactive<PartnerMasterRequest>({
   contactPhone: '',
   contactEmail: '',
   note: ''
+})
+
+const referenceItems = computed(() => {
+  const currentUsage = usage.value
+  if (!currentUsage) return []
+  return [
+    { label: '입고 참조', count: currentUsage.inboundCount },
+    { label: '출하 참조', count: currentUsage.shippingCount }
+  ].filter((item) => item.count > 0)
 })
 
 onMounted(() => {
@@ -155,13 +165,17 @@ async function updateStatus(nextStatus: PartnerStatus) {
 
 async function requestDelete() {
   if (!partner.value) return
-  const currentUsage = await partnerMasterStore.loadPartnerUsage(partner.value.partnerId)
-  if (!currentUsage.canDelete) {
-    if (!confirm(`${currentUsage.deleteBlockedReason}\n삭제할 수 없으므로 비활성화로 변경하시겠습니까?`)) return
-    await updateStatus('INACTIVE')
-    return
+  try {
+    pageError.value = null
+    await partnerMasterStore.loadPartnerUsage(partner.value.partnerId)
+    isDeleteOpen.value = true
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '거래처 사용 현황을 불러오지 못했습니다.'
   }
+}
 
+async function deletePartner() {
+  if (!partner.value) return
   if (!confirm(`[${partner.value.partnerCode}] ${partner.value.partnerName} 거래처를 삭제하시겠습니까?`)) return
 
   try {
@@ -170,6 +184,22 @@ async function requestDelete() {
     await router.push({ name: 'partner-master' })
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '거래처 삭제에 실패했습니다.'
+  }
+}
+
+async function deactivateFromDeleteModal() {
+  if (!partner.value) return
+  if (partner.value.partnerStatus === 'INACTIVE') {
+    isDeleteOpen.value = false
+    return
+  }
+  try {
+    await partnerMasterStore.updatePartnerStatus(partner.value.partnerId, 'INACTIVE')
+    showToast('참조 중인 거래처를 비활성화했습니다.')
+    isDeleteOpen.value = false
+    await loadDetail()
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '거래처 상태 변경에 실패했습니다.'
   }
 }
 
@@ -393,6 +423,38 @@ function showToast(message: string) {
             <button class="rounded-2xl app-accent-bg px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="submit" :disabled="partnerMasterStore.isSaving">저장</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div v-if="isDeleteOpen" class="fixed inset-0 z-[60] flex items-center justify-center app-backdrop p-4">
+      <div class="w-full max-w-xl rounded-3xl app-bg-surface p-6 shadow-2xl">
+        <h2 class="text-lg app-font-emphasis app-text-strong">거래처 삭제 확인</h2>
+        <div class="mt-4 rounded-2xl border app-border-muted p-4">
+          <p class="mb-2 text-sm app-font-emphasis app-text-strong">참조 항목</p>
+          <ul v-if="referenceItems.length > 0" class="space-y-1 text-sm app-font-strong app-text-soft">
+            <li v-for="refItem in referenceItems" :key="refItem.label">- {{ refItem.label }} {{ refItem.count.toLocaleString() }}건</li>
+          </ul>
+          <p v-else class="text-sm app-font-strong app-text-muted">참조 중인 항목이 없습니다.</p>
+        </div>
+        <p v-if="usage && !usage.canDelete" class="mt-4 rounded-2xl app-bg-warning-soft p-4 text-sm app-font-strong app-text-warning">
+          참조 중인 거래처는 삭제할 수 없습니다. 더 이상 사용하지 않는 거래처는 비활성화로 전환하세요.
+        </p>
+        <p v-else class="mt-4 rounded-2xl app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">
+          참조 데이터가 없습니다. 삭제 후 복구할 수 없습니다.
+        </p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
+          <button
+            v-if="usage && !usage.canDelete"
+            class="rounded-2xl app-bg-warning px-5 py-2.5 text-sm app-font-emphasis app-text-inverse disabled:opacity-50"
+            type="button"
+            :disabled="partnerMasterStore.isSaving || partner?.partnerStatus === 'INACTIVE'"
+            @click="deactivateFromDeleteModal"
+          >
+            {{ partner?.partnerStatus === 'INACTIVE' ? '이미 비활성화됨' : '비활성화' }}
+          </button>
+          <button v-else class="rounded-2xl app-bg-danger px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="button" @click="deletePartner">삭제</button>
+        </div>
       </div>
     </div>
   </div>

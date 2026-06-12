@@ -92,3 +92,21 @@
     - 없음
 
   </details>
+
+### 거래처 삭제 비활성화 유도 모달 적용 (Codex)
+- **User Intent**: 참조 중인 거래처 삭제 시 상단 알림이 아니라 품목 마스터의 비활성화 유도처럼 팝업 모달로 안내되도록 요청
+- **Agent Context**: 거래처 상세는 참조 중인 거래처 삭제 시 브라우저 confirm과 상단 toast로 흐름이 이어져 품목 마스터의 삭제 확인 UX와 달랐음. 삭제 버튼 클릭 시 사용 현황을 조회하고, 참조 항목과 삭제 불가 안내를 모달에서 보여주도록 변경함.
+- **Key Decisions**:
+  - 품목 마스터의 삭제 확인 모달 패턴 재사용 — `app-backdrop`, `app-bg-warning-soft`, `app-bg-warning` 디자인 토큰을 동일하게 적용해 기준정보 상세 화면 간 UX를 통일함
+  - 참조 항목을 모달 안에 표시 — 입고/출하 참조 건수를 먼저 보여줘 사용자가 삭제 불가 이유를 즉시 이해하도록 함
+  - 참조 중인 경우 삭제 버튼 대신 비활성화 버튼 제공 — 기존 정책인 “삭제 대신 비활성화”를 명시적 선택 흐름으로 바꿈
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/PartnerMasterDetailView.vue` (+67/-5) — 거래처 삭제 확인 모달, 참조 항목 표시, 비활성화 유도 버튼 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
