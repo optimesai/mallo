@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -32,4 +33,7 @@ public class ShippingCreateRequest {
     @NotNull(message = "요청 수량은 필수입니다.")
     @Min(value = 1, message = "요청 수량은 1 이상이어야 합니다.")
     private Integer requestQty;
+
+    @Schema(description = "출하 유형 (SALE, TRANSFER, RETURN)", example = "SALE")
+    private String shippingType;
 }

@@ -31,7 +31,7 @@ public interface OutboundShippingApi {
     @GetMapping
     ResponseEntity<ApiResponse<PageResponse<ShippingResponse>>> getShippings(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
-            @Parameter(description = "출하 상태 (READY, PICKING, SHIPPED)")
+            @Parameter(description = "출하 상태 (READY, PICKING, PACKING, INSPECTING, SHIPPED, PARTIALLY_SHIPPED, CANCELED)")
             @RequestParam(required = false) String status,
             @Parameter(description = "출하번호, 품목명/코드 또는 거래처명 검색 키워드")
             @RequestParam(required = false) String keyword

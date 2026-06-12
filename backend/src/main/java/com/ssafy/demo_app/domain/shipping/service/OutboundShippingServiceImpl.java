@@ -63,6 +63,9 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         shipping.setPartner(partner);
         shipping.setItem(item);
         shipping.setRequestQty(request.getRequestQty());
+        if (request.getShippingType() != null) {
+            shipping.setShippingType(OutboundShipping.ShippingType.valueOf(request.getShippingType()));
+        }
         shipping.setStatus(OutboundShipping.ShippingStatus.READY);
 
         OutboundShipping savedShipping = outboundShippingRepository.save(shipping);
