@@ -46,6 +46,11 @@ const stats = computed(() => ({
 }))
 
 const canWrite = computed(() => ['ADMIN', 'MANAGER'].includes(authStore.user?.role || ''))
+const pageStart = computed(() => {
+  if (partnerMasterStore.totalElements === 0) return 0
+  return partnerMasterStore.page * partnerMasterStore.size + 1
+})
+const pageEnd = computed(() => Math.min((partnerMasterStore.page + 1) * partnerMasterStore.size, partnerMasterStore.totalElements))
 
 const keywordSuggestions = computed(() => {
   const keyword = filterKeyword.value.trim().toLowerCase()
@@ -452,7 +457,9 @@ function showToast(message: string) {
       </div>
 
       <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-sm app-font-strong app-text-muted">총 {{ partnerMasterStore.totalElements.toLocaleString() }}건 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지</p>
+        <p class="text-sm app-font-strong app-text-muted">
+          총 {{ partnerMasterStore.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ partnerMasterStore.size }}건씩 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지
+        </p>
         <div class="flex gap-2">
           <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
           <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>

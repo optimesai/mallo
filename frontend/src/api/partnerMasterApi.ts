@@ -84,7 +84,7 @@ export const partnerMasterApi = {
     const response = await apiClient.get<ApiResponse<PageResponse<PartnerMasterResponse>>>('/api/partners', {
       params: {
         page: params.page ?? 0,
-        size: params.size ?? 20,
+        size: params.size ?? 10,
         sort: params.sort ?? 'createdAt,desc',
         partnerType: params.partnerType,
         partnerStatus: params.partnerStatus,

@@ -208,3 +208,24 @@
     - 없음
 
   </details>
+
+### 거래처 목록 10건 단위 페이지네이션 적용 (Codex)
+- **User Intent**: 거래처 마스터 목록에서 페이지네이션이 동작하지 않는 것처럼 보이는 문제를 해결하고, 10건 단위로 페이지를 나누도록 요청
+- **Agent Context**: 거래처 목록 화면은 페이지 이동 UI와 서버 페이징 요청 구조를 이미 갖고 있었지만, 프론트 API와 store 기본 페이지 크기가 20건으로 설정되어 있어 10건 기준으로 페이지가 나뉘지 않았음. 서버에 size 파라미터가 누락되는 경우도 10건 기본값이 보장되도록 백엔드 기본 Pageable 설정을 보강함.
+- **Key Decisions**:
+  - 프론트 기본 요청 size를 10으로 통일 — 목록 초기 조회, 필터 조회, 페이지 이동이 모두 10건 단위로 동작하도록 함
+  - 백엔드 기본 Pageable size를 10으로 지정 — 클라이언트가 size를 보내지 않는 경우에도 거래처 목록 API가 10건 기준으로 응답하도록 함
+  - 하단 페이지 정보 보강 — 현재 페이지에서 몇 번째 거래처까지 표시 중인지 `1-10 표시`, `10건씩` 형태로 사용자에게 명확히 보여줌
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` (+2/-1) — 거래처 목록 API 기본 페이지 크기 10건 지정
+    - `frontend/src/api/partnerMasterApi.ts` (+1/-1) — 거래처 목록 API 요청 기본 size를 10으로 변경
+    - `frontend/src/state/partnerMasterStore.ts` (+1/-1) — 거래처 목록 store 기본 페이지 크기를 10으로 변경
+    - `frontend/src/views/PartnerMasterView.vue` (+7/-1) — 현재 표시 범위와 10건 단위 안내 문구 추가
+  - **Deleted**:
+    - 없음
+
+  </details>

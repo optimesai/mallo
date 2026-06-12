@@ -19,7 +19,7 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
   const shippedItems = ref<PartnerShippedItemResponse[]>([])
   const suggestions = ref<PartnerMasterResponse[]>([])
   const page = ref(0)
-  const size = ref(20)
+  const size = ref(10)
   const totalElements = ref(0)
   const totalPages = ref(0)
   const sort = ref('createdAt,desc')

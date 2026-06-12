@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public interface PartnerApi {
     @Operation(summary = "거래처 목록 조회", description = "등록된 거래처 마스터 목록을 조회합니다. partnerType으로 SUPPLIER, CUSTOMER 필터링이 가능하고, keyword로 거래처 ID, 거래처 코드, 거래처명, 사업자등록번호를 검색할 수 있습니다.")
     @GetMapping
     ResponseEntity<ApiResponse<PageResponse<PartnerResponse>>> getPartners(
-            Pageable pageable,
+            @PageableDefault(size = 10) Pageable pageable,
             @Parameter(description = "거래처 구분 필터") @RequestParam(required = false) PartnerMaster.PartnerType partnerType,
             @Parameter(description = "거래처 상태 필터") @RequestParam(required = false) PartnerMaster.PartnerStatus partnerStatus,
             @Parameter(description = "사업자등록번호 등록 여부") @RequestParam(required = false) Boolean hasBusinessNo,
