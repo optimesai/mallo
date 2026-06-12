@@ -125,6 +125,7 @@ class OutboundShippingServiceTest {
         // Given
         User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
         PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
         ItemMaster item = createItem("SH-ITEM-03", "완제품C", ItemMaster.ItemType.FG);
 
         // 출하 지시 생성 (PICKING 상태, 재고는 이미 PICKING 단계에서 차감됨)
@@ -133,8 +134,8 @@ class OutboundShippingServiceTest {
         shipping.setPartner(partner);
         shipping.setItem(item);
         shipping.setRequestQty(30);
+        shipping.setPickingLocation(location);
         shipping.setStatus(OutboundShipping.ShippingStatus.PICKING);
-        shipping.setShippedQty(0);
         em.persist(shipping);
 
         em.flush();
