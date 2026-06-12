@@ -14,7 +14,10 @@ export interface PartnerMasterResponse {
   businessNo: string | null
   representative: string | null
   contactPhone: string | null
+  contactEmail: string | null
+  note: string | null
   createdAt: string
+  lastUsedAt: string | null
   inboundCount: number
   shippingCount: number
   usageCount: number
@@ -27,6 +30,8 @@ export interface PartnerMasterRequest {
   businessNo?: string | null
   representative?: string | null
   contactPhone?: string | null
+  contactEmail?: string | null
+  note?: string | null
 }
 
 export interface PartnerMasterSearchParams {
@@ -62,6 +67,16 @@ export interface PartnerSuppliedItemResponse {
   totalInboundQty: number
   inboundCount: number
   lastInboundDate: string | null
+}
+
+export interface PartnerShippedItemResponse {
+  itemCode: string
+  itemName: string
+  itemType: 'RAW' | 'HALF' | 'FG'
+  unit: string
+  totalShippingQty: number
+  shippingCount: number
+  lastShippingAt: string | null
 }
 
 export const partnerMasterApi = {
@@ -116,6 +131,11 @@ export const partnerMasterApi = {
 
   async getSuppliedItems(id: number) {
     const response = await apiClient.get<ApiResponse<PartnerSuppliedItemResponse[]>>(`/api/partners/${id}/supplied-items`)
+    return response.data
+  },
+
+  async getShippedItems(id: number) {
+    const response = await apiClient.get<ApiResponse<PartnerShippedItemResponse[]>>(`/api/partners/${id}/shipped-items`)
     return response.data
   },
 

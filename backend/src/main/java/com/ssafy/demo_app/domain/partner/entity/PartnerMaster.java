@@ -35,6 +35,12 @@ public class PartnerMaster extends BaseCreatedTimeEntity {
     @Column(name = "contact_phone")
     private String contactPhone;
 
+    @Column(name = "contact_email")
+    private String contactEmail;
+
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "partner_status", nullable = false, columnDefinition = "varchar(20) default 'ACTIVE'")
     private PartnerStatus partnerStatus = PartnerStatus.ACTIVE;

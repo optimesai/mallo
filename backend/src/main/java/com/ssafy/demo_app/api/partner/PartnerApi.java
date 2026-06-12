@@ -3,6 +3,7 @@ package com.ssafy.demo_app.api.partner;
 import com.ssafy.demo_app.api.partner.dto.PartnerDuplicateCheckResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerStatusUpdateRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
@@ -82,6 +83,12 @@ public interface PartnerApi {
     @Operation(summary = "공급사 실제 공급 품목 이력 조회", description = "공급사의 입고 이력을 기준으로 실제 공급한 품목 요약을 조회합니다.")
     @GetMapping("/{id}/supplied-items")
     ResponseEntity<ApiResponse<List<PartnerSuppliedItemResponse>>> getSuppliedItems(
+            @Parameter(description = "거래처 ID", required = true) @PathVariable Integer id
+    );
+
+    @Operation(summary = "고객사 실제 출하 품목 이력 조회", description = "고객사의 출하 이력을 기준으로 실제 출하한 품목 요약을 조회합니다.")
+    @GetMapping("/{id}/shipped-items")
+    ResponseEntity<ApiResponse<List<PartnerShippedItemResponse>>> getShippedItems(
             @Parameter(description = "거래처 ID", required = true) @PathVariable Integer id
     );
 

@@ -2,6 +2,7 @@ package com.ssafy.demo_app.domain.partner.service;
 
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
@@ -48,8 +49,8 @@ public class PartnerServiceImpl implements PartnerService {
                                                       PartnerMaster.PartnerStatus partnerStatus, Boolean hasBusinessNo,
                                                       String keyword) {
         Specification<PartnerMaster> spec = buildPartnerSpec(partnerType, partnerStatus, hasBusinessNo, keyword);
-        if (isUsageCountSort(pageable)) {
-            return PageResponse.from(buildUsageCountPage(spec, pageable));
+        if (isAggregateSort(pageable)) {
+            return PageResponse.from(buildAggregateSortPage(spec, pageable));
         }
         Page<PartnerMaster> page = partnerMasterRepository.findAll(spec, pageable);
         return PageResponse.from(page.map(this::toResponse));
@@ -74,6 +75,7 @@ public class PartnerServiceImpl implements PartnerService {
     @Override
     @Transactional
     public PartnerResponse createPartner(PartnerRequest request) {
+        validatePartnerCodePrefix(request.getPartnerCode(), request.getPartnerType());
         validatePartnerCodeNotUsed(request.getPartnerCode());
 
         PartnerMaster partner = new PartnerMaster();
@@ -87,8 +89,7 @@ public class PartnerServiceImpl implements PartnerService {
     @Transactional
     public PartnerResponse updatePartner(Integer partnerId, PartnerRequest request) {
         PartnerMaster partner = findPartner(partnerId);
-        validatePartnerCodeNotUsedByAnotherPartner(request.getPartnerCode(), partnerId);
-        applyRequest(partner, request);
+        applyUpdateRequest(partner, request);
 
         return toResponse(partnerMasterRepository.save(partner));
     }
@@ -140,6 +141,38 @@ public class PartnerServiceImpl implements PartnerService {
     }
 
     @Override
+    public List<PartnerShippedItemResponse> getShippedItems(Integer partnerId) {
+        PartnerMaster partner = findPartner(partnerId);
+        if (partner.getPartnerType() != PartnerMaster.PartnerType.CUSTOMER) {
+            return List.of();
+        }
+
+        Map<Integer, PartnerShippedItemResponse> shippedItems = new LinkedHashMap<>();
+        for (OutboundShipping shipping : outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(partner)) {
+            ItemMaster item = shipping.getItem();
+            PartnerShippedItemResponse response = shippedItems.computeIfAbsent(item.getItemId(), key -> {
+                PartnerShippedItemResponse created = new PartnerShippedItemResponse();
+                created.setItemCode(item.getItemCode());
+                created.setItemName(item.getItemName());
+                created.setItemType(item.getItemType());
+                created.setUnit(item.getUnit());
+                created.setLastShippingAt(shipping.getCreatedAt());
+                return created;
+            });
+            response.setTotalShippingQty(response.getTotalShippingQty() + shipping.getRequestQty());
+            response.setShippingCount(response.getShippingCount() + 1);
+            LocalDateTime lastShippingAt = response.getLastShippingAt();
+            if (lastShippingAt == null || shipping.getCreatedAt().isAfter(lastShippingAt)) {
+                response.setLastShippingAt(shipping.getCreatedAt());
+            }
+        }
+        return shippedItems.values().stream()
+                .sorted(Comparator.comparing(PartnerShippedItemResponse::getLastShippingAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void deletePartner(Integer partnerId) {
         PartnerMaster partner = findPartner(partnerId);
@@ -166,6 +199,13 @@ public class PartnerServiceImpl implements PartnerService {
         }
     }
 
+    private void validatePartnerCodePrefix(String partnerCode, PartnerMaster.PartnerType partnerType) {
+        String prefix = partnerType == PartnerMaster.PartnerType.SUPPLIER ? "SUP-" : "CUS-";
+        if (partnerCode == null || !partnerCode.trim().startsWith(prefix)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
     private void applyRequest(PartnerMaster partner, PartnerRequest request) {
         partner.setPartnerCode(trimRequired(request.getPartnerCode()));
         partner.setPartnerName(trimRequired(request.getPartnerName()));
@@ -173,6 +213,17 @@ public class PartnerServiceImpl implements PartnerService {
         partner.setBusinessNo(trimToNull(request.getBusinessNo()));
         partner.setRepresentative(trimToNull(request.getRepresentative()));
         partner.setContactPhone(trimToNull(request.getContactPhone()));
+        partner.setContactEmail(trimToNull(request.getContactEmail()));
+        partner.setNote(trimToNull(request.getNote()));
+    }
+
+    private void applyUpdateRequest(PartnerMaster partner, PartnerRequest request) {
+        partner.setPartnerName(trimRequired(request.getPartnerName()));
+        partner.setBusinessNo(trimToNull(request.getBusinessNo()));
+        partner.setRepresentative(trimToNull(request.getRepresentative()));
+        partner.setContactPhone(trimToNull(request.getContactPhone()));
+        partner.setContactEmail(trimToNull(request.getContactEmail()));
+        partner.setNote(trimToNull(request.getNote()));
     }
 
     private List<PartnerMaster> searchPartnersByIdCodeOrName(String searchValue) {
@@ -251,20 +302,29 @@ public class PartnerServiceImpl implements PartnerService {
                 keywordPredicates.add(cb.like(cb.lower(root.get("partnerCode")), pattern));
                 keywordPredicates.add(cb.like(cb.lower(root.get("partnerName")), pattern));
                 keywordPredicates.add(cb.like(cb.lower(root.get("businessNo")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("representative")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("contactPhone")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("contactEmail")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("note")), pattern));
                 predicates.add(cb.or(keywordPredicates.toArray(new Predicate[0])));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    private boolean isUsageCountSort(Pageable pageable) {
-        return pageable.getSort().stream().anyMatch(order -> "usageCount".equals(order.getProperty()));
+    private boolean isAggregateSort(Pageable pageable) {
+        return pageable.getSort().stream()
+                .anyMatch(order -> "usageCount".equals(order.getProperty()) || "lastUsedAt".equals(order.getProperty()));
     }
 
-    private Page<PartnerResponse> buildUsageCountPage(Specification<PartnerMaster> spec, Pageable pageable) {
+    private Page<PartnerResponse> buildAggregateSortPage(Specification<PartnerMaster> spec, Pageable pageable) {
+        Sort.Order lastUsedOrder = pageable.getSort().getOrderFor("lastUsedAt");
         Sort.Order usageOrder = pageable.getSort().getOrderFor("usageCount");
-        boolean descending = usageOrder == null || usageOrder.isDescending();
-        Comparator<PartnerResponse> comparator = Comparator.comparingLong(PartnerResponse::getUsageCount);
+        boolean sortByLastUsedAt = lastUsedOrder != null;
+        boolean descending = sortByLastUsedAt ? lastUsedOrder.isDescending() : usageOrder == null || usageOrder.isDescending();
+        Comparator<PartnerResponse> comparator = sortByLastUsedAt
+                ? Comparator.comparing(PartnerResponse::getLastUsedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                : Comparator.comparingLong(PartnerResponse::getUsageCount);
         if (descending) {
             comparator = comparator.reversed();
         }
@@ -287,6 +347,13 @@ public class PartnerServiceImpl implements PartnerService {
         response.setInboundCount(inboundCount);
         response.setShippingCount(shippingCount);
         response.setUsageCount(inboundCount + shippingCount);
+        LocalDateTime lastInboundAt = inboundReceiptRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
+                .map(InboundReceipt::getCreatedAt)
+                .orElse(null);
+        LocalDateTime lastShippingAt = outboundShippingRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
+                .map(OutboundShipping::getCreatedAt)
+                .orElse(null);
+        response.setLastUsedAt(maxDateTime(lastInboundAt, lastShippingAt));
         return response;
     }
 

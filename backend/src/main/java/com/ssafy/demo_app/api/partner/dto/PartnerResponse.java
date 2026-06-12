@@ -20,7 +20,10 @@ public class PartnerResponse {
     private String businessNo;
     private String representative;
     private String contactPhone;
+    private String contactEmail;
+    private String note;
     private LocalDateTime createdAt;
+    private LocalDateTime lastUsedAt;
     private long inboundCount;
     private long shippingCount;
     private long usageCount;
@@ -35,6 +38,8 @@ public class PartnerResponse {
         response.setBusinessNo(partner.getBusinessNo());
         response.setRepresentative(partner.getRepresentative());
         response.setContactPhone(partner.getContactPhone());
+        response.setContactEmail(partner.getContactEmail());
+        response.setNote(partner.getNote());
         response.setCreatedAt(partner.getCreatedAt());
         return response;
     }

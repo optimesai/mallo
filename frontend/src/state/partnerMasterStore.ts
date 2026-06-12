@@ -5,6 +5,7 @@ import type {
   PartnerMasterRequest,
   PartnerMasterResponse,
   PartnerMasterSearchParams,
+  PartnerShippedItemResponse,
   PartnerStatus,
   PartnerSuppliedItemResponse,
   PartnerUsageResponse
@@ -15,6 +16,8 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
   const selectedPartner = ref<PartnerMasterResponse | null>(null)
   const selectedUsage = ref<PartnerUsageResponse | null>(null)
   const suppliedItems = ref<PartnerSuppliedItemResponse[]>([])
+  const shippedItems = ref<PartnerShippedItemResponse[]>([])
+  const suggestions = ref<PartnerMasterResponse[]>([])
   const page = ref(0)
   const size = ref(20)
   const totalElements = ref(0)
@@ -24,6 +27,7 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
   const isSaving = ref(false)
   const isUsageLoading = ref(false)
   const isSuppliedItemsLoading = ref(false)
+  const isShippedItemsLoading = ref(false)
   const error = ref<string | null>(null)
 
   async function loadPartners(params: PartnerMasterSearchParams = {}) {
@@ -56,6 +60,20 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadSuggestions(keyword: string) {
+    try {
+      const response = await partnerMasterService.getPartners({
+        page: 0,
+        size: 8,
+        sort: 'partnerName,asc',
+        keyword
+      })
+      suggestions.value = response.content
+    } catch (err) {
+      suggestions.value = []
     }
   }
 
@@ -141,6 +159,20 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     }
   }
 
+  async function loadShippedItems(id: number) {
+    isShippedItemsLoading.value = true
+    error.value = null
+    try {
+      shippedItems.value = await partnerMasterService.getShippedItems(id)
+      return shippedItems.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '출하 품목 이력을 불러오지 못했습니다.'
+      throw err
+    } finally {
+      isShippedItemsLoading.value = false
+    }
+  }
+
   async function checkDuplicate(partnerCode: string) {
     return partnerMasterService.checkDuplicate(partnerCode)
   }
@@ -166,6 +198,7 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     selectedPartner.value = partner
     selectedUsage.value = null
     suppliedItems.value = []
+    shippedItems.value = []
   }
 
   return {
@@ -173,6 +206,8 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     selectedPartner,
     selectedUsage,
     suppliedItems,
+    shippedItems,
+    suggestions,
     page,
     size,
     totalElements,
@@ -182,14 +217,17 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     isSaving,
     isUsageLoading,
     isSuppliedItemsLoading,
+    isShippedItemsLoading,
     error,
     loadPartners,
     searchPartners,
+    loadSuggestions,
     createPartner,
     updatePartner,
     updatePartnerStatus,
     loadPartnerUsage,
     loadSuppliedItems,
+    loadShippedItems,
     checkDuplicate,
     deletePartner,
     selectPartner

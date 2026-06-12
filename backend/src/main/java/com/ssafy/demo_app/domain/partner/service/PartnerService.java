@@ -2,6 +2,7 @@ package com.ssafy.demo_app.domain.partner.service;
 
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
@@ -21,5 +22,6 @@ public interface PartnerService {
     PartnerResponse updatePartnerStatus(Integer partnerId, PartnerMaster.PartnerStatus partnerStatus);
     PartnerUsageResponse getPartnerUsage(Integer partnerId);
     List<PartnerSuppliedItemResponse> getSuppliedItems(Integer partnerId);
+    List<PartnerShippedItemResponse> getShippedItems(Integer partnerId);
     void deletePartner(Integer partnerId);
 }

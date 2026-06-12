@@ -181,3 +181,33 @@
     - 없음
 
   </details>
+
+### 거래처 마스터 UX 후속 수정 (Codex)
+- **User Intent**: 거래처 마스터 화면을 품목 마스터 흐름처럼 검색 상단, 전체 목록/세부 정보 탭 구조로 바꾸고, 검색 추천, 고객사 출하 이력, 정렬 위치 변경, 상세 전용 액션, 코드 정책, 비고/메일/최근 거래 일시를 추가해달라는 요청
+- **Agent Context**: 기존 세로 스크롤형 거래처 화면을 목록/상세 탭 기반으로 재구성하고, 백엔드에는 담당자 이메일·비고·최근 거래 일시·고객사 출하 품목 이력 API를 추가했다.
+- **Key Decisions**:
+  - 목록 행 액션을 제거하고 상세 탭에서만 수정/삭제/상태 변경을 허용 — 사용자가 요청한 업무 흐름과 품목 마스터식 상세 진입 패턴을 맞추기 위함
+  - 거래처 수정 시 코드는 백엔드에서도 변경하지 않음 — 프론트 비활성화만으로는 API 직접 호출을 막을 수 없기 때문
+  - 고객사 출하 이력은 기존 `OutboundShipping` 이력 집계로 구현 — 별도 마스터 매핑 없이 실제 거래 이력만 제공하기 위함
+- **Affected Files**: <details><summary>15개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerShippedItemResponse.java` — 고객사 출하 품목 이력 응답 DTO
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` — 고객사 출하 이력 API 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerController.java` — 출하 이력 API 위임 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerRequest.java` — 담당자 이메일, 비고 필드 및 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerResponse.java` — 담당자 이메일, 비고, 최근 거래 일시 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/entity/PartnerMaster.java` — 담당자 이메일, 비고 컬럼 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerService.java` — 고객사 출하 이력 조회 계약 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` — 코드 prefix 검증, 수정 시 코드 보존, 최근 거래 정렬, 출하 이력 집계 구현
+    - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/repository/OutboundShippingRepository.java` — 고객사별 출하 이력 조회 메서드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` — 코드 수정 불가 정책에 맞춰 테스트 수정
+    - `frontend/src/api/partnerMasterApi.ts` — 이메일/비고/최근 거래/출하 이력 타입과 API 추가
+    - `frontend/src/services/partnerMasterService.ts` — 출하 이력 서비스 추가
+    - `frontend/src/state/partnerMasterStore.ts` — 검색 추천과 출하 이력 상태 관리 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 검색 추천, 목록/상세 탭, 상세 전용 액션, 고객사 출하 이력, 등록/수정 폼 정책 반영
+  - **Deleted**:
+    - 없음
+
+  </details>

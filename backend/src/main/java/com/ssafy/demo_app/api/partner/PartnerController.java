@@ -3,6 +3,7 @@ package com.ssafy.demo_app.api.partner;
 import com.ssafy.demo_app.api.partner.dto.PartnerDuplicateCheckResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerStatusUpdateRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
@@ -75,6 +76,11 @@ public class PartnerController implements PartnerApi {
     @Override
     public ResponseEntity<ApiResponse<List<PartnerSuppliedItemResponse>>> getSuppliedItems(Integer id) {
         return ResponseEntity.ok(ApiResponse.success(partnerService.getSuppliedItems(id)));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<List<PartnerShippedItemResponse>>> getShippedItems(Integer id) {
+        return ResponseEntity.ok(ApiResponse.success(partnerService.getShippedItems(id)));
     }
 
     @Override

@@ -45,4 +45,23 @@ public class PartnerRequest {
     @Size(max = 50, message = "담당자 연락처는 50자 이하여야 합니다.")
     @Pattern(regexp = "^$|^[0-9+()\\-\\s]{7,50}$", message = "담당자 연락처 형식이 올바르지 않습니다.")
     private String contactPhone;
+
+    @Schema(description = "담당자 이메일", example = "partner@example.com")
+    @Size(max = 100, message = "담당자 이메일은 100자 이하여야 합니다.")
+    @Pattern(regexp = "^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "담당자 이메일 형식이 올바르지 않습니다.")
+    private String contactEmail;
+
+    @Schema(description = "거래처 비고", example = "월말 정산 대상 거래처")
+    @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")
+    private String note;
+
+    public PartnerRequest(String partnerCode, String partnerName, PartnerMaster.PartnerType partnerType,
+                          String businessNo, String representative, String contactPhone) {
+        this.partnerCode = partnerCode;
+        this.partnerName = partnerName;
+        this.partnerType = partnerType;
+        this.businessNo = businessNo;
+        this.representative = representative;
+        this.contactPhone = contactPhone;
+    }
 }

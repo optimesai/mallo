@@ -238,19 +238,18 @@ class PartnerServiceTest {
         );
 
         given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
-        given(partnerMasterRepository.existsByPartnerCodeAndPartnerIdNot("SUP-POSCO-02", 1)).willReturn(false);
         given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         PartnerResponse response = partnerService.updatePartner(1, request);
 
-        assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-02");
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-01");
         assertThat(response.getPartnerName()).isEqualTo("포스코 공급사");
         assertThat(response.getRepresentative()).isEqualTo("박대표");
     }
 
     @Test
-    @DisplayName("거래처 수정 실패 - 거래처 코드 중복")
-    void updatePartner_duplicateCode() {
+    @DisplayName("거래처 수정 시 코드 변경 요청은 무시")
+    void updatePartner_ignoreCodeChange() {
         PartnerRequest request = new PartnerRequest(
                 "CUS-HYUNDAI-M",
                 "포스코 공급사",
@@ -261,11 +260,12 @@ class PartnerServiceTest {
         );
 
         given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
-        given(partnerMasterRepository.existsByPartnerCodeAndPartnerIdNot("CUS-HYUNDAI-M", 1)).willReturn(true);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> partnerService.updatePartner(1, request))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_CODE_DUPLICATE);
+        PartnerResponse response = partnerService.updatePartner(1, request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-01");
+        assertThat(response.getPartnerName()).isEqualTo("포스코 공급사");
     }
 
     @Test

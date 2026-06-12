@@ -4,6 +4,7 @@ import type {
   PartnerMasterRequest,
   PartnerMasterResponse,
   PartnerMasterSearchParams,
+  PartnerShippedItemResponse,
   PartnerStatus,
   PartnerSuppliedItemResponse,
   PartnerUsageResponse
@@ -78,6 +79,15 @@ export const partnerMasterService = {
       return response.data
     } catch (error) {
       throw new Error(getErrorMessage(error, '공급 품목 이력을 불러오지 못했습니다.'))
+    }
+  },
+
+  async getShippedItems(id: number): Promise<PartnerShippedItemResponse[]> {
+    try {
+      const response = await partnerMasterApi.getShippedItems(id)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '출하 품목 이력을 불러오지 못했습니다.'))
     }
   },
 
