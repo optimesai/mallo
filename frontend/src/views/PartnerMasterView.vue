@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Building2, CheckCircle2, Copy, Edit3, Loader2, RefreshCw, Search, Trash2, Users, X } from '@lucide/vue'
+import { useRouter } from 'vue-router'
+import { Building2, CheckCircle2, Loader2, RefreshCw, Search, Users, X } from '@lucide/vue'
 import { usePartnerMasterStore } from '@/state/partnerMasterStore'
 import type { PartnerMasterRequest, PartnerMasterResponse, PartnerStatus, PartnerType } from '@/api/partnerMasterApi'
 
 const partnerMasterStore = usePartnerMasterStore()
+const router = useRouter()
 
 const partnerTypeOptions: Array<{ value: PartnerType; label: string; description: string }> = [
   { value: 'SUPPLIER', label: '공급사', description: '입고 등록에서 납품 공급처로 사용됩니다.' },
@@ -17,16 +19,13 @@ const filterPartnerStatus = ref<'ALL' | PartnerStatus>('ALL')
 const filterHasBusinessNo = ref<'ALL' | 'YES' | 'NO'>('ALL')
 const sortField = ref('createdAt')
 const sortDirection = ref<'asc' | 'desc'>('desc')
-const detailTab = ref<'profile' | 'system' | 'history'>('profile')
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
 const isSuggestOpen = ref(false)
 let suggestionTimer: number | undefined
 
 const isFormOpen = ref(false)
-const formMode = ref<'create' | 'edit'>('create')
 const formError = ref<string | null>(null)
-const editingPartnerId = ref<number | null>(null)
 const form = reactive<PartnerMasterRequest>({
   partnerCode: '',
   partnerName: '',
@@ -37,9 +36,6 @@ const form = reactive<PartnerMasterRequest>({
   contactEmail: '',
   note: ''
 })
-
-const selectedPartner = computed(() => partnerMasterStore.selectedPartner)
-const selectedUsage = computed(() => partnerMasterStore.selectedUsage)
 
 const stats = computed(() => ({
   total: partnerMasterStore.totalElements,
@@ -115,7 +111,7 @@ function handleKeywordInput() {
 function selectSuggestion(partner: PartnerMasterResponse) {
   filterKeyword.value = `${partner.partnerCode} ${partner.partnerName}`
   isSuggestOpen.value = false
-  selectPartner(partner)
+  goToDetail(partner)
 }
 
 function openSuggestions() {
@@ -138,31 +134,13 @@ function isKeywordMatched(partner: PartnerMasterResponse, keyword: string) {
   ].some((value) => value.toLowerCase().includes(keyword))
 }
 
-async function selectPartner(partner: PartnerMasterResponse) {
+async function goToDetail(partner: PartnerMasterResponse) {
   partnerMasterStore.selectPartner(partner)
-  detailTab.value = 'profile'
-  await loadSelectedPartnerContext(partner)
+  await router.push({ name: 'partner-master-detail', params: { id: partner.partnerId } })
 }
 
 function openCreateForm() {
-  formMode.value = 'create'
-  editingPartnerId.value = null
   resetForm()
-  formError.value = null
-  isFormOpen.value = true
-}
-
-function openEditForm(partner: PartnerMasterResponse) {
-  formMode.value = 'edit'
-  editingPartnerId.value = partner.partnerId
-  form.partnerCode = partner.partnerCode
-  form.partnerName = partner.partnerName
-  form.partnerType = partner.partnerType
-  form.businessNo = partner.businessNo || ''
-  form.representative = partner.representative || ''
-  form.contactPhone = partner.contactPhone || ''
-  form.contactEmail = partner.contactEmail || ''
-  form.note = partner.note || ''
   formError.value = null
   isFormOpen.value = true
 }
@@ -184,7 +162,6 @@ function resetForm() {
 }
 
 function handleFormTypeChange() {
-  if (formMode.value === 'edit') return
   const nextPrefix = form.partnerType === 'SUPPLIER' ? 'SUP-' : 'CUS-'
   const previousPrefix = form.partnerType === 'SUPPLIER' ? 'CUS-' : 'SUP-'
   if (!form.partnerCode || form.partnerCode === previousPrefix || form.partnerCode === 'SUP-' || form.partnerCode === 'CUS-') {
@@ -202,27 +179,16 @@ async function submitForm() {
 
   try {
     formError.value = null
-    if (formMode.value === 'create') {
-      const duplicated = await partnerMasterStore.checkDuplicate(payload.partnerCode)
-      if (duplicated) {
-        formError.value = '이미 사용 중인 거래처 코드입니다.'
-        return
-      }
-      const created = await partnerMasterStore.createPartner(payload)
-      showToast('신규 거래처 마스터가 등록되었습니다.')
-      closeForm()
-      await fetchPartners(0)
-      await selectPartner(created)
+    const duplicated = await partnerMasterStore.checkDuplicate(payload.partnerCode)
+    if (duplicated) {
+      formError.value = '이미 사용 중인 거래처 코드입니다.'
       return
     }
-
-    if (editingPartnerId.value !== null) {
-      const updated = await partnerMasterStore.updatePartner(editingPartnerId.value, payload)
-      showToast('거래처 마스터 정보가 수정되었습니다.')
-      closeForm()
-      await fetchPartners(partnerMasterStore.page)
-      await selectPartner(updated)
-    }
+    const created = await partnerMasterStore.createPartner(payload)
+    showToast('신규 거래처 마스터가 등록되었습니다.')
+    closeForm()
+    await fetchPartners(0)
+    await goToDetail(created)
   } catch (err) {
     formError.value = err instanceof Error ? err.message : '거래처 저장에 실패했습니다.'
   }
@@ -262,51 +228,6 @@ function validateForm(payload: PartnerMasterRequest) {
   return null
 }
 
-async function requestDelete(partner: PartnerMasterResponse) {
-  const usage = await partnerMasterStore.loadPartnerUsage(partner.partnerId)
-  if (!usage.canDelete) {
-    if (!confirm(`${usage.deleteBlockedReason}\n삭제할 수 없으므로 비활성화로 변경하시겠습니까?`)) return
-    await updateStatus(partner, 'INACTIVE')
-    return
-  }
-
-  if (!confirm(`[${partner.partnerCode}] ${partner.partnerName} 거래처를 삭제하시겠습니까?`)) return
-
-  try {
-    pageError.value = null
-    await partnerMasterStore.deletePartner(partner.partnerId)
-    showToast('거래처 마스터가 삭제되었습니다.')
-    await fetchPartners(partnerMasterStore.page)
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '거래처 삭제에 실패했습니다.'
-  }
-}
-
-async function updateStatus(partner: PartnerMasterResponse, partnerStatus: PartnerStatus) {
-  try {
-    pageError.value = null
-    const updated = await partnerMasterStore.updatePartnerStatus(partner.partnerId, partnerStatus)
-    showToast(partnerStatus === 'ACTIVE' ? '거래처가 활성화되었습니다.' : '거래처가 비활성화되었습니다.')
-    await fetchPartners(partnerMasterStore.page)
-    await selectPartner(updated)
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '거래처 상태 변경에 실패했습니다.'
-  }
-}
-
-async function loadSelectedPartnerContext(partner: PartnerMasterResponse) {
-  try {
-    await partnerMasterStore.loadPartnerUsage(partner.partnerId)
-    if (partner.partnerType === 'SUPPLIER') {
-      await partnerMasterStore.loadSuppliedItems(partner.partnerId)
-    } else {
-      await partnerMasterStore.loadShippedItems(partner.partnerId)
-    }
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '거래처 상세 정보를 불러오지 못했습니다.'
-  }
-}
-
 async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
@@ -320,12 +241,6 @@ async function changeSort(field: string) {
 async function goToPage(nextPage: number) {
   const safePage = Math.max(0, Math.min(nextPage, Math.max(partnerMasterStore.totalPages - 1, 0)))
   await fetchPartners(safePage)
-}
-
-async function copyText(value: string | null, label: string) {
-  if (!value) return
-  await navigator.clipboard.writeText(value)
-  showToast(`${label}이 복사되었습니다.`)
 }
 
 function getPartnerTypeLabel(partnerType: PartnerType) {
@@ -505,7 +420,7 @@ function showToast(message: string) {
               v-else
               :key="partner.partnerId"
               class="cursor-pointer border-t app-border-muted transition app-hover-muted"
-              @click="selectPartner(partner)"
+              @click="goToDetail(partner)"
             >
               <td class="px-4 py-3 font-mono text-xs app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
               <td class="px-4 py-3 font-mono app-font-emphasis app-text-strong">{{ partner.partnerCode }}</td>
@@ -539,136 +454,11 @@ function showToast(message: string) {
       </div>
     </section>
 
-    <section class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-      <div v-if="!selectedPartner" class="py-12 text-center app-text-muted">
-        전체 목록에서 거래처를 선택하면 상세 정보가 표시됩니다.
-      </div>
-      <div v-else class="space-y-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="font-mono text-sm font-semibold app-text-muted">{{ selectedPartner.partnerCode }}</p>
-            <h2 class="mt-1 text-2xl font-bold app-text-primary">{{ selectedPartner.partnerName }}</h2>
-            <p class="mt-2 text-sm app-text-muted">{{ getPartnerTypeLabel(selectedPartner.partnerType) }} · {{ selectedPartner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" class="inline-flex items-center gap-2 rounded-2xl border app-border px-4 py-2.5 text-sm font-semibold app-text-primary hover:bg-slate-50" @click="openEditForm(selectedPartner)">
-              <Edit3 class="h-4 w-4" />
-              수정
-            </button>
-            <button type="button" class="rounded-2xl border app-border px-4 py-2.5 text-sm font-semibold app-text-primary hover:bg-slate-50" @click="updateStatus(selectedPartner, selectedPartner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')">
-              {{ selectedPartner.partnerStatus === 'ACTIVE' ? '비활성화' : '활성화' }}
-            </button>
-            <button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" @click="requestDelete(selectedPartner)">
-              <Trash2 class="h-4 w-4" />
-              삭제
-            </button>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2 border-b app-border pb-3">
-          <button type="button" class="rounded-2xl px-4 py-2 text-sm font-semibold" :class="detailTab === 'profile' ? 'bg-slate-900 text-white' : 'app-text-primary hover:bg-slate-50'" @click="detailTab = 'profile'">기본 정보</button>
-          <button type="button" class="rounded-2xl px-4 py-2 text-sm font-semibold" :class="detailTab === 'system' ? 'bg-slate-900 text-white' : 'app-text-primary hover:bg-slate-50'" @click="detailTab = 'system'">사용 현황</button>
-          <button type="button" class="rounded-2xl px-4 py-2 text-sm font-semibold" :class="detailTab === 'history' ? 'bg-slate-900 text-white' : 'app-text-primary hover:bg-slate-50'" @click="detailTab = 'history'">
-            {{ selectedPartner.partnerType === 'SUPPLIER' ? '공급 이력' : '출하 이력' }}
-          </button>
-        </div>
-
-        <div v-if="detailTab === 'profile'" class="grid gap-4 lg:grid-cols-3">
-          <div class="rounded-2xl border app-border app-bg-card p-4">
-            <h3 class="mb-3 font-bold app-text-primary">기본 식별 정보</h3>
-            <dl class="space-y-3 text-sm">
-              <div><dt class="app-text-muted">거래처 코드</dt><dd class="mt-1 font-mono font-semibold app-text-primary">{{ selectedPartner.partnerCode }}</dd></div>
-              <div><dt class="app-text-muted">거래처명</dt><dd class="mt-1 font-semibold app-text-primary">{{ selectedPartner.partnerName }}</dd></div>
-              <div><dt class="app-text-muted">거래처 구분</dt><dd class="mt-1 app-text-primary">{{ getPartnerTypeLabel(selectedPartner.partnerType) }}</dd></div>
-            </dl>
-          </div>
-          <div class="rounded-2xl border app-border app-bg-card p-4">
-            <h3 class="mb-3 font-bold app-text-primary">사업자 및 연락처</h3>
-            <dl class="space-y-3 text-sm">
-              <div><dt class="app-text-muted">사업자등록번호</dt><dd class="mt-1 font-mono app-text-primary">{{ selectedPartner.businessNo || '미등록' }}</dd></div>
-              <div><dt class="app-text-muted">대표자</dt><dd class="mt-1 app-text-primary">{{ selectedPartner.representative || '-' }}</dd></div>
-              <div>
-                <dt class="app-text-muted">담당자 연락처</dt>
-                <dd class="mt-1 flex items-center gap-2 app-text-primary">
-                  {{ selectedPartner.contactPhone || '-' }}
-                  <button v-if="selectedPartner.contactPhone" type="button" class="rounded-lg border app-border p-1 hover:bg-slate-50" @click="copyText(selectedPartner.contactPhone, '담당자 연락처')"><Copy class="h-3.5 w-3.5" /></button>
-                </dd>
-              </div>
-              <div>
-                <dt class="app-text-muted">담당자 이메일</dt>
-                <dd class="mt-1 flex items-center gap-2 app-text-primary">
-                  {{ selectedPartner.contactEmail || '-' }}
-                  <button v-if="selectedPartner.contactEmail" type="button" class="rounded-lg border app-border p-1 hover:bg-slate-50" @click="copyText(selectedPartner.contactEmail, '담당자 이메일')"><Copy class="h-3.5 w-3.5" /></button>
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div class="rounded-2xl border app-border app-bg-card p-4">
-            <h3 class="mb-3 font-bold app-text-primary">비고</h3>
-            <p class="whitespace-pre-line text-sm app-text-muted">{{ selectedPartner.note || '등록된 비고가 없습니다.' }}</p>
-          </div>
-        </div>
-
-        <div v-else-if="detailTab === 'system'" class="grid gap-4 lg:grid-cols-2">
-          <div class="rounded-2xl border app-border app-bg-card p-4">
-            <h3 class="mb-3 font-bold app-text-primary">사용 현황</h3>
-            <dl class="space-y-3 text-sm">
-              <div><dt class="app-text-muted">입고 참조</dt><dd class="mt-1 font-semibold app-text-primary">{{ selectedUsage?.inboundCount ?? selectedPartner.inboundCount }}건</dd></div>
-              <div><dt class="app-text-muted">출하 참조</dt><dd class="mt-1 font-semibold app-text-primary">{{ selectedUsage?.shippingCount ?? selectedPartner.shippingCount }}건</dd></div>
-              <div><dt class="app-text-muted">최근 거래 일시</dt><dd class="mt-1 app-text-primary">{{ formatDateTime(selectedUsage?.lastUsedAt || selectedPartner.lastUsedAt) }}</dd></div>
-              <div><dt class="app-text-muted">삭제 가능 여부</dt><dd class="mt-1 app-text-primary">{{ selectedUsage?.canDelete ? '삭제 가능' : (selectedUsage?.deleteBlockedReason || '참조 현황 확인 필요') }}</dd></div>
-            </dl>
-          </div>
-          <div class="rounded-2xl border app-border app-bg-card p-4">
-            <h3 class="mb-3 font-bold app-text-primary">업무 연계</h3>
-            <p class="text-sm app-text-muted">{{ selectedPartner.partnerType === 'SUPPLIER' ? '입고 등록 화면의 공급사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' : '출하 지시 화면의 고객사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' }}</p>
-          </div>
-        </div>
-
-        <div v-else class="overflow-hidden rounded-2xl border app-border app-bg-card">
-          <table class="min-w-full divide-y app-border text-sm">
-            <thead class="bg-slate-50/80">
-              <tr class="text-left text-xs font-bold uppercase tracking-wide app-text-muted">
-                <th class="px-4 py-3">품목 코드</th>
-                <th class="px-4 py-3">품목명</th>
-                <th class="px-4 py-3">구분</th>
-                <th class="px-4 py-3 text-right">누적 수량</th>
-                <th class="px-4 py-3 text-right">건수</th>
-                <th class="px-4 py-3">최근 일시</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y app-border">
-              <tr v-if="selectedPartner.partnerType === 'SUPPLIER' && partnerMasterStore.isSuppliedItemsLoading">
-                <td colspan="6" class="px-4 py-8 text-center app-text-muted">공급 이력을 불러오고 있습니다.</td>
-              </tr>
-              <tr v-else-if="selectedPartner.partnerType === 'CUSTOMER' && partnerMasterStore.isShippedItemsLoading">
-                <td colspan="6" class="px-4 py-8 text-center app-text-muted">출하 이력을 불러오고 있습니다.</td>
-              </tr>
-              <tr v-else-if="selectedPartner.partnerType === 'SUPPLIER' && partnerMasterStore.suppliedItems.length === 0">
-                <td colspan="6" class="px-4 py-8 text-center app-text-muted">공급 이력이 없습니다.</td>
-              </tr>
-              <tr v-else-if="selectedPartner.partnerType === 'CUSTOMER' && partnerMasterStore.shippedItems.length === 0">
-                <td colspan="6" class="px-4 py-8 text-center app-text-muted">출하 이력이 없습니다.</td>
-              </tr>
-              <tr v-for="item in selectedPartner.partnerType === 'SUPPLIER' ? partnerMasterStore.suppliedItems : partnerMasterStore.shippedItems" v-else :key="item.itemCode">
-                <td class="px-4 py-3 font-mono text-xs font-semibold app-text-primary">{{ item.itemCode }}</td>
-                <td class="px-4 py-3 font-semibold app-text-primary">{{ item.itemName }}</td>
-                <td class="px-4 py-3 app-text-muted">{{ item.itemType }}</td>
-                <td class="px-4 py-3 text-right app-text-primary">{{ 'totalInboundQty' in item ? item.totalInboundQty : item.totalShippingQty }} {{ item.unit }}</td>
-                <td class="px-4 py-3 text-right app-text-primary">{{ 'inboundCount' in item ? item.inboundCount : item.shippingCount }}건</td>
-                <td class="px-4 py-3 app-text-muted">{{ formatDateTime('lastInboundDate' in item ? item.lastInboundDate : item.lastShippingAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
     <div v-if="isFormOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border app-border app-bg-surface p-6 shadow-2xl">
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-bold app-text-primary">{{ formMode === 'create' ? '신규 거래처 등록' : '거래처 수정' }}</h2>
+            <h2 class="text-2xl font-bold app-text-primary">신규 거래처 등록</h2>
             <p class="mt-1 text-sm app-text-muted">거래처 코드는 구분에 따라 SUP- 또는 CUS-로 시작해야 합니다.</p>
           </div>
           <button type="button" class="rounded-full p-2 hover:bg-slate-100" @click="closeForm">
@@ -689,7 +479,7 @@ function showToast(message: string) {
           </div>
           <div>
             <label for="partner-form-code" class="mb-2 block text-sm font-semibold app-text-primary">거래처 코드</label>
-            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100" :disabled="formMode === 'edit'" placeholder="SUP- 또는 CUS-로 시작">
+            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="SUP- 또는 CUS-로 시작">
           </div>
           <div>
             <label for="partner-form-name" class="mb-2 block text-sm font-semibold app-text-primary">거래처명</label>

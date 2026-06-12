@@ -34,3 +34,22 @@
     - 없음
 
   </details>
+
+### 거래처 상세 화면 라우팅 분리 (Codex)
+- **User Intent**: 거래처 마스터 진입 시 검색, 전체 목록, 상세가 세로 스크롤로 이어지는 구조를 제거하고, 품목 마스터처럼 목록 또는 검색에서 거래처를 선택하면 상세 화면으로 이동하도록 요청
+- **Agent Context**: 기존 거래처 목록 화면 내부에 상세 카드와 수정·삭제·비활성화 액션이 같이 렌더링되어 품목 마스터의 목록/상세 라우트 분리 흐름과 달랐음. 목록 화면은 검색·목록·신규 등록만 담당하게 줄이고, 상세 조회/수정/상태 변경/삭제/이력 탭은 별도 상세 뷰로 이동함.
+- **Key Decisions**:
+  - `/master/partners/:id` 라우트 추가 — 품목 마스터의 `/master/items/:id` 구조와 동일하게 목록과 상세의 책임을 분리함
+  - `PartnerMasterDetailView.vue` 신규 생성 — 거래처 사용 현황, 공급/출하 이력, 수정, 삭제, 비활성화 액션을 상세 화면으로 이동해 목록 화면 스크롤을 줄임
+  - 목록 행 클릭과 검색 추천 선택을 `router.push`로 변경 — 사용자가 목록 또는 검색 결과에서 거래처를 선택하면 상세 화면으로 링킹되도록 함
+- **Affected Files**: <details><summary>3개 파일</summary>
+
+  - **Created**:
+    - `frontend/src/views/PartnerMasterDetailView.vue` — 거래처 상세 조회, 수정, 상태 변경, 삭제, 사용 현황, 공급/출하 이력 전용 화면
+  - **Modified**:
+    - `frontend/src/router/index.ts` (+5/-0) — 거래처 상세 라우트 `/master/partners/:id` 추가
+    - `frontend/src/views/PartnerMasterView.vue` (+22/-227) — 인라인 상세 섹션 제거, 행/검색 추천/등록 완료 시 상세 라우트 이동으로 변경
+  - **Deleted**:
+    - 없음
+
+  </details>
