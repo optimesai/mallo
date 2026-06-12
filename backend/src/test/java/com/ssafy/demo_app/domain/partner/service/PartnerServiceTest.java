@@ -204,6 +204,27 @@ class PartnerServiceTest {
     }
 
     @Test
+    @DisplayName("거래처 등록 실패 - 사업자등록번호 중복")
+    void createPartner_duplicateBusinessNo() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-DUP-BIZ",
+                "중복 사업자 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                " 123-45-67890 ",
+                null,
+                null
+        );
+
+        given(partnerMasterRepository.existsByBusinessNo("123-45-67890")).willReturn(true);
+
+        assertThatThrownBy(() -> partnerService.createPartner(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_BUSINESS_NO_DUPLICATE);
+
+        verify(partnerMasterRepository, never()).save(any(PartnerMaster.class));
+    }
+
+    @Test
     @DisplayName("거래처 목록 조회 성공")
     void getPartners_success() {
         Pageable pageable = PageRequest.of(0, 20);

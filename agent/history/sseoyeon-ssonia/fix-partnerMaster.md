@@ -167,3 +167,24 @@
     - 없음
 
   </details>
+
+### 거래처 사업자번호 중복 등록 차단 (Codex)
+- **User Intent**: 신규 거래처 등록 시 사업자등록번호가 동일하면 거래처명 등 다른 값이 달라도 추가 등록을 막도록 요청
+- **Agent Context**: 기존 신규 등록 검증은 거래처 코드 중복만 검사해 동일 사업자등록번호로 여러 거래처가 생성될 수 있었음. 서버 저장 전 사업자등록번호 중복 검사를 추가해 프론트 우회와 관계없이 신규 등록을 차단함.
+- **Key Decisions**:
+  - 백엔드 도메인 서비스에서 중복 검증 수행 — 프론트 검증보다 서버 저장 정책으로 강제하는 것이 데이터 정합성에 안전함
+  - 빈 사업자등록번호는 중복 검사 제외 — 사업자등록번호 미등록 거래처는 기존 선택 입력 정책을 유지함
+  - 전용 에러 코드 추가 — 코드 중복과 사업자번호 중복을 사용자 메시지에서 구분하기 위함
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/repository/PartnerMasterRepository.java` (+1/-0) — 사업자등록번호 존재 여부 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` (+9/-0) — 신규 등록 전 사업자등록번호 중복 검증 추가
+    - `backend/src/main/java/com/ssafy/demo_app/global/exception/ErrorCode.java` (+1/-0) — 사업자등록번호 중복 에러 코드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` (+21/-0) — 사업자등록번호 중복 등록 차단 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>

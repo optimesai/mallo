@@ -78,6 +78,8 @@ public class PartnerServiceImpl implements PartnerService {
     @Override
     @Transactional
     public PartnerResponse createPartner(PartnerRequest request) {
+        validateBusinessNoNotUsed(request.getBusinessNo());
+
         PartnerMaster partner = new PartnerMaster();
         applyRequest(partner, request, resolvePartnerCode(request.getPartnerCode(), request.getPartnerType()));
         partner.setPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE);
@@ -200,6 +202,13 @@ public class PartnerServiceImpl implements PartnerService {
     private void validatePartnerCodeNotUsedByAnotherPartner(String partnerCode, Integer partnerId) {
         if (partnerMasterRepository.existsByPartnerCodeAndPartnerIdNot(partnerCode.trim(), partnerId)) {
             throw new BusinessException(ErrorCode.PARTNER_CODE_DUPLICATE);
+        }
+    }
+
+    private void validateBusinessNoNotUsed(String businessNo) {
+        String normalizedBusinessNo = trimToNull(businessNo);
+        if (normalizedBusinessNo != null && partnerMasterRepository.existsByBusinessNo(normalizedBusinessNo)) {
+            throw new BusinessException(ErrorCode.PARTNER_BUSINESS_NO_DUPLICATE);
         }
     }
 
