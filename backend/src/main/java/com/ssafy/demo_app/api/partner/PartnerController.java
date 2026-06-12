@@ -4,6 +4,7 @@ import com.ssafy.demo_app.api.partner.dto.PartnerDuplicateCheckResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerStatsResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerStatusUpdateRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
@@ -34,6 +35,11 @@ public class PartnerController implements PartnerApi {
         return ResponseEntity.ok(ApiResponse.success(
                 partnerService.getPartners(pageable, partnerType, partnerStatus, hasBusinessNo, keyword)
         ));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<PartnerStatsResponse>> getPartnerStats() {
+        return ResponseEntity.ok(ApiResponse.success(partnerService.getPartnerStats()));
     }
 
     @Override

@@ -229,3 +229,32 @@
     - 없음
 
   </details>
+
+### 거래처 통계 및 수정 불가 필드 보강 (Codex)
+- **User Intent**: 거래처 마스터 상단 활성/비활성 통계를 현재 페이지가 아닌 서버 전체 기준으로 표시하고, 거래처 수정 시 거래처 구분과 사업자등록번호를 변경하지 못하도록 요청
+- **Agent Context**: 기존 목록 상단의 활성/비활성 수는 현재 페이지의 `partners` 배열 기준으로 계산되어 전체 통계로 오해될 수 있었음. 상세 수정 모달은 거래처 구분을 변경할 수 있게 보였고, 사업자등록번호도 수정 가능했으며 백엔드도 사업자등록번호 request 값을 반영하고 있었음.
+- **Key Decisions**:
+  - 전체 통계 전용 API 추가 — `/api/partners/stats`에서 전체/활성/비활성 거래처 수를 서버 전체 기준으로 반환하도록 함
+  - 프론트 통계 store 분리 — 목록 페이지의 통계 카드는 페이지 데이터가 아닌 서버 통계 응답을 사용하도록 변경함
+  - 수정 불가 필드는 백엔드에서도 보존 — 프론트 disabled 처리와 별개로, 수정 서비스에서 기존 사업자등록번호를 request 값으로 덮어쓰지 않도록 함
+  - 수정 모달 안내 문구 보강 — 거래처 구분, 거래처 코드, 사업자등록번호는 수정할 수 없다는 안내를 명시함
+- **Affected Files**: <details><summary>12개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/dto/PartnerStatsResponse.java` — 거래처 전체 통계 응답 DTO 추가
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerApi.java` — 거래처 전체 통계 조회 API 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/partner/PartnerController.java` — 통계 API 컨트롤러 구현 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/repository/PartnerMasterRepository.java` — 상태별 카운트 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerService.java` — 통계 조회 서비스 계약 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceImpl.java` — 전체 통계 계산 및 수정 시 사업자등록번호 보존 처리
+    - `backend/src/test/java/com/ssafy/demo_app/domain/partner/service/PartnerServiceTest.java` — 통계 조회 및 사업자등록번호 변경 무시 테스트 추가
+    - `frontend/src/api/partnerMasterApi.ts` — 통계 응답 타입 및 API 호출 추가
+    - `frontend/src/services/partnerMasterService.ts` — 통계 조회 서비스 추가
+    - `frontend/src/state/partnerMasterStore.ts` — 통계 상태 및 로드 액션 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 상단 통계를 서버 전체 기준으로 표시하고 등록 후 갱신
+    - `frontend/src/views/PartnerMasterDetailView.vue` — 수정 모달에서 거래처 구분/사업자등록번호 비활성화 및 기존 값 보존
+  - **Deleted**:
+    - 없음
+
+  </details>

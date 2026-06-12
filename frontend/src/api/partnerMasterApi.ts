@@ -44,6 +44,12 @@ export interface PartnerMasterSearchParams {
   keyword?: string
 }
 
+export interface PartnerStatsResponse {
+  totalCount: number
+  activeCount: number
+  inactiveCount: number
+}
+
 export interface PartnerDuplicateCheckResponse {
   duplicated: boolean
 }
@@ -92,6 +98,11 @@ export const partnerMasterApi = {
         keyword: params.keyword || undefined,
       }
     })
+    return response.data
+  },
+
+  async getPartnerStats() {
+    const response = await apiClient.get<ApiResponse<PartnerStatsResponse>>('/api/partners/stats')
     return response.data
   },
 

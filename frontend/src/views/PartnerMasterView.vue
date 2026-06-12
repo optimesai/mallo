@@ -40,9 +40,9 @@ const form = reactive<PartnerMasterRequest>({
 })
 
 const stats = computed(() => ({
-  total: partnerMasterStore.totalElements,
-  active: partnerMasterStore.partners.filter((partner) => partner.partnerStatus === 'ACTIVE').length,
-  inactive: partnerMasterStore.partners.filter((partner) => partner.partnerStatus === 'INACTIVE').length
+  total: partnerMasterStore.stats.totalCount,
+  active: partnerMasterStore.stats.activeCount,
+  inactive: partnerMasterStore.stats.inactiveCount
 }))
 
 const canWrite = computed(() => ['ADMIN', 'MANAGER'].includes(authStore.user?.role || ''))
@@ -64,8 +64,19 @@ const keywordSuggestions = computed(() => {
 })
 
 onMounted(async () => {
-  await fetchPartners(0)
+  await Promise.all([
+    fetchPartners(0),
+    loadStats()
+  ])
 })
+
+async function loadStats() {
+  try {
+    await partnerMasterStore.loadPartnerStats()
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '거래처 통계를 불러오지 못했습니다.'
+  }
+}
 
 async function fetchPartners(page = partnerMasterStore.page) {
   try {
@@ -195,7 +206,10 @@ async function submitForm() {
     const created = await partnerMasterStore.createPartner(payload)
     showToast('신규 거래처 마스터가 등록되었습니다.')
     closeForm()
-    await fetchPartners(0)
+    await Promise.all([
+      fetchPartners(0),
+      loadStats()
+    ])
     await goToDetail(created)
   } catch (err) {
     formError.value = err instanceof Error ? err.message : '거래처 저장에 실패했습니다.'

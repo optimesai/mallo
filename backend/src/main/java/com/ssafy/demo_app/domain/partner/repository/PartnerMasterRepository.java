@@ -15,6 +15,7 @@ public interface PartnerMasterRepository extends JpaRepository<PartnerMaster, In
     boolean existsByPartnerCode(String partnerCode);
     boolean existsByPartnerCodeAndPartnerIdNot(String partnerCode, Integer partnerId);
     boolean existsByBusinessNo(String businessNo);
+    long countByPartnerStatus(PartnerMaster.PartnerStatus partnerStatus);
     List<PartnerMaster> findByPartnerCodeStartingWith(String partnerCodePrefix);
     List<PartnerMaster> findByPartnerTypeOrderByPartnerIdAsc(PartnerMaster.PartnerType partnerType);
     List<PartnerMaster> findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(

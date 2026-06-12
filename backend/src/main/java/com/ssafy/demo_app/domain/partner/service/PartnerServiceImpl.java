@@ -3,6 +3,7 @@ package com.ssafy.demo_app.domain.partner.service;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerStatsResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
@@ -57,6 +58,15 @@ public class PartnerServiceImpl implements PartnerService {
         }
         Page<PartnerMaster> page = partnerMasterRepository.findAll(spec, pageable);
         return PageResponse.from(page.map(this::toResponse));
+    }
+
+    @Override
+    public PartnerStatsResponse getPartnerStats() {
+        PartnerStatsResponse response = new PartnerStatsResponse();
+        response.setTotalCount(partnerMasterRepository.count());
+        response.setActiveCount(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE));
+        response.setInactiveCount(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.INACTIVE));
+        return response;
     }
 
     @Override
@@ -273,7 +283,6 @@ public class PartnerServiceImpl implements PartnerService {
 
     private void applyUpdateRequest(PartnerMaster partner, PartnerRequest request) {
         partner.setPartnerName(trimRequired(request.getPartnerName()));
-        partner.setBusinessNo(trimToNull(request.getBusinessNo()));
         partner.setRepresentative(trimToNull(request.getRepresentative()));
         partner.setContactPhone(trimToNull(request.getContactPhone()));
         partner.setContactEmail(trimToNull(request.getContactEmail()));

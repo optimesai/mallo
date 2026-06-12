@@ -131,11 +131,12 @@ async function submitForm() {
 }
 
 function normalizeForm(): PartnerMasterRequest {
+  const currentPartner = partner.value
   return {
     partnerCode: form.partnerCode.trim(),
     partnerName: form.partnerName.trim(),
-    partnerType: form.partnerType,
-    businessNo: normalizeOptionalText(form.businessNo),
+    partnerType: currentPartner?.partnerType || form.partnerType,
+    businessNo: currentPartner?.businessNo || null,
     representative: normalizeOptionalText(form.representative),
     contactPhone: normalizeOptionalText(form.contactPhone),
     contactEmail: normalizeOptionalText(form.contactEmail),
@@ -390,7 +391,7 @@ function showToast(message: string) {
         <div class="mb-5 flex items-start justify-between gap-4 border-b app-border-muted pb-4">
           <div>
             <h2 class="text-lg app-font-emphasis app-text-strong">거래처 수정</h2>
-            <p class="mt-1 text-sm app-font-label app-text-muted">거래처 코드는 수정할 수 없습니다.</p>
+            <p class="mt-1 text-sm app-font-label app-text-muted">거래처 구분, 거래처 코드, 사업자등록번호는 수정할 수 없습니다.</p>
           </div>
           <button class="rounded-full p-2 app-hover-muted" type="button" @click="closeForm"><X class="h-5 w-5" /></button>
         </div>
@@ -399,7 +400,7 @@ function showToast(message: string) {
           <div v-if="formError" class="md:col-span-2 rounded-2xl border app-border app-bg-danger-soft p-3 text-sm app-font-strong app-text-danger">{{ formError }}</div>
           <label class="block text-sm app-font-emphasis app-text-soft">
             거래처 구분
-            <select v-model="form.partnerType" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <select v-model="form.partnerType" disabled class="mt-1 h-11 w-full rounded-2xl border app-border bg-slate-100 px-4 text-sm outline-none">
               <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
           </label>
@@ -413,7 +414,7 @@ function showToast(message: string) {
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             사업자등록번호
-            <input v-model="form.businessNo" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <input v-model="form.businessNo" disabled class="mt-1 h-11 w-full rounded-2xl border app-border bg-slate-100 px-4 text-sm outline-none">
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             대표자명

@@ -6,6 +6,7 @@ import type {
   PartnerMasterResponse,
   PartnerMasterSearchParams,
   PartnerShippedItemResponse,
+  PartnerStatsResponse,
   PartnerStatus,
   PartnerSuppliedItemResponse,
   PartnerUsageResponse
@@ -18,6 +19,11 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
   const suppliedItems = ref<PartnerSuppliedItemResponse[]>([])
   const shippedItems = ref<PartnerShippedItemResponse[]>([])
   const suggestions = ref<PartnerMasterResponse[]>([])
+  const stats = ref<PartnerStatsResponse>({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
   const page = ref(0)
   const size = ref(10)
   const totalElements = ref(0)
@@ -46,6 +52,16 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadPartnerStats() {
+    try {
+      stats.value = await partnerMasterService.getPartnerStats()
+      return stats.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '거래처 통계를 불러오지 못했습니다.'
+      throw err
     }
   }
 
@@ -208,6 +224,7 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     suppliedItems,
     shippedItems,
     suggestions,
+    stats,
     page,
     size,
     totalElements,
@@ -220,6 +237,7 @@ export const usePartnerMasterStore = defineStore('partnerMaster', () => {
     isShippedItemsLoading,
     error,
     loadPartners,
+    loadPartnerStats,
     searchPartners,
     loadSuggestions,
     createPartner,

@@ -4,6 +4,7 @@ import com.ssafy.demo_app.api.partner.dto.PartnerDuplicateCheckResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerStatsResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerStatusUpdateRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerSuppliedItemResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerUsageResponse;
@@ -42,6 +43,10 @@ public interface PartnerApi {
             @Parameter(description = "사업자등록번호 등록 여부") @RequestParam(required = false) Boolean hasBusinessNo,
             @Parameter(description = "거래처 ID, 거래처 코드, 거래처명, 사업자등록번호 검색어") @RequestParam(required = false) String keyword
     );
+
+    @Operation(summary = "거래처 전체 통계 조회", description = "전체 거래처, 활성 거래처, 비활성 거래처 수를 조회합니다.")
+    @GetMapping("/stats")
+    ResponseEntity<ApiResponse<PartnerStatsResponse>> getPartnerStats();
 
     @Operation(summary = "거래처 코드 중복 확인", description = "거래처 코드가 이미 사용 중인지 확인합니다.")
     @GetMapping("/duplicates")

@@ -5,6 +5,7 @@ import type {
   PartnerMasterResponse,
   PartnerMasterSearchParams,
   PartnerShippedItemResponse,
+  PartnerStatsResponse,
   PartnerStatus,
   PartnerSuppliedItemResponse,
   PartnerUsageResponse
@@ -25,6 +26,15 @@ export const partnerMasterService = {
       return response.data
     } catch (error) {
       throw new Error(getErrorMessage(error, '거래처 목록을 불러오지 못했습니다.'))
+    }
+  },
+
+  async getPartnerStats(): Promise<PartnerStatsResponse> {
+    try {
+      const response = await partnerMasterApi.getPartnerStats()
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '거래처 통계를 불러오지 못했습니다.'))
     }
   },
 

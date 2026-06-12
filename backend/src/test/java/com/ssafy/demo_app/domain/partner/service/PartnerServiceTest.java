@@ -3,6 +3,7 @@ package com.ssafy.demo_app.domain.partner.service;
 import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
 import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
 import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerStatsResponse;
 import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
@@ -267,6 +268,20 @@ class PartnerServiceTest {
     }
 
     @Test
+    @DisplayName("거래처 전체 통계 조회 성공")
+    void getPartnerStats_success() {
+        given(partnerMasterRepository.count()).willReturn(7L);
+        given(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE)).willReturn(5L);
+        given(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.INACTIVE)).willReturn(2L);
+
+        PartnerStatsResponse response = partnerService.getPartnerStats();
+
+        assertThat(response.getTotalCount()).isEqualTo(7);
+        assertThat(response.getActiveCount()).isEqualTo(5);
+        assertThat(response.getInactiveCount()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("거래처 검색 조회 성공 - ID")
     void searchPartners_byId_success() {
         given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
@@ -372,6 +387,27 @@ class PartnerServiceTest {
 
         assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-01");
         assertThat(response.getPartnerName()).isEqualTo("포스코 공급사");
+    }
+
+    @Test
+    @DisplayName("거래처 수정 시 사업자등록번호 변경 요청은 무시")
+    void updatePartner_ignoreBusinessNoChange() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-POSCO-01",
+                "포스코 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                "999-99-99999",
+                "박대표",
+                "02-0000-0000"
+        );
+
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        PartnerResponse response = partnerService.updatePartner(1, request);
+
+        assertThat(response.getBusinessNo()).isEqualTo("123-45-67890");
+        assertThat(response.getRepresentative()).isEqualTo("박대표");
     }
 
     @Test
