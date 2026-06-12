@@ -6,6 +6,7 @@ import com.ssafy.demo_app.api.inventory.dto.InventoryStackRequest;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InboundReceipt;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 import com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation;
 import com.ssafy.demo_app.domain.inventory.repository.CurrentInventoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
@@ -140,7 +141,7 @@ public class InboundServiceImpl implements InboundService {
         InventoryTransactionHistory history = new InventoryTransactionHistory();
         history.setItem(item);
         history.setLocation(targetLocation);
-        history.setTransactionType(InventoryTransactionHistory.TransactionType.INBOUND);
+        history.setTransactionType(TransactionType.INBOUND);
         history.setQuantity(receipt.getInboundQty());
         history.setReasonDesc("Inbound receipt stacked to rack");
         history.setWorker(worker);

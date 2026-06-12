@@ -1,4 +1,5 @@
 package com.ssafy.demo_app.domain.shipping.service;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.shipping.dto.ShippingCreateRequest;
 import com.ssafy.demo_app.api.shipping.dto.ShippingResponse;
@@ -121,7 +122,7 @@ class OutboundShippingServiceTest {
                 .setParameter("item", item)
                 .getResultList();
         assertThat(histories).hasSize(1);
-        assertThat(histories.get(0).getTransactionType()).isEqualTo(InventoryTransactionHistory.TransactionType.OUTBOUND);
+        assertThat(histories.get(0).getTransactionType()).isEqualTo(TransactionType.OUTBOUND);
         assertThat(histories.get(0).getQuantity()).isEqualTo(40);
     }
 

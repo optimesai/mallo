@@ -1,4 +1,5 @@
 package com.ssafy.demo_app.domain.production.service;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.inventory.dto.CurrentInventoryResponse;
 import com.ssafy.demo_app.api.inventory.dto.TransactionHistoryResponse;
@@ -95,7 +96,7 @@ class WorkOrderServiceTest {
         InventoryTransactionHistory history = new InventoryTransactionHistory();
         history.setItem(item);
         history.setLocation(location);
-        history.setTransactionType(InventoryTransactionHistory.TransactionType.INBOUND);
+        history.setTransactionType(TransactionType.INBOUND);
         history.setQuantity(300);
         history.setReasonDesc("Test Inbound Audit");
         history.setWorker(worker);
@@ -114,7 +115,7 @@ class WorkOrderServiceTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(target.getQuantity()).isEqualTo(300);
-        assertThat(target.getTransactionType()).isEqualTo(InventoryTransactionHistory.TransactionType.INBOUND.name());
+        assertThat(target.getTransactionType()).isEqualTo(TransactionType.INBOUND.name());
     }
 
     @Test

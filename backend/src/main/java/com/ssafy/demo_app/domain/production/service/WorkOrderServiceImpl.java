@@ -1,4 +1,5 @@
 package com.ssafy.demo_app.domain.production.service;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.production.dto.ProductionExecutionResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderCloseRequest;
@@ -229,7 +230,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                     InventoryTransactionHistory history = new InventoryTransactionHistory();
                     history.setItem(childItem);
                     history.setLocation(inventory.getLocation());
-                    history.setTransactionType(InventoryTransactionHistory.TransactionType.PRODUCTION_ISSUE);
+                    history.setTransactionType(TransactionType.PRODUCTION_ISSUE);
                     history.setQuantity(deductQty);
                     history.setReasonDesc(issueReason(workOrder));
                     history.setWorker(worker);
@@ -342,7 +343,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
     private int getIssuedQty(WorkOrder workOrder, ItemMaster item) {
         return transactionHistoryRepository.findByReasonDescContainingOrderByTransactionIdAsc(workOrder.getOrderNo()).stream()
-                .filter(history -> history.getTransactionType() == InventoryTransactionHistory.TransactionType.PRODUCTION_ISSUE)
+                .filter(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE)
                 .filter(history -> history.getItem().getItemId().equals(item.getItemId()))
                 .mapToInt(InventoryTransactionHistory::getQuantity)
                 .sum();
