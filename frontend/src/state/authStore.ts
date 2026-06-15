@@ -13,6 +13,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const employeeId = computed(() => user.value?.employeeNo ?? null)
   const isLoggedIn = computed(() => Boolean(accessToken.value))
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
+  const isManager = computed(() => user.value?.role === 'MANAGER')
+  const canManageMasterData = computed(() => isAdmin.value || isManager.value)
 
   configureAuthClient({
     getAccessToken: () => accessToken.value,
@@ -86,9 +89,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     accessToken,
+    canManageMasterData,
     employeeId,
+    isAdmin,
     isInitialized,
     isLoggedIn,
+    isManager,
     user,
     initializeAuth,
     login,

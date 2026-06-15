@@ -1,6 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { menuGroups } from '@/router/navigation'
+import { useAuthStore } from '@/state/authStore'
+
+const authStore = useAuthStore()
+
+const visibleMenuGroups = computed(() => {
+  return menuGroups
+    .map((group) => {
+      if (group.category === '시스템 관리' && !authStore.isAdmin) {
+        return { ...group, items: [] }
+      }
+      return group
+    })
+    .filter((group) => group.items.length > 0)
+})
 </script>
 
 <template>
@@ -13,7 +28,7 @@ import { menuGroups } from '@/router/navigation'
     </div>
 
     <nav class="app-sidebar-nav">
-      <div v-for="group in menuGroups" :key="group.category" class="app-sidebar-group">
+      <div v-for="group in visibleMenuGroups" :key="group.category" class="app-sidebar-group">
         <div class="app-sidebar-category">
           <svg class="app-sidebar-category-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" :d="group.iconPath" />

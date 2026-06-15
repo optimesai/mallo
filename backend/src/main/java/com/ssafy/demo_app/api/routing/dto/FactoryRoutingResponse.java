@@ -17,7 +17,9 @@ public class FactoryRoutingResponse {
     private String lineName;
     private Integer operationSeq;
     private String operationName;
+    private String routingStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime lastExecutionAt;
 
     public static FactoryRoutingResponse from(FactoryRouting routing) {
         FactoryRoutingResponse response = new FactoryRoutingResponse();
@@ -26,6 +28,7 @@ public class FactoryRoutingResponse {
         response.setLineName(routing.getLineName());
         response.setOperationSeq(routing.getOperationSeq());
         response.setOperationName(routing.getOperationName());
+        response.setRoutingStatus(routing.getRoutingStatus().name());
         response.setCreatedAt(routing.getCreatedAt());
         return response;
     }

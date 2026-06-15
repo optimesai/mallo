@@ -55,6 +55,7 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         FactoryRouting routing = factoryRoutingRepository.findById(request.getRoutingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROUTING_NOT_FOUND));
+        validateRoutingMatchesWorkOrder(workOrder, routing);
 
         issueMaterialsForExecution(workOrder, worker, request.getGoodQty() + request.getDefectQty());
 
@@ -108,6 +109,14 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
     private ProductionExecution findExecution(Integer executionId) {
         return productionExecutionRepository.findById(executionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCTION_EXECUTION_NOT_FOUND));
+    }
+
+    private void validateRoutingMatchesWorkOrder(WorkOrder workOrder, FactoryRouting routing) {
+        FactoryRouting workOrderRouting = workOrder.getRouting();
+        if (!workOrderRouting.getFactoryName().equals(routing.getFactoryName())
+                || !workOrderRouting.getLineName().equals(routing.getLineName())) {
+            throw new BusinessException(ErrorCode.PRODUCTION_EXECUTION_ROUTING_MISMATCH);
+        }
     }
 
     private void issueMaterialsForExecution(WorkOrder workOrder, User worker, int newExecutedQty) {

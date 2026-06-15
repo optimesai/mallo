@@ -32,6 +32,10 @@ public interface FactoryRoutingRepository extends JpaRepository<FactoryRouting, 
 
     List<FactoryRouting> findAllByOrderByFactoryNameAscLineNameAscOperationSeqAsc();
 
+    List<FactoryRouting> findByRoutingStatusOrderByFactoryNameAscLineNameAscOperationSeqAsc(
+            FactoryRouting.RoutingStatus routingStatus
+    );
+
     @Query("select distinct r.factoryName from FactoryRouting r order by r.factoryName asc")
     List<String> findDistinctFactoryNames();
 

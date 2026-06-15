@@ -20,13 +20,16 @@ import {
 import { itemMasterService } from '@/services/itemMasterService'
 import { factoryRoutingService } from '@/services/factoryRoutingService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
-import type { ItemMasterResponse } from '@/api/itemMasterApi'
+import { useAuthStore } from '@/state/authStore'
+import { formatDateTime } from '@/utils/dateFormat'
+import type { ItemMasterResponse, ItemType } from '@/api/itemMasterApi'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
 import type { WorkOrderRequest, WorkOrderResponse, WorkOrderStatus } from '@/api/workOrderApi'
 
 type WorkOrderTab = 'register' | 'list'
 
 const workOrderStore = useWorkOrderStore()
+const authStore = useAuthStore()
 
 const productionItems = ref<ItemMasterResponse[]>([])
 const routings = ref<FactoryRoutingResponse[]>([])
@@ -111,6 +114,7 @@ const keywordSuggestions = computed(() => {
 })
 
 const recentOrders = computed(() => workOrderStore.workOrders.slice(0, 6))
+const hasNoActiveRoutings = computed(() => routings.value.length === 0)
 
 onMounted(async () => {
   await loadInitialData()
@@ -150,13 +154,6 @@ function formatNumber(value: number | null | undefined) {
   return Number(value ?? 0).toLocaleString()
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
 function getOrderKey(order: WorkOrderResponse) {
   return order.orderNo || order.orderId
 }
@@ -186,16 +183,33 @@ async function loadInitialData() {
   pageError.value = null
   try {
     const [halfItems, finishedItems, routingList] = await Promise.all([
-      itemMasterService.getItems({ itemType: 'HALF', itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }),
-      itemMasterService.getItems({ itemType: 'FG', itemStatus: 'ACTIVE', page: 0, size: 100, sort: 'itemCode,asc' }),
-      factoryRoutingService.getRoutings(),
+      loadProductionItems('HALF'),
+      loadProductionItems('FG'),
+      factoryRoutingService.getRoutings({ routingStatus: 'ACTIVE' }),
       workOrderStore.loadWorkOrders()
     ])
-    productionItems.value = [...halfItems.content, ...finishedItems.content]
+    productionItems.value = [...halfItems, ...finishedItems]
     routings.value = routingList
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '작업지시 데이터를 불러오지 못했습니다.'
   }
+}
+
+async function loadProductionItems(itemType: ItemType) {
+  const size = 100
+  const firstPage = await itemMasterService.getItems({ itemType, itemStatus: 'ACTIVE', page: 0, size, sort: 'itemCode,asc' })
+  if (firstPage.totalPages <= 1) return firstPage.content
+
+  const restPages = await Promise.all(
+    Array.from({ length: firstPage.totalPages - 1 }, (_, index) => itemMasterService.getItems({
+      itemType,
+      itemStatus: 'ACTIVE',
+      page: index + 1,
+      size,
+      sort: 'itemCode,asc'
+    }))
+  )
+  return [firstPage, ...restPages].flatMap((page) => page.content)
 }
 
 async function searchWorkOrders() {
@@ -366,6 +380,14 @@ async function closeOrder(order: WorkOrderResponse) {
     </nav>
 
     <section v-if="activeTab === 'register'" class="wo-tab-section">
+      <div v-if="hasNoActiveRoutings" class="wo-alert wo-alert-danger">
+        <AlertTriangle class="wo-icon" />
+        <span>활성 공장/생산 라우팅 기준정보가 없어 작업지시를 등록할 수 없습니다.</span>
+        <RouterLink v-if="authStore.canManageMasterData" class="wo-button wo-button-subtle" to="/master/factory-lines">
+          기준정보 등록
+        </RouterLink>
+      </div>
+
       <div class="wo-panel wo-form-panel">
         <div class="wo-panel-head">
           <div>

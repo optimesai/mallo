@@ -60,6 +60,9 @@ public enum ErrorCode {
     ROUTING_NOT_FOUND(HttpStatus.NOT_FOUND, "라우팅 정보를 찾을 수 없습니다."),
     ROUTING_DUPLICATE(HttpStatus.CONFLICT, "동일한 공장/라인/공정 순서의 라우팅이 이미 존재합니다."),
     ROUTING_HAS_WORK_ORDER(HttpStatus.CONFLICT, "작업 지시에서 참조 중인 라우팅은 삭제할 수 없습니다."),
+    ROUTING_HAS_REFERENCE(HttpStatus.CONFLICT, "작업 지시 또는 생산 실적에서 참조 중인 라우팅은 수정 또는 삭제할 수 없습니다."),
+    ROUTING_INACTIVE(HttpStatus.BAD_REQUEST, "비활성 라우팅은 신규 작업 지시에 사용할 수 없습니다."),
+    PRODUCTION_EXECUTION_ROUTING_MISMATCH(HttpStatus.BAD_REQUEST, "작업 지시의 공장/라인과 다른 라우팅으로 생산 실적을 등록할 수 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
 
     private final HttpStatus status;

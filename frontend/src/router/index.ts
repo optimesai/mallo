@@ -69,6 +69,11 @@ const router = createRouter({
           component: () => import('../views/FactoryLineMasterView.vue')
         },
         {
+          path: 'master/factory-lines/:id',
+          name: 'factory-line-master-detail',
+          component: () => import('../views/FactoryLineMasterDetailView.vue')
+        },
+        {
           path: 'master/boms',
           name: 'bom-master',
           component: () => import('../views/BomMasterView.vue')

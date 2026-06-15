@@ -5,7 +5,9 @@ import type {
   FactoryRoutingRequest,
   FactoryRoutingResponse,
   FactoryRoutingSearchParams,
-  FactoryRoutingTreeResponse
+  FactoryRoutingStatusUpdateRequest,
+  FactoryRoutingTreeResponse,
+  FactoryRoutingUsageResponse
 } from '@/api/factoryRoutingApi'
 
 export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
@@ -14,6 +16,7 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
   const factories = ref<string[]>([])
   const lines = ref<string[]>([])
   const selectedRouting = ref<FactoryRoutingResponse | null>(null)
+  const selectedUsage = ref<FactoryRoutingUsageResponse | null>(null)
   const isLoading = ref(false)
   const isSaving = ref(false)
   const error = ref<string | null>(null)
@@ -124,6 +127,7 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
       routings.value = routings.value.filter((routing) => routing.routingId !== id)
       if (selectedRouting.value?.routingId === id) {
         selectedRouting.value = null
+        selectedUsage.value = null
       }
       await refreshReferences()
     } catch (err) {
@@ -131,6 +135,37 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
       throw err
     } finally {
       isSaving.value = false
+    }
+  }
+
+  async function updateRoutingStatus(id: number, request: FactoryRoutingStatusUpdateRequest) {
+    isSaving.value = true
+    error.value = null
+    try {
+      const updated = await factoryRoutingService.updateRoutingStatus(id, request)
+      const index = routings.value.findIndex((routing) => routing.routingId === id)
+      if (index !== -1) {
+        routings.value[index] = updated
+      }
+      selectedRouting.value = updated
+      await refreshReferences()
+      return updated
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '라우팅 상태 변경에 실패했습니다.'
+      throw err
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  async function loadRoutingUsage(id: number) {
+    error.value = null
+    try {
+      selectedUsage.value = await factoryRoutingService.getRoutingUsage(id)
+      return selectedUsage.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '라우팅 참조 현황을 불러오지 못했습니다.'
+      throw err
     }
   }
 
@@ -143,6 +178,11 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
 
   function selectRouting(routing: FactoryRoutingResponse | null) {
     selectedRouting.value = routing
+    selectedUsage.value = null
+  }
+
+  function clearLines() {
+    lines.value = []
   }
 
   return {
@@ -151,6 +191,7 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
     factories,
     lines,
     selectedRouting,
+    selectedUsage,
     isLoading,
     isSaving,
     error,
@@ -162,6 +203,9 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
     createRouting,
     updateRouting,
     deleteRouting,
-    selectRouting
+    updateRoutingStatus,
+    loadRoutingUsage,
+    selectRouting,
+    clearLines
   }
 })

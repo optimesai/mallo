@@ -7,8 +7,12 @@ export interface FactoryRoutingResponse {
   lineName: string
   operationSeq: number
   operationName: string
+  routingStatus: FactoryRoutingStatus
   createdAt: string
+  lastExecutionAt: string | null
 }
+
+export type FactoryRoutingStatus = 'ACTIVE' | 'INACTIVE'
 
 export interface FactoryRoutingRequest {
   factoryName: string
@@ -36,6 +40,22 @@ export interface FactoryRoutingOperationResponse {
 export interface FactoryRoutingSearchParams {
   factoryName?: string
   lineName?: string
+  routingStatus?: FactoryRoutingStatus
+}
+
+export interface FactoryRoutingStatusUpdateRequest {
+  routingStatus: FactoryRoutingStatus
+}
+
+export interface FactoryRoutingUsageResponse {
+  routingId: number
+  workOrderCount: number
+  executionCount: number
+  workOrderNos: string[]
+  executionIds: number[]
+  canUpdate: boolean
+  canDelete: boolean
+  recommendedAction: string
 }
 
 function encodePath(value: string) {
@@ -67,6 +87,16 @@ export const factoryRoutingApi = {
 
   async deleteRouting(id: number) {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/routings/${id}`)
+    return response.data
+  },
+
+  async updateRoutingStatus(id: number, request: FactoryRoutingStatusUpdateRequest) {
+    const response = await apiClient.patch<ApiResponse<FactoryRoutingResponse>>(`/api/routings/${id}/status`, request)
+    return response.data
+  },
+
+  async getRoutingUsage(id: number) {
+    const response = await apiClient.get<ApiResponse<FactoryRoutingUsageResponse>>(`/api/routings/${id}/usage`)
     return response.data
   },
 

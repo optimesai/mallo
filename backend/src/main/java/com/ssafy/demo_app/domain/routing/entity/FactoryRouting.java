@@ -29,4 +29,13 @@ public class FactoryRouting extends BaseCreatedTimeEntity {
 
     @Column(name = "operation_name", nullable = false)
     private String operationName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "routing_status", nullable = false, columnDefinition = "varchar(20) default 'ACTIVE'")
+    private RoutingStatus routingStatus = RoutingStatus.ACTIVE;
+
+    public enum RoutingStatus {
+        ACTIVE,
+        INACTIVE
+    }
 }

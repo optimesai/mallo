@@ -258,3 +258,19 @@
     - 없음
 
   </details>
+
+### 회원 기능 비교 문서 작성 (Codex)
+- **User Intent**: 사용자가 제공한 회원 기능 유스케이스와 현재 구현을 비교한 내용을 Notion에 붙여넣을 수 있는 Markdown 파일로 출력해달라고 요청했다.
+- **Agent Context**: 백엔드와 프론트엔드 회원 기능 구현을 기준 명세와 대조해 신규 API, 토큰 정책, 관리자 보호 정책, 프론트 연동 변경 사항을 문서화했다.
+- **Key Decisions**:
+  - 노션 이관용 문서를 별도 산출물 파일로 생성 — 프로젝트 작업 범위를 코드 변경 없이 문서 출력 요청에 한정하기 위해 `agent/output/`에 작성했다.
+  - API별 표와 기능별 불릿 구조를 사용 — `agent/history-logging.md`의 산출물 텍스트 형식 규칙에 맞춰 한 불릿에 하나의 정보만 담았다.
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - `agent/output/member-feature-diff.md` — 회원 기능 구현 변경 사항 비교 문서
+  - **Modified**:
+    - `agent/history/sseoyeon-ssonia/fix-partnerMaster.md` — 작업 히스토리 로그 추가
+  - **Deleted**:
+
+  </details>
