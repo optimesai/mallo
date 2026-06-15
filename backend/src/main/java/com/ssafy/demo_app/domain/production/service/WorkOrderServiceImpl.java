@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -86,16 +85,16 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         String normalizedFactoryName = normalize(factoryName);
         String normalizedLineName = normalize(lineName);
 
-        return workOrderRepository.findAll().stream()
-                .filter(order -> status == null || order.getStatus() == status)
-                .filter(order -> planDate == null || order.getPlanDate().isEqual(planDate))
-                .filter(order -> fromDate == null || !order.getPlanDate().isBefore(fromDate))
-                .filter(order -> toDate == null || !order.getPlanDate().isAfter(toDate))
-                .filter(order -> normalizedKeyword == null || matchesKeyword(order, normalizedKeyword))
-                .filter(order -> normalizedFactoryName == null || order.getRouting().getFactoryName().toLowerCase(Locale.ROOT).contains(normalizedFactoryName))
-                .filter(order -> normalizedLineName == null || order.getRouting().getLineName().toLowerCase(Locale.ROOT).contains(normalizedLineName))
-                .sorted(Comparator.comparing(WorkOrder::getPlanDate).reversed()
-                        .thenComparing(WorkOrder::getOrderNo, Comparator.reverseOrder()))
+        return workOrderRepository.searchWorkOrders(
+                        status,
+                        planDate,
+                        fromDate,
+                        toDate,
+                        normalizedKeyword,
+                        normalizedFactoryName,
+                        normalizedLineName
+                )
+                .stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -282,8 +281,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     private FactoryRouting findRouting(Integer routingId) {
-        return factoryRoutingRepository.findById(routingId)
+        FactoryRouting routing = factoryRoutingRepository.findById(routingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROUTING_NOT_FOUND));
+        if (routing.getRoutingStatus() != FactoryRouting.RoutingStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.ROUTING_INACTIVE);
+        }
+        return routing;
     }
 
     private void validateEditable(WorkOrder workOrder) {

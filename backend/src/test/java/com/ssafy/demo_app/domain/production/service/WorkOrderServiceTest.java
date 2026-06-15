@@ -136,6 +136,22 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    @DisplayName("작업 지시 생성 실패 - 비활성 라우팅은 신규 작업 지시에 사용할 수 없다")
+    void createWorkOrder_inactiveRouting() {
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        routing.setRoutingStatus(FactoryRouting.RoutingStatus.INACTIVE);
+        ItemMaster item = createItem("WO-FG-INACTIVE", "비활성라우팅 완제품", ItemMaster.ItemType.FG);
+        em.flush();
+        em.clear();
+
+        assertThatThrownBy(() -> workOrderService.createWorkOrder(
+                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, LocalDate.now())
+        ))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_INACTIVE);
+    }
+
+    @Test
     @DisplayName("작업 지시 수정 실패 - READY 상태가 아니면 수정할 수 없다")
     void updateWorkOrder_onlyReadyAllowed() {
         // Given
@@ -259,6 +275,30 @@ class WorkOrderServiceTest {
         ))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORK_ORDER_STATUS_INVALID);
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 실패 - 작업 지시와 다른 공장/라인 라우팅은 사용할 수 없다")
+    void createExecution_rejectsDifferentLineRouting() {
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        List<FactoryRouting> routings = em.createQuery("select r from FactoryRouting r order by r.routingId asc", FactoryRouting.class).getResultList();
+        FactoryRouting orderRouting = routings.get(0);
+        FactoryRouting otherLineRouting = routings.stream()
+                .filter(routing -> !routing.getFactoryName().equals(orderRouting.getFactoryName())
+                        || !routing.getLineName().equals(orderRouting.getLineName()))
+                .findFirst()
+                .orElseThrow();
+        ItemMaster item = createItem("WO-FG-ROUTE-MISMATCH", "라우팅불일치 완제품", ItemMaster.ItemType.FG);
+        WorkOrder workOrder = createWorkOrder("WO-ROUTE-MISMATCH-001", item, orderRouting, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        assertThatThrownBy(() -> productionExecutionService.createExecution(
+                worker.getUserId(),
+                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), otherLineRouting.getRoutingId(), 1, 0, 30)
+        ))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCTION_EXECUTION_ROUTING_MISMATCH);
     }
 
     @Test

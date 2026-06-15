@@ -2,7 +2,12 @@ package com.ssafy.demo_app.domain.routing.service;
 
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingRequest;
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingResponse;
+import com.ssafy.demo_app.api.routing.dto.FactoryRoutingStatusUpdateRequest;
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingTreeResponse;
+import com.ssafy.demo_app.api.routing.dto.FactoryRoutingUsageResponse;
+import com.ssafy.demo_app.domain.production.entity.ProductionExecution;
+import com.ssafy.demo_app.domain.production.entity.WorkOrder;
+import com.ssafy.demo_app.domain.production.repository.ProductionExecutionRepository;
 import com.ssafy.demo_app.domain.production.repository.WorkOrderRepository;
 import com.ssafy.demo_app.domain.routing.entity.FactoryRouting;
 import com.ssafy.demo_app.domain.routing.repository.FactoryRoutingRepository;
@@ -15,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +40,9 @@ class FactoryRoutingServiceTest {
 
     @Mock
     private WorkOrderRepository workOrderRepository;
+
+    @Mock
+    private ProductionExecutionRepository productionExecutionRepository;
 
     @InjectMocks
     private FactoryRoutingServiceImpl factoryRoutingService;
@@ -103,12 +112,35 @@ class FactoryRoutingServiceTest {
     }
 
     @Test
+    @DisplayName("라우팅 등록 실패 - DB 유니크 제약 충돌")
+    void createRouting_duplicateConstraint() {
+        FactoryRoutingRequest request = new FactoryRoutingRequest(
+                "창원제1공장",
+                "A라인",
+                1,
+                "중복 공정"
+        );
+
+        given(factoryRoutingRepository.existsByFactoryNameAndLineNameAndOperationSeq(
+                "창원제1공장",
+                "A라인",
+                1
+        )).willReturn(false);
+        given(factoryRoutingRepository.save(any(FactoryRouting.class)))
+                .willThrow(new DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> factoryRoutingService.createRouting(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_DUPLICATE);
+    }
+
+    @Test
     @DisplayName("라우팅 목록 조회 성공 - 공장/라인 필터")
     void getRoutings_filterByFactoryAndLine() {
         given(factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc("창원제1공장", "A라인"))
                 .willReturn(List.of(routing1, routing2));
 
-        List<FactoryRoutingResponse> responses = factoryRoutingService.getRoutings("창원제1공장", "A라인");
+        List<FactoryRoutingResponse> responses = factoryRoutingService.getRoutings("창원제1공장", "A라인", null);
 
         assertThat(responses).hasSize(2);
         assertThat(responses).extracting(FactoryRoutingResponse::getOperationSeq)
@@ -126,6 +158,8 @@ class FactoryRoutingServiceTest {
         );
 
         given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
+        given(workOrderRepository.existsByRouting(routing1)).willReturn(false);
+        given(productionExecutionRepository.existsByRouting(routing1)).willReturn(false);
         given(factoryRoutingRepository.existsByFactoryNameAndLineNameAndOperationSeqAndRoutingIdNot(
                 "창원제1공장",
                 "A라인",
@@ -141,6 +175,26 @@ class FactoryRoutingServiceTest {
     }
 
     @Test
+    @DisplayName("라우팅 수정 실패 - 작업지시 참조 존재")
+    void updateRouting_hasReference() {
+        FactoryRoutingRequest request = new FactoryRoutingRequest(
+                "창원제1공장",
+                "A라인",
+                2,
+                "수정된 공정"
+        );
+
+        given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
+        given(workOrderRepository.existsByRouting(routing1)).willReturn(true);
+
+        assertThatThrownBy(() -> factoryRoutingService.updateRouting(1, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_HAS_REFERENCE);
+
+        verify(factoryRoutingRepository, never()).save(any(FactoryRouting.class));
+    }
+
+    @Test
     @DisplayName("라우팅 삭제 실패 - 작업지시 참조 존재")
     void deleteRouting_hasWorkOrder() {
         given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
@@ -148,9 +202,60 @@ class FactoryRoutingServiceTest {
 
         assertThatThrownBy(() -> factoryRoutingService.deleteRouting(1))
                 .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_HAS_WORK_ORDER);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_HAS_REFERENCE);
 
         verify(factoryRoutingRepository, never()).delete(any(FactoryRouting.class));
+    }
+
+    @Test
+    @DisplayName("라우팅 삭제 실패 - 생산 실적 참조 존재")
+    void deleteRouting_hasExecution() {
+        given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
+        given(workOrderRepository.existsByRouting(routing1)).willReturn(false);
+        given(productionExecutionRepository.existsByRouting(routing1)).willReturn(true);
+
+        assertThatThrownBy(() -> factoryRoutingService.deleteRouting(1))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_HAS_REFERENCE);
+
+        verify(factoryRoutingRepository, never()).delete(any(FactoryRouting.class));
+    }
+
+    @Test
+    @DisplayName("라우팅 상태 변경 성공")
+    void updateRoutingStatus_success() {
+        FactoryRoutingStatusUpdateRequest request = new FactoryRoutingStatusUpdateRequest();
+        request.setRoutingStatus(FactoryRouting.RoutingStatus.INACTIVE);
+
+        given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
+        given(factoryRoutingRepository.save(any(FactoryRouting.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        FactoryRoutingResponse response = factoryRoutingService.updateRoutingStatus(1, request);
+
+        assertThat(response.getRoutingStatus()).isEqualTo("INACTIVE");
+    }
+
+    @Test
+    @DisplayName("라우팅 참조 현황 조회 성공")
+    void getRoutingUsage_success() {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setOrderNo("WO-20260615-001");
+        ProductionExecution execution = new ProductionExecution();
+        execution.setExecutionId(10);
+
+        given(factoryRoutingRepository.findById(1)).willReturn(Optional.of(routing1));
+        given(workOrderRepository.countByRouting(routing1)).willReturn(1L);
+        given(productionExecutionRepository.countByRouting(routing1)).willReturn(1L);
+        given(workOrderRepository.findTop5ByRoutingOrderByOrderIdDesc(routing1)).willReturn(List.of(workOrder));
+        given(productionExecutionRepository.findTop5ByRoutingOrderByExecutionIdDesc(routing1)).willReturn(List.of(execution));
+
+        FactoryRoutingUsageResponse response = factoryRoutingService.getRoutingUsage(1);
+
+        assertThat(response.getWorkOrderCount()).isEqualTo(1);
+        assertThat(response.getExecutionCount()).isEqualTo(1);
+        assertThat(response.isCanDelete()).isFalse();
+        assertThat(response.getWorkOrderNos()).containsExactly("WO-20260615-001");
+        assertThat(response.getExecutionIds()).containsExactly(10);
     }
 
     @Test

@@ -2,16 +2,23 @@ package com.ssafy.demo_app.domain.routing.service;
 
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingRequest;
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingResponse;
+import com.ssafy.demo_app.api.routing.dto.FactoryRoutingStatusUpdateRequest;
 import com.ssafy.demo_app.api.routing.dto.FactoryRoutingTreeResponse;
+import com.ssafy.demo_app.api.routing.dto.FactoryRoutingUsageResponse;
+import com.ssafy.demo_app.domain.production.entity.ProductionExecution;
+import com.ssafy.demo_app.domain.production.entity.WorkOrder;
+import com.ssafy.demo_app.domain.production.repository.ProductionExecutionRepository;
 import com.ssafy.demo_app.domain.production.repository.WorkOrderRepository;
 import com.ssafy.demo_app.domain.routing.entity.FactoryRouting;
 import com.ssafy.demo_app.domain.routing.repository.FactoryRoutingRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,9 +31,14 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
 
     private final FactoryRoutingRepository factoryRoutingRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final ProductionExecutionRepository productionExecutionRepository;
 
     @Override
-    public List<FactoryRoutingResponse> getRoutings(String factoryName, String lineName) {
+    public List<FactoryRoutingResponse> getRoutings(
+            String factoryName,
+            String lineName,
+            FactoryRouting.RoutingStatus routingStatus
+    ) {
         List<FactoryRouting> routings;
         if (hasText(factoryName) && hasText(lineName)) {
             routings = factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc(
@@ -35,18 +47,21 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
             );
         } else if (hasText(factoryName)) {
             routings = factoryRoutingRepository.findByFactoryNameOrderByLineNameAscOperationSeqAsc(factoryName.trim());
+        } else if (routingStatus != null) {
+            routings = factoryRoutingRepository.findByRoutingStatusOrderByFactoryNameAscLineNameAscOperationSeqAsc(routingStatus);
         } else {
             routings = factoryRoutingRepository.findAllByOrderByFactoryNameAscLineNameAscOperationSeqAsc();
         }
 
         return routings.stream()
-                .map(FactoryRoutingResponse::from)
+                .filter(routing -> routingStatus == null || routing.getRoutingStatus() == routingStatus)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
     public FactoryRoutingResponse getRouting(Integer routingId) {
-        return FactoryRoutingResponse.from(findRouting(routingId));
+        return toResponse(findRouting(routingId));
     }
 
     @Override
@@ -64,13 +79,14 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
         routing.setOperationSeq(request.getOperationSeq());
         routing.setOperationName(operationName);
 
-        return FactoryRoutingResponse.from(factoryRoutingRepository.save(routing));
+        return toResponse(saveRouting(routing));
     }
 
     @Override
     @Transactional
     public FactoryRoutingResponse updateRouting(Integer routingId, FactoryRoutingRequest request) {
         FactoryRouting routing = findRouting(routingId);
+        validateNoReference(routing);
         String factoryName = trimRequired(request.getFactoryName());
         String lineName = trimRequired(request.getLineName());
         String operationName = trimRequired(request.getOperationName());
@@ -82,17 +98,52 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
         routing.setOperationSeq(request.getOperationSeq());
         routing.setOperationName(operationName);
 
-        return FactoryRoutingResponse.from(factoryRoutingRepository.save(routing));
+        return toResponse(saveRouting(routing));
     }
 
     @Override
     @Transactional
     public void deleteRouting(Integer routingId) {
         FactoryRouting routing = findRouting(routingId);
-        if (workOrderRepository.existsByRouting(routing)) {
-            throw new BusinessException(ErrorCode.ROUTING_HAS_WORK_ORDER);
-        }
+        validateNoReference(routing);
         factoryRoutingRepository.delete(routing);
+    }
+
+    @Override
+    @Transactional
+    public FactoryRoutingResponse updateRoutingStatus(Integer routingId, FactoryRoutingStatusUpdateRequest request) {
+        FactoryRouting routing = findRouting(routingId);
+        routing.setRoutingStatus(request.getRoutingStatus());
+        return toResponse(saveRouting(routing));
+    }
+
+    @Override
+    public FactoryRoutingUsageResponse getRoutingUsage(Integer routingId) {
+        FactoryRouting routing = findRouting(routingId);
+        long workOrderCount = workOrderRepository.countByRouting(routing);
+        long executionCount = productionExecutionRepository.countByRouting(routing);
+        List<String> workOrderNos = workOrderRepository.findTop5ByRoutingOrderByOrderIdDesc(routing)
+                .stream()
+                .map(WorkOrder::getOrderNo)
+                .toList();
+        List<Integer> executionIds = productionExecutionRepository.findTop5ByRoutingOrderByExecutionIdDesc(routing)
+                .stream()
+                .map(ProductionExecution::getExecutionId)
+                .toList();
+        boolean hasReference = workOrderCount > 0 || executionCount > 0;
+        String recommendedAction = hasReference
+                ? "참조 이력이 있으므로 삭제 또는 수정 대신 비활성화를 사용하세요."
+                : "참조 이력이 없어 수정 또는 삭제할 수 있습니다.";
+        return new FactoryRoutingUsageResponse(
+                routing.getRoutingId(),
+                workOrderCount,
+                executionCount,
+                workOrderNos,
+                executionIds,
+                !hasReference,
+                !hasReference,
+                recommendedAction
+        );
     }
 
     @Override
@@ -113,7 +164,7 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
                         trimRequired(lineName)
                 )
                 .stream()
-                .map(FactoryRoutingResponse::from)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -158,6 +209,18 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROUTING_NOT_FOUND));
     }
 
+    private FactoryRoutingResponse toResponse(FactoryRouting routing) {
+        FactoryRoutingResponse response = FactoryRoutingResponse.from(routing);
+        response.setLastExecutionAt(resolveLastExecutionAt(routing));
+        return response;
+    }
+
+    private LocalDateTime resolveLastExecutionAt(FactoryRouting routing) {
+        return productionExecutionRepository.findTopByRoutingOrderByCreatedAtDesc(routing)
+                .map(ProductionExecution::getCreatedAt)
+                .orElse(null);
+    }
+
     private void validateDuplicate(String factoryName, String lineName, Integer operationSeq) {
         if (factoryRoutingRepository.existsByFactoryNameAndLineNameAndOperationSeq(
                 factoryName,
@@ -180,6 +243,20 @@ public class FactoryRoutingServiceImpl implements FactoryRoutingService {
                 operationSeq,
                 routingId
         )) {
+            throw new BusinessException(ErrorCode.ROUTING_DUPLICATE);
+        }
+    }
+
+    private void validateNoReference(FactoryRouting routing) {
+        if (workOrderRepository.existsByRouting(routing) || productionExecutionRepository.existsByRouting(routing)) {
+            throw new BusinessException(ErrorCode.ROUTING_HAS_REFERENCE);
+        }
+    }
+
+    private FactoryRouting saveRouting(FactoryRouting routing) {
+        try {
+            return factoryRoutingRepository.save(routing);
+        } catch (DataIntegrityViolationException exception) {
             throw new BusinessException(ErrorCode.ROUTING_DUPLICATE);
         }
     }

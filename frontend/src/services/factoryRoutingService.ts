@@ -4,7 +4,9 @@ import type {
   FactoryRoutingRequest,
   FactoryRoutingResponse,
   FactoryRoutingSearchParams,
-  FactoryRoutingTreeResponse
+  FactoryRoutingStatusUpdateRequest,
+  FactoryRoutingTreeResponse,
+  FactoryRoutingUsageResponse
 } from '@/api/factoryRoutingApi'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -56,6 +58,24 @@ export const factoryRoutingService = {
       await factoryRoutingApi.deleteRouting(id)
     } catch (error) {
       throw new Error(getErrorMessage(error, '라우팅 삭제에 실패했습니다.'))
+    }
+  },
+
+  async updateRoutingStatus(id: number, request: FactoryRoutingStatusUpdateRequest): Promise<FactoryRoutingResponse> {
+    try {
+      const response = await factoryRoutingApi.updateRoutingStatus(id, request)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '라우팅 상태 변경에 실패했습니다.'))
+    }
+  },
+
+  async getRoutingUsage(id: number): Promise<FactoryRoutingUsageResponse> {
+    try {
+      const response = await factoryRoutingApi.getRoutingUsage(id)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '라우팅 참조 현황을 불러오지 못했습니다.'))
     }
   },
 

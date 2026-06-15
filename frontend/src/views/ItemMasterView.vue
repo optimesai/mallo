@@ -2,10 +2,12 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@lucide/vue'
+import { useAuthStore } from '@/state/authStore'
 import { useItemMasterStore } from '@/state/itemMasterStore'
 import type { ItemMasterRequest, ItemMasterResponse, ItemStatus, ItemType, ItemUnit } from '@/api/itemMasterApi'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const itemMasterStore = useItemMasterStore()
 
 const itemTypeOptions: Array<{ value: ItemType; label: string }> = [
@@ -55,6 +57,7 @@ const stats = computed(() => {
     inactive: items.filter((item) => item.itemStatus === 'INACTIVE').length
   }
 })
+const canWrite = computed(() => authStore.canManageMasterData)
 
 const keywordSuggestions = computed(() => {
   const searchKeyword = keyword.value.trim().toLowerCase()
@@ -159,6 +162,7 @@ function isKeywordMatched(item: ItemMasterResponse, searchKeyword: string) {
 }
 
 function openCreate() {
+  if (!canWrite.value) return
   form.itemCode = ''
   form.itemName = ''
   form.spec = ''
@@ -336,7 +340,7 @@ function showToast(message: string) {
         <div class="flex gap-2">
           <button class="h-11 rounded-2xl app-bg-strong px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="fetchItems(0)">조회</button>
           <button class="h-11 rounded-2xl app-bg-muted px-5 text-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
-          <button class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreate">신규 등록</button>
+          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreate">신규 등록</button>
         </div>
       </div>
     </section>

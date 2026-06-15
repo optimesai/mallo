@@ -13,6 +13,8 @@ import {
 } from '@lucide/vue'
 import { factoryRoutingService } from '@/services/factoryRoutingService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
+import { useAuthStore } from '@/state/authStore'
+import { formatDateTime } from '@/utils/dateFormat'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
 import type { ProductionExecutionCreateRequest, WorkOrderStatus } from '@/api/workOrderApi'
 
@@ -21,6 +23,7 @@ type ExecutionSortOrder = 'latest' | 'oldest'
 type ExecutionQtyFilter = 'ALL' | 'GOOD' | 'DEFECT'
 
 const workOrderStore = useWorkOrderStore()
+const authStore = useAuthStore()
 
 const routings = ref<FactoryRoutingResponse[]>([])
 const pageError = ref<string | null>(null)
@@ -91,6 +94,7 @@ const totalDefectRate = computed(() => {
   if (!selectedOrder.value || selectedOrder.value.totalExecutedQty === 0) return 0
   return Math.round((selectedOrder.value.totalDefectQty * 10000) / selectedOrder.value.totalExecutedQty) / 100
 })
+const hasNoRoutings = computed(() => routings.value.length === 0)
 const factoryOptions = computed(() => [...new Set(routings.value.map((routing) => routing.factoryName))])
 const lineOptions = computed(() => [...new Set(routings.value
   .filter((routing) => !factoryInput.value || routing.factoryName === factoryInput.value)
@@ -212,13 +216,6 @@ function getStatusLabel(status: WorkOrderStatus) {
 
 function formatNumber(value: number | null | undefined) {
   return Number(value ?? 0).toLocaleString()
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 function getRemainingQty(requiredQty: number, issuedQty: number) {
@@ -363,6 +360,14 @@ function selectKeywordSuggestion(orderNo: string) {
         새로고침
       </button>
     </header>
+
+    <div v-if="hasNoRoutings" class="wo-alert wo-alert-danger">
+      <AlertTriangle class="wo-icon" />
+      <span>등록된 공장/생산 라우팅 기준정보가 없어 공정 실적을 등록할 수 없습니다.</span>
+      <RouterLink v-if="authStore.canManageMasterData" class="wo-button wo-button-subtle" to="/master/factory-lines">
+        기준정보 등록
+      </RouterLink>
+    </div>
 
     <section class="wo-metric-grid wo-panel pe-summary-panel">
       <div class="wo-metric">
