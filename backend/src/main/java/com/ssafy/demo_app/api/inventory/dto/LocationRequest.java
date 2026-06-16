@@ -27,4 +27,14 @@ public class LocationRequest {
 
     @Schema(description = "렉(Rack) 단(Column) 정보", example = "3단")
     private String rackColumn;
+
+    @Schema(description = "생산 입고 기본 로케이션 여부", example = "false")
+    private Boolean productionReceiptDefault;
+
+    public LocationRequest(String locationCode, String warehouseName, String rackRow, String rackColumn) {
+        this.locationCode = locationCode;
+        this.warehouseName = warehouseName;
+        this.rackRow = rackRow;
+        this.rackColumn = rackColumn;
+    }
 }

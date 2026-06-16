@@ -1,6 +1,7 @@
 package com.ssafy.demo_app.domain.production.service;
 
 import com.ssafy.demo_app.api.production.dto.ProductionExecutionResponse;
+import com.ssafy.demo_app.api.production.dto.ProductionIssueHistoryResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderCloseRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderCreateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderDetailResponse;
@@ -20,15 +21,21 @@ import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.item.repository.ItemMasterRepository;
 import com.ssafy.demo_app.domain.production.entity.ProductionExecution;
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
+import com.ssafy.demo_app.domain.production.entity.WorkOrderSequence;
 import com.ssafy.demo_app.domain.production.repository.ProductionExecutionRepository;
 import com.ssafy.demo_app.domain.production.repository.WorkOrderRepository;
+import com.ssafy.demo_app.domain.production.repository.WorkOrderSequenceRepository;
 import com.ssafy.demo_app.domain.routing.entity.FactoryRouting;
 import com.ssafy.demo_app.domain.routing.repository.FactoryRoutingRepository;
 import com.ssafy.demo_app.domain.user.entity.User;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
+import com.ssafy.demo_app.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +60,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private final ItemMasterRepository itemMasterRepository;
     private final FactoryRoutingRepository factoryRoutingRepository;
     private final ProductionExecutionRepository productionExecutionRepository;
+    private final WorkOrderSequenceRepository workOrderSequenceRepository;
 
     @Override
     @Transactional
@@ -75,31 +83,41 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     @Override
-    public List<WorkOrderResponse> getWorkOrders(
+    public PageResponse<WorkOrderResponse> getWorkOrders(
+            Pageable pageable,
             WorkOrder.OrderStatus status,
             LocalDate planDate,
             LocalDate fromDate,
             LocalDate toDate,
             String keyword,
+            String itemKeyword,
             String factoryName,
-            String lineName
+            String lineName,
+            String operationName
     ) {
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         String normalizedKeyword = normalize(keyword);
+        String normalizedItemKeyword = normalize(itemKeyword);
         String normalizedFactoryName = normalize(factoryName);
         String normalizedLineName = normalize(lineName);
+        String normalizedOperationName = normalize(operationName);
 
-        return workOrderRepository.searchWorkOrders(
+        Page<WorkOrderResponse> page = workOrderRepository.searchWorkOrders(
                         status,
                         planDate,
                         fromDate,
                         toDate,
                         normalizedKeyword,
+                        normalizedItemKeyword,
                         normalizedFactoryName,
-                        normalizedLineName
+                        normalizedLineName,
+                        normalizedOperationName,
+                        pageable
                 )
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                .map(this::toResponse);
+        return PageResponse.from(page);
     }
 
     @Override
@@ -111,7 +129,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return new WorkOrderDetailResponse(
                 toResponse(workOrder),
                 getMaterialRequirements(workOrder),
-                executions
+                executions,
+                getIssueHistories(workOrder)
         );
     }
 
@@ -190,81 +209,88 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     @Override
     @Transactional
     public void issueMaterials(String orderKey, Integer workerId) {
-        WorkOrder workOrder = findWorkOrder(orderKey);
+        WorkOrder workOrder = findWorkOrderForUpdate(orderKey);
         User worker = userRepository.findById(workerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (workOrder.getStatus() != WorkOrder.OrderStatus.READY && workOrder.getStatus() != WorkOrder.OrderStatus.RUN) {
+        if (workOrder.getStatus() != WorkOrder.OrderStatus.READY) {
             throw new BusinessException(ErrorCode.WORK_ORDER_STATUS_INVALID);
         }
 
-        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
-                workOrder.getItem(),
-                workOrder.getBomVersion(),
-                workOrder.getTargetQty()
-        );
+        issueMaterialsForQuantity(workOrder, worker, null, workOrder.getTargetQty());
 
-        for (BomRequirement requirement : requirements) {
-            int requiredQty = requirement.requiredQty() - getIssuedQty(workOrder, requirement.item());
-            if (requiredQty <= 0) {
-                continue;
-            }
-            int totalAvailableQty = currentInventoryRepository.findByItem(requirement.item()).stream()
-                    .mapToInt(CurrentInventory::getCurrentQty)
-                    .sum();
+        workOrder.setStatus(WorkOrder.OrderStatus.RUN);
+        workOrderRepository.save(workOrder);
+    }
 
-            if (totalAvailableQty < requiredQty) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
+    @Override
+    @Transactional
+    public void cancelIssueMaterials(String orderKey, Integer workerId) {
+        WorkOrder workOrder = findWorkOrderForUpdate(orderKey);
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (workOrder.getStatus() == WorkOrder.OrderStatus.CLOSE) {
+            throw new BusinessException(ErrorCode.WORK_ORDER_STATUS_INVALID);
+        }
+        if (productionExecutionRepository.existsByOrder(workOrder)) {
+            throw new BusinessException(ErrorCode.WORK_ORDER_HAS_EXECUTIONS);
         }
 
-        for (BomRequirement requirement : requirements) {
-            ItemMaster childItem = requirement.item();
-            int remainingQty = requirement.requiredQty() - getIssuedQty(workOrder, childItem);
-            if (remainingQty <= 0) {
-                continue;
-            }
+        List<InventoryTransactionHistory> issueHistories = transactionHistoryRepository.findByWorkOrderOrderByTransactionIdAsc(workOrder).stream()
+                .filter(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE)
+                .filter(history -> history.getProductionExecution() == null)
+                .toList();
+        boolean alreadyCanceled = transactionHistoryRepository.findByWorkOrderOrderByTransactionIdAsc(workOrder).stream()
+                .anyMatch(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE_CANCEL
+                        && history.getProductionExecution() == null);
 
-            List<CurrentInventory> inventories = currentInventoryRepository.findByItem(childItem);
-            for (CurrentInventory inventory : inventories) {
-                if (remainingQty <= 0) break;
-                if (inventory.getCurrentQty() > 0) {
-                    int deductQty = Math.min(inventory.getCurrentQty(), remainingQty);
-                    inventory.setCurrentQty(inventory.getCurrentQty() - deductQty);
-                    currentInventoryRepository.save(inventory);
-
-                    remainingQty -= deductQty;
-
-                    InventoryTransactionHistory history = new InventoryTransactionHistory();
-                    history.setItem(childItem);
-                    history.setLocation(inventory.getLocation());
-                    history.setTransactionType(TransactionType.PRODUCTION_ISSUE);
-                    history.setQuantity(deductQty);
-                    history.setReasonDesc(issueReason(workOrder));
-                    history.setWorker(worker);
-                    transactionHistoryRepository.save(history);
-                }
-            }
-
-            if (remainingQty > 0) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
+        if (issueHistories.isEmpty() || alreadyCanceled) {
+            throw new BusinessException(ErrorCode.WORK_ORDER_HAS_ISSUES);
         }
 
-        if (workOrder.getStatus() == WorkOrder.OrderStatus.READY) {
-            workOrder.setStatus(WorkOrder.OrderStatus.RUN);
+        for (InventoryTransactionHistory issueHistory : issueHistories) {
+            restoreInventory(
+                    issueHistory.getItem(),
+                    issueHistory.getLocation(),
+                    issueHistory.getQuantity(),
+                    worker,
+                    workOrder,
+                    null,
+                    TransactionType.PRODUCTION_ISSUE_CANCEL,
+                    "Production issue cancel for WorkOrder: " + workOrder.getOrderNo(),
+                    issueHistory
+            );
+        }
+
+        if (workOrder.getStatus() == WorkOrder.OrderStatus.RUN) {
+            workOrder.setStatus(WorkOrder.OrderStatus.READY);
             workOrderRepository.save(workOrder);
         }
     }
 
-    private String generateOrderNo(LocalDate planDate) {
+    private synchronized String generateOrderNo(LocalDate planDate) {
+        WorkOrderSequence sequence = findOrCreateSequence(planDate);
+        sequence.setLastSequence(sequence.getLastSequence() + 1);
+        workOrderSequenceRepository.save(sequence);
+
         String prefix = "WO-" + planDate.format(ORDER_NO_DATE_FORMAT) + "-";
-        int nextSequence = workOrderRepository.findTopByOrderNoStartingWithOrderByOrderNoDesc(prefix)
-                .map(WorkOrder::getOrderNo)
-                .map(orderNo -> orderNo.substring(orderNo.lastIndexOf('-') + 1))
-                .map(Integer::parseInt)
-                .orElse(0) + 1;
-        return prefix + String.format("%03d", nextSequence);
+        return prefix + String.format("%03d", sequence.getLastSequence());
+    }
+
+    private WorkOrderSequence findOrCreateSequence(LocalDate planDate) {
+        return workOrderSequenceRepository.findByPlanDateForUpdate(planDate)
+                .orElseGet(() -> {
+                    try {
+                        WorkOrderSequence sequence = new WorkOrderSequence();
+                        sequence.setPlanDate(planDate);
+                        sequence.setLastSequence(0);
+                        return workOrderSequenceRepository.saveAndFlush(sequence);
+                    } catch (DataIntegrityViolationException exception) {
+                        return workOrderSequenceRepository.findByPlanDateForUpdate(planDate)
+                                .orElseThrow(() -> exception);
+                    }
+                });
     }
 
     private WorkOrder findWorkOrder(String orderKey) {
@@ -277,6 +303,19 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             }
         }
         return workOrderRepository.findByOrderNo(orderKey)
+                .orElseThrow(() -> new BusinessException(ErrorCode.WORK_ORDER_NOT_FOUND));
+    }
+
+    private WorkOrder findWorkOrderForUpdate(String orderKey) {
+        if (orderKey != null && orderKey.matches("\\d+")) {
+            try {
+                return workOrderRepository.findByIdForUpdate(Integer.valueOf(orderKey))
+                        .orElseThrow(() -> new BusinessException(ErrorCode.WORK_ORDER_NOT_FOUND));
+            } catch (NumberFormatException exception) {
+                throw new BusinessException(ErrorCode.WORK_ORDER_NOT_FOUND);
+            }
+        }
+        return workOrderRepository.findByOrderNoForUpdate(orderKey)
                 .orElseThrow(() -> new BusinessException(ErrorCode.WORK_ORDER_NOT_FOUND));
     }
 
@@ -305,13 +344,37 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (productionExecutionRepository.existsByOrder(workOrder)) {
             throw new BusinessException(ErrorCode.WORK_ORDER_HAS_EXECUTIONS);
         }
-        if (transactionHistoryRepository.existsByReasonDescContaining(workOrder.getOrderNo())) {
+        if (transactionHistoryRepository.existsByWorkOrder(workOrder)) {
             throw new BusinessException(ErrorCode.WORK_ORDER_HAS_ISSUES);
         }
     }
 
     private WorkOrderResponse toResponse(WorkOrder workOrder) {
-        return WorkOrderResponse.from(workOrder, summarize(workOrder));
+        return WorkOrderResponse.from(
+                workOrder,
+                summarize(workOrder),
+                canCancelIssueMaterials(workOrder),
+                canDeleteExecution(workOrder)
+        );
+    }
+
+    private boolean canCancelIssueMaterials(WorkOrder workOrder) {
+        if (workOrder.getStatus() == WorkOrder.OrderStatus.CLOSE || productionExecutionRepository.existsByOrder(workOrder)) {
+            return false;
+        }
+        List<InventoryTransactionHistory> histories = transactionHistoryRepository.findByWorkOrderOrderByTransactionIdAsc(workOrder);
+        boolean hasWorkOrderIssue = histories.stream()
+                .anyMatch(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE
+                        && history.getProductionExecution() == null);
+        boolean hasWorkOrderIssueCancel = histories.stream()
+                .anyMatch(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE_CANCEL
+                        && history.getProductionExecution() == null);
+        return hasWorkOrderIssue && !hasWorkOrderIssueCancel;
+    }
+
+    private boolean canDeleteExecution(WorkOrder workOrder) {
+        return workOrder.getStatus() != WorkOrder.OrderStatus.CLOSE
+                && productionExecutionRepository.existsByOrder(workOrder);
     }
 
     private WorkOrderExecutionSummary summarize(WorkOrder workOrder) {
@@ -331,10 +394,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 .stream()
                 .map(requirement -> {
                     ItemMaster childItem = requirement.item();
-                    int issuedQty = transactionHistoryRepository.findByReasonDescContainingOrderByTransactionIdAsc(workOrder.getOrderNo()).stream()
-                            .filter(history -> history.getItem().getItemId().equals(childItem.getItemId()))
-                            .mapToInt(InventoryTransactionHistory::getQuantity)
-                            .sum();
+                    int issuedQty = getIssuedQty(workOrder, childItem);
                     int availableQty = currentInventoryRepository.findByItem(childItem).stream()
                             .mapToInt(CurrentInventory::getCurrentQty)
                             .sum();
@@ -354,11 +414,127 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     private int getIssuedQty(WorkOrder workOrder, ItemMaster item) {
-        return transactionHistoryRepository.findByReasonDescContainingOrderByTransactionIdAsc(workOrder.getOrderNo()).stream()
-                .filter(history -> history.getTransactionType() == TransactionType.PRODUCTION_ISSUE)
+        return transactionHistoryRepository.findByWorkOrderOrderByTransactionIdAsc(workOrder).stream()
                 .filter(history -> history.getItem().getItemId().equals(item.getItemId()))
-                .mapToInt(InventoryTransactionHistory::getQuantity)
+                .mapToInt(history -> {
+                    if (history.getTransactionType() == TransactionType.PRODUCTION_ISSUE) {
+                        return history.getQuantity();
+                    }
+                    if (history.getTransactionType() == TransactionType.PRODUCTION_ISSUE_CANCEL) {
+                        return -history.getQuantity();
+                    }
+                    return 0;
+                })
                 .sum();
+    }
+
+    private List<ProductionIssueHistoryResponse> getIssueHistories(WorkOrder workOrder) {
+        return transactionHistoryRepository.findByWorkOrderOrderByTransactionIdAsc(workOrder).stream()
+                .map(ProductionIssueHistoryResponse::from)
+                .toList();
+    }
+
+    private void issueMaterialsForQuantity(WorkOrder workOrder, User worker, ProductionExecution execution, int productionQty) {
+        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
+                workOrder.getItem(),
+                workOrder.getBomVersion(),
+                productionQty
+        );
+
+        for (BomRequirement requirement : requirements) {
+            int requiredDeltaQty = requirement.requiredQty() - getIssuedQty(workOrder, requirement.item());
+            if (requiredDeltaQty <= 0) {
+                continue;
+            }
+            int totalAvailableQty = currentInventoryRepository.findByItem(requirement.item()).stream()
+                    .mapToInt(CurrentInventory::getCurrentQty)
+                    .sum();
+            if (totalAvailableQty < requiredDeltaQty) {
+                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+        }
+
+        for (BomRequirement requirement : requirements) {
+            ItemMaster childItem = requirement.item();
+            int remainingQty = requirement.requiredQty() - getIssuedQty(workOrder, childItem);
+            if (remainingQty <= 0) {
+                continue;
+            }
+            for (CurrentInventory inventory : currentInventoryRepository.findByItemForUpdate(childItem)) {
+                if (remainingQty <= 0) break;
+                if (inventory.getCurrentQty() > 0) {
+                    int deductQty = Math.min(inventory.getCurrentQty(), remainingQty);
+                    inventory.setCurrentQty(inventory.getCurrentQty() - deductQty);
+                    currentInventoryRepository.save(inventory);
+                    remainingQty -= deductQty;
+                    saveHistory(childItem, inventory.getLocation(), TransactionType.PRODUCTION_ISSUE, deductQty, issueReason(workOrder), worker, workOrder, execution, null);
+                }
+            }
+            if (remainingQty > 0) {
+                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+        }
+    }
+
+    private void restoreInventory(
+            ItemMaster item,
+            com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation location,
+            int quantity,
+            User worker,
+            WorkOrder workOrder,
+            ProductionExecution execution,
+            TransactionType transactionType,
+            String reasonDesc,
+            InventoryTransactionHistory originalTransaction
+    ) {
+        CurrentInventory inventory = currentInventoryRepository.findByItemAndLocationForUpdate(item, location)
+                .orElseGet(() -> {
+                    CurrentInventory ci = new CurrentInventory();
+                    ci.setItem(item);
+                    ci.setLocation(location);
+                    ci.setCurrentQty(0);
+                    return ci;
+                });
+        inventory.setCurrentQty(inventory.getCurrentQty() + quantity);
+        currentInventoryRepository.save(inventory);
+        saveHistory(item, location, transactionType, quantity, reasonDesc, worker, workOrder, execution, originalTransaction);
+    }
+
+    private void saveHistory(
+            ItemMaster item,
+            com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation location,
+            TransactionType transactionType,
+            int quantity,
+            String reasonDesc,
+            User worker,
+            WorkOrder workOrder,
+            ProductionExecution execution
+    ) {
+        saveHistory(item, location, transactionType, quantity, reasonDesc, worker, workOrder, execution, null);
+    }
+
+    private void saveHistory(
+            ItemMaster item,
+            com.ssafy.demo_app.domain.inventory.entity.WarehouseLocation location,
+            TransactionType transactionType,
+            int quantity,
+            String reasonDesc,
+            User worker,
+            WorkOrder workOrder,
+            ProductionExecution execution,
+            InventoryTransactionHistory originalTransaction
+    ) {
+        InventoryTransactionHistory history = new InventoryTransactionHistory();
+        history.setItem(item);
+        history.setLocation(location);
+        history.setTransactionType(transactionType);
+        history.setQuantity(quantity);
+        history.setReasonDesc(reasonDesc);
+        history.setWorker(worker);
+        history.setWorkOrder(workOrder);
+        history.setProductionExecution(execution);
+        history.setOriginalTransaction(originalTransaction);
+        transactionHistoryRepository.save(history);
     }
 
     private boolean matchesKeyword(WorkOrder order, String keyword) {

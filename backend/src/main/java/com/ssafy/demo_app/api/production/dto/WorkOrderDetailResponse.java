@@ -11,4 +11,5 @@ public class WorkOrderDetailResponse {
     private WorkOrderResponse workOrder;
     private List<WorkOrderMaterialRequirementResponse> materialRequirements;
     private List<ProductionExecutionResponse> executions;
+    private List<ProductionIssueHistoryResponse> issueHistories;
 }

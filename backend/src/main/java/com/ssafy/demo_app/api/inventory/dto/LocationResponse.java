@@ -13,6 +13,7 @@ public class LocationResponse {
     private String warehouseName;
     private String rackRow;
     private String rackColumn;
+    private Boolean productionReceiptDefault;
 
     public static LocationResponse from(WarehouseLocation location) {
         LocationResponse response = new LocationResponse();
@@ -21,6 +22,7 @@ public class LocationResponse {
         response.setWarehouseName(location.getWarehouseName());
         response.setRackRow(location.getRackRow());
         response.setRackColumn(location.getRackColumn());
+        response.setProductionReceiptDefault(location.getProductionReceiptDefault());
         return response;
     }
 }

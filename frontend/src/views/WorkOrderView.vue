@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -31,6 +32,7 @@ type WorkOrderTab = 'register' | 'list'
 
 const workOrderStore = useWorkOrderStore()
 const authStore = useAuthStore()
+const router = useRouter()
 
 const productionItems = ref<ItemMasterResponse[]>([])
 const routings = ref<FactoryRoutingResponse[]>([])
@@ -47,16 +49,19 @@ const formFactoryName = ref('')
 const formLineName = ref('')
 const bomVersions = ref<string[]>([])
 const keywordQuery = ref('')
+const itemKeywordQuery = ref('')
 const isKeywordSuggestOpen = ref(false)
 
 const filters = reactive({
   keyword: '',
+  itemKeyword: '',
   status: '' as WorkOrderStatus | '',
   planDate: '',
   fromDate: '',
   toDate: '',
   factoryName: '',
-  lineName: ''
+  lineName: '',
+  operationName: ''
 })
 
 const form = reactive<Omit<WorkOrderRequest, 'targetQty'> & { targetQty: number | null }>({
@@ -103,9 +108,7 @@ const keywordSuggestions = computed(() => {
   const query = keywordQuery.value.trim().toLowerCase()
   if (!query) return []
   const candidates = workOrderStore.workOrders.flatMap((order) => [
-    { label: order.orderNo, meta: '작업지시번호' },
-    { label: order.itemCode, meta: order.itemName },
-    { label: order.itemName, meta: order.itemCode }
+    { label: order.orderNo, meta: `${order.itemCode} · ${order.itemName}` }
   ])
   const unique = new Map<string, { label: string; meta: string }>()
   candidates.forEach((candidate) => {
@@ -190,7 +193,7 @@ async function loadInitialData() {
       loadProductionItems('HALF'),
       loadProductionItems('FG'),
       factoryRoutingService.getRoutings({ routingStatus: 'ACTIVE' }),
-      workOrderStore.loadWorkOrders()
+      workOrderStore.loadWorkOrders({ page: 0, size: 10 })
     ])
     productionItems.value = [...halfItems, ...finishedItems]
     routings.value = routingList
@@ -231,11 +234,12 @@ async function loadBomVersions(itemCode: string) {
   }
 }
 
-async function searchWorkOrders() {
+async function searchWorkOrders(page = 0) {
   pageError.value = null
   filters.keyword = keywordQuery.value.trim()
+  filters.itemKeyword = itemKeywordQuery.value.trim()
   try {
-    await workOrderStore.loadWorkOrders({ ...filters })
+    await workOrderStore.loadWorkOrders({ ...filters, page, size: 10, sort: 'planDate,desc' })
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '작업지시 목록 조회에 실패했습니다.'
   }
@@ -244,12 +248,15 @@ async function searchWorkOrders() {
 function resetFilters() {
   filters.keyword = ''
   keywordQuery.value = ''
+  filters.itemKeyword = ''
+  itemKeywordQuery.value = ''
   filters.status = ''
   filters.planDate = ''
   filters.fromDate = ''
   filters.toDate = ''
   filters.factoryName = ''
   filters.lineName = ''
+  filters.operationName = ''
 }
 
 function resetForm() {
@@ -310,16 +317,7 @@ async function submitWorkOrder() {
 }
 
 async function selectOrder(order: WorkOrderResponse) {
-  pageError.value = null
-  try {
-    if (selectedOrder.value?.orderId === order.orderId) {
-      workOrderStore.clearSelection()
-      return
-    }
-    await workOrderStore.loadWorkOrder(getOrderKey(order))
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '작업지시 상세 조회에 실패했습니다.'
-  }
+  await router.push({ name: 'production-work-order-detail', params: { id: getOrderKey(order) } })
 }
 
 async function deleteOrder(order: WorkOrderResponse) {
@@ -591,6 +589,15 @@ async function closeOrder(order: WorkOrderResponse) {
             </div>
           </label>
           <label class="wo-field">
+            <span class="wo-label">품목</span>
+            <input
+              v-model="itemKeywordQuery"
+              class="wo-control"
+              placeholder="품목코드 또는 품목명"
+              @keyup.enter="searchWorkOrders(0)"
+            />
+          </label>
+          <label class="wo-field">
             <span class="wo-label">상태</span>
             <select v-model="filters.status" class="wo-control">
               <option value="">전체</option>
@@ -617,17 +624,21 @@ async function closeOrder(order: WorkOrderResponse) {
               <option v-for="line in searchLines" :key="line" :value="line">{{ line }}</option>
             </select>
           </label>
+          <label class="wo-field">
+            <span class="wo-label">공정</span>
+            <input v-model="filters.operationName" class="wo-control" placeholder="공정명 입력" />
+          </label>
         </div>
         <div v-show="isSearchExpanded" class="wo-toolbar wo-toolbar-end">
           <button class="wo-button wo-button-subtle" @click="resetFilters">조건 초기화</button>
-          <button class="wo-button wo-button-primary" @click="searchWorkOrders">조회</button>
+          <button class="wo-button wo-button-primary" @click="searchWorkOrders(0)">조회</button>
         </div>
       </section>
 
       <section class="wo-panel wo-table-panel">
         <div class="wo-panel-head">
           <h2 class="wo-section-title">작업지시 목록</h2>
-          <span class="wo-count">총 {{ workOrderStore.workOrders.length }}건</span>
+          <span class="wo-count">총 {{ formatNumber(workOrderStore.totalElements) }}건</span>
         </div>
         <div class="wo-table-wrap">
           <table class="wo-table">
@@ -677,57 +688,22 @@ async function closeOrder(order: WorkOrderResponse) {
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section v-if="selectedOrder" class="wo-detail-grid">
-        <div class="wo-panel wo-detail-panel">
-          <div class="wo-detail-head">
-            <div><p class="wo-kicker">DETAIL</p><h2 class="wo-section-title">{{ selectedOrder.orderNo }}</h2></div>
-            <span class="wo-status" :data-status="selectedOrder.status">{{ getStatusLabel(selectedOrder.status) }}</span>
-          </div>
-          <div class="wo-metric-grid">
-            <div class="wo-metric"><span>목표 수량</span><strong>{{ formatNumber(selectedOrder.targetQty) }}</strong></div>
-            <div class="wo-metric"><span>양품</span><strong>{{ formatNumber(selectedOrder.totalGoodQty) }}</strong></div>
-            <div class="wo-metric"><span>불량</span><strong>{{ formatNumber(selectedOrder.totalDefectQty) }}</strong></div>
-            <div class="wo-metric"><span>작업 시간</span><strong>{{ formatNumber(selectedOrder.totalManHoursMinutes) }}분</strong></div>
-          </div>
-          <div class="wo-info-list">
-            <div><span>생산 품목</span><strong>{{ selectedOrder.itemCode }} · {{ selectedOrder.itemName }}</strong></div>
-            <div><span>BOM 버전</span><strong>{{ selectedOrder.bomVersion }}</strong></div>
-            <div><span>라우팅</span><strong>{{ selectedOrder.factoryName }} / {{ selectedOrder.lineName }} / {{ selectedOrder.operationName }}</strong></div>
-            <div><span>계획일</span><strong>{{ selectedOrder.planDate }}</strong></div>
-            <div><span>등록일</span><strong>{{ formatDateTime(selectedOrder.createdAt) }}</strong></div>
-          </div>
-          <div class="wo-action-grid">
-            <button class="wo-button wo-button-primary" :disabled="!detailCanIssue || detailHasStockShortage || workOrderStore.isSaving" @click="issueMaterials(selectedOrder)"><Package class="wo-button-icon" /> 자재 불출</button>
-            <button class="wo-button wo-button-primary" :disabled="!selectedOrder.canStart || workOrderStore.isSaving" @click="changeStatus(selectedOrder, 'RUN')"><Play class="wo-button-icon" /> 작업 착수</button>
-            <button class="wo-button wo-button-subtle" :disabled="!selectedOrder.canHold || workOrderStore.isSaving" @click="changeStatus(selectedOrder, 'HOLD')"><Pause class="wo-button-icon" /> 보류</button>
-            <button class="wo-button wo-button-subtle" :disabled="selectedOrder.status !== 'HOLD' || workOrderStore.isSaving" @click="changeStatus(selectedOrder, 'RUN')"><Play class="wo-button-icon" /> 재개</button>
-          </div>
-          <label class="wo-check"><input v-model="allowUnderTargetClose" type="checkbox" />목표 미달 마감 허용</label>
-          <button class="wo-button wo-button-danger" :disabled="!selectedOrder.canClose || workOrderStore.isSaving" @click="closeOrder(selectedOrder)"><CheckCircle2 class="wo-button-icon" /> 작업지시 마감</button>
-        </div>
-
-        <div class="wo-panel">
-          <div class="wo-panel-head">
-            <h2 class="wo-section-title">BOM 자재 소요량</h2>
-            <span v-if="detailHasStockShortage" class="wo-badge-danger">재고 부족</span>
-          </div>
-          <div class="wo-table-wrap">
-            <table class="wo-table wo-table-compact">
-              <thead><tr><th>자재</th><th>소요</th><th>필요</th><th>불출</th><th>가용</th></tr></thead>
-              <tbody>
-                <tr v-for="item in materialRequirements" :key="item.itemId">
-                  <td><strong>{{ item.itemName }}</strong><span>{{ item.itemCode }}</span></td>
-                  <td class="wo-number">{{ item.bomQuantity }}</td>
-                  <td class="wo-number">{{ formatNumber(item.requiredQty) }}</td>
-                  <td class="wo-number">{{ formatNumber(item.issuedQty) }}</td>
-                  <td class="wo-number" :class="{ 'wo-danger-text': item.availableQty < item.requiredQty - item.issuedQty }">{{ formatNumber(item.availableQty) }}</td>
-                </tr>
-                <tr v-if="materialRequirements.length === 0"><td colspan="5" class="wo-empty">BOM 자재 정보가 없습니다.</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="wo-toolbar wo-toolbar-end">
+          <button
+            class="wo-button wo-button-subtle"
+            :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
+            @click="searchWorkOrders(workOrderStore.page - 1)"
+          >
+            이전
+          </button>
+          <span class="wo-count">{{ workOrderStore.page + 1 }} / {{ Math.max(workOrderStore.totalPages, 1) }}</span>
+          <button
+            class="wo-button wo-button-subtle"
+            :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
+            @click="searchWorkOrders(workOrderStore.page + 1)"
+          >
+            다음
+          </button>
         </div>
       </section>
     </section>

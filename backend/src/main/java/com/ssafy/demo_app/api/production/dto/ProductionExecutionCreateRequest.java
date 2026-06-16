@@ -34,8 +34,34 @@ public class ProductionExecutionCreateRequest {
     @Min(value = 0, message = "불량 수량은 0 이상이어야 합니다.")
     private Integer defectQty;
 
+    @Schema(description = "불량 유형", example = "DIMENSION")
+    private String defectType;
+
+    @Schema(description = "불량 사유", example = "치수 오차")
+    private String defectReason;
+
+    @Schema(description = "재작업 가능 여부", example = "true")
+    private Boolean reworkable;
+
+    @Schema(description = "생산 입고 로케이션 코드", example = "PROD-IN-01")
+    private String receiptLocationCode;
+
     @Schema(description = "총 소요 시간(분)", example = "480")
     @NotNull(message = "총 소요 시간은 필수입니다.")
     @Min(value = 1, message = "총 소요 시간은 1분 이상이어야 합니다.")
     private Integer manHoursMinutes;
+
+    public ProductionExecutionCreateRequest(
+            String orderKey,
+            Integer routingId,
+            Integer goodQty,
+            Integer defectQty,
+            Integer manHoursMinutes
+    ) {
+        this.orderKey = orderKey;
+        this.routingId = routingId;
+        this.goodQty = goodQty;
+        this.defectQty = defectQty;
+        this.manHoursMinutes = manHoursMinutes;
+    }
 }

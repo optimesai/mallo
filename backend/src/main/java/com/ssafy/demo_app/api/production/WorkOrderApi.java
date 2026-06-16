@@ -8,12 +8,15 @@ import com.ssafy.demo_app.api.production.dto.WorkOrderStatusUpdateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,8 +30,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
-import java.util.List;
-
 @Tag(name = "Work Order API", description = "생산 작업 지시 관리 API")
 @RequestMapping("/api/work-orders")
 public interface WorkOrderApi {
@@ -41,14 +42,17 @@ public interface WorkOrderApi {
 
     @Operation(summary = "작업 지시 목록 조회", description = "상태, 계획일, 기간, 키워드, 공장/라인 기준으로 작업 지시 목록을 조회합니다.")
     @GetMapping
-    ResponseEntity<ApiResponse<List<WorkOrderResponse>>> getWorkOrders(
+    ResponseEntity<ApiResponse<PageResponse<WorkOrderResponse>>> getWorkOrders(
+            @PageableDefault(size = 10, sort = "planDate") Pageable pageable,
             @RequestParam(required = false) WorkOrder.OrderStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate planDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String itemKeyword,
             @RequestParam(required = false) String factoryName,
-            @RequestParam(required = false) String lineName
+            @RequestParam(required = false) String lineName,
+            @RequestParam(required = false) String operationName
     );
 
     @Operation(summary = "작업 지시 상세 조회", description = "작업 지시 기본 정보, BOM 기준 투입량, 생산 실적 이력을 조회합니다.")
@@ -87,6 +91,13 @@ public interface WorkOrderApi {
     @Operation(summary = "BOM 기반 자재 출고 처리", description = "생산 작업 지시에 등록된 품목의 BOM 구조를 기준으로 자재 창고 재고를 차감합니다. 불출량은 생산 투입량으로 간주합니다.")
     @PostMapping("/{orderKey}/issue-materials")
     ResponseEntity<ApiResponse<Void>> issueMaterials(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "작업 지시 ID 또는 작업 지시 번호", required = true) @PathVariable("orderKey") String orderKey
+    );
+
+    @Operation(summary = "BOM 기반 자재 출고 취소", description = "마감 전 작업 지시의 생산 자재 출고 이력을 되돌리고 현재고를 복원합니다.")
+    @PostMapping("/{orderKey}/issue-materials/cancel")
+    ResponseEntity<ApiResponse<Void>> cancelIssueMaterials(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "작업 지시 ID 또는 작업 지시 번호", required = true) @PathVariable("orderKey") String orderKey
     );

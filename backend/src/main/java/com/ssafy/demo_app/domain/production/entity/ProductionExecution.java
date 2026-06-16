@@ -32,6 +32,15 @@ public class ProductionExecution extends BaseCreatedTimeEntity {
     @Column(name = "defect_qty", nullable = false)
     private Integer defectQty = 0;
 
+    @Column(name = "defect_type")
+    private String defectType;
+
+    @Column(name = "defect_reason")
+    private String defectReason;
+
+    @Column(name = "reworkable")
+    private Boolean reworkable = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id")
     private User worker;

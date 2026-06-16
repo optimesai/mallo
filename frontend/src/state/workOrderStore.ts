@@ -14,6 +14,11 @@ import type {
 
 export const useWorkOrderStore = defineStore('workOrder', () => {
   const workOrders = ref<WorkOrderResponse[]>([])
+  const page = ref(0)
+  const size = ref(10)
+  const totalElements = ref(0)
+  const totalPages = ref(0)
+  const sort = ref('')
   const selectedDetail = ref<WorkOrderDetailResponse | null>(null)
   const bomRequirements = ref<WorkOrderMaterialRequirementResponse[]>([])
   const isLoading = ref(false)
@@ -39,7 +44,13 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     isLoading.value = true
     error.value = null
     try {
-      workOrders.value = await workOrderService.getWorkOrders(params)
+      const response = await workOrderService.getWorkOrders(params)
+      workOrders.value = response.content
+      page.value = response.page
+      size.value = response.size
+      totalElements.value = response.totalElements
+      totalPages.value = response.totalPages
+      sort.value = response.sort
     } catch (err) {
       error.value = err instanceof Error ? err.message : '작업 지시 목록을 불러오지 못했습니다.'
       throw err
@@ -165,6 +176,20 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     }
   }
 
+  async function cancelIssueMaterials(orderKey: string | number) {
+    isSaving.value = true
+    error.value = null
+    try {
+      await workOrderService.cancelIssueMaterials(orderKey)
+      await loadWorkOrder(orderKey)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '자재 출고 취소에 실패했습니다.'
+      throw err
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   async function createExecution(request: ProductionExecutionCreateRequest) {
     isSaving.value = true
     error.value = null
@@ -203,6 +228,11 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
 
   return {
     workOrders,
+    page,
+    size,
+    totalElements,
+    totalPages,
+    sort,
     selectedDetail,
     bomRequirements,
     isLoading,
@@ -217,6 +247,7 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     updateStatus,
     closeWorkOrder,
     issueMaterials,
+    cancelIssueMaterials,
     createExecution,
     deleteExecution,
     clearSelection

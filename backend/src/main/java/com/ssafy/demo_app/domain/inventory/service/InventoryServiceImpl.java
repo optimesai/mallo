@@ -214,6 +214,10 @@ public class InventoryServiceImpl implements InventoryService {
         location.setWarehouseName(request.getWarehouseName());
         location.setRackRow(request.getRackRow());
         location.setRackColumn(request.getRackColumn());
+        location.setProductionReceiptDefault(Boolean.TRUE.equals(request.getProductionReceiptDefault()));
+        if (Boolean.TRUE.equals(location.getProductionReceiptDefault())) {
+            clearProductionReceiptDefault(location);
+        }
         return LocationResponse.from(warehouseLocationRepository.save(location));
     }
 
@@ -229,6 +233,10 @@ public class InventoryServiceImpl implements InventoryService {
         location.setWarehouseName(request.getWarehouseName());
         location.setRackRow(request.getRackRow());
         location.setRackColumn(request.getRackColumn());
+        location.setProductionReceiptDefault(Boolean.TRUE.equals(request.getProductionReceiptDefault()));
+        if (Boolean.TRUE.equals(location.getProductionReceiptDefault())) {
+            clearProductionReceiptDefault(location);
+        }
         return LocationResponse.from(warehouseLocationRepository.save(location));
     }
 
@@ -445,5 +453,14 @@ public class InventoryServiceImpl implements InventoryService {
             Predicate nameMatch = cb.like(cb.lower(root.get("warehouseName")), pattern);
             return cb.or(codeMatch, nameMatch);
         };
+    }
+
+    private void clearProductionReceiptDefault(WarehouseLocation selectedLocation) {
+        warehouseLocationRepository.findByProductionReceiptDefaultTrue().forEach(location -> {
+            if (selectedLocation.getLocationId() == null || !selectedLocation.getLocationId().equals(location.getLocationId())) {
+                location.setProductionReceiptDefault(false);
+                warehouseLocationRepository.save(location);
+            }
+        });
     }
 }

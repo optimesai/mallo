@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/authApi'
+import type { PageParams, PageResponse } from '@/api/types'
 
 export type WorkOrderStatus = 'READY' | 'RUN' | 'HOLD' | 'CLOSE'
 
@@ -31,6 +32,8 @@ export interface WorkOrderResponse {
   canHold: boolean
   canClose: boolean
   canRegisterExecution: boolean
+  canCancelIssue: boolean
+  canDeleteExecution: boolean
   canUpdate: boolean
   canDelete: boolean
 }
@@ -58,11 +61,33 @@ export interface ProductionExecutionResponse {
   operationName: string | null
   goodQty: number
   defectQty: number
+  defectType: string | null
+  defectReason: string | null
+  reworkable: boolean | null
   executedQty: number
   workerId: number | null
   workerEmployeeNo: string | null
   workerName: string | null
   manHoursMinutes: number
+  canDelete: boolean
+  createdAt: string
+}
+
+export interface ProductionIssueHistoryResponse {
+  transactionId: number
+  itemId: number
+  itemCode: string
+  itemName: string
+  locationId: number
+  locationCode: string
+  transactionType: string
+  quantity: number
+  reasonDesc: string
+  workerId: number | null
+  workerEmployeeNo: string | null
+  workerName: string | null
+  executionId: number | null
+  originalTransactionId: number | null
   createdAt: string
 }
 
@@ -70,6 +95,7 @@ export interface WorkOrderDetailResponse {
   workOrder: WorkOrderResponse
   materialRequirements: WorkOrderMaterialRequirementResponse[]
   executions: ProductionExecutionResponse[]
+  issueHistories: ProductionIssueHistoryResponse[]
 }
 
 export interface WorkOrderRequest {
@@ -80,14 +106,16 @@ export interface WorkOrderRequest {
   planDate: string
 }
 
-export interface WorkOrderSearchParams {
+export interface WorkOrderSearchParams extends PageParams {
   status?: WorkOrderStatus | ''
   planDate?: string
   fromDate?: string
   toDate?: string
   keyword?: string
+  itemKeyword?: string
   factoryName?: string
   lineName?: string
+  operationName?: string
 }
 
 export interface WorkOrderStatusUpdateRequest {
@@ -103,6 +131,10 @@ export interface ProductionExecutionCreateRequest {
   routingId: number
   goodQty: number
   defectQty: number
+  defectType?: string
+  defectReason?: string
+  reworkable?: boolean
+  receiptLocationCode?: string
   manHoursMinutes: number
 }
 
@@ -114,8 +146,21 @@ function cleanParams(params: WorkOrderSearchParams) {
 
 export const workOrderApi = {
   async getWorkOrders(params: WorkOrderSearchParams = {}) {
-    const response = await apiClient.get<ApiResponse<WorkOrderResponse[]>>('/api/work-orders', {
-      params: cleanParams(params)
+    const response = await apiClient.get<ApiResponse<PageResponse<WorkOrderResponse>>>('/api/work-orders', {
+      params: cleanParams({
+        page: params.page ?? 0,
+        size: params.size ?? 10,
+        sort: params.sort ?? 'planDate,desc',
+        status: params.status,
+        planDate: params.planDate,
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+        keyword: params.keyword,
+        itemKeyword: params.itemKeyword,
+        factoryName: params.factoryName,
+        lineName: params.lineName,
+        operationName: params.operationName
+      })
     })
     return response.data
   },
@@ -152,6 +197,11 @@ export const workOrderApi = {
 
   async issueMaterials(orderKey: string | number) {
     const response = await apiClient.post<ApiResponse<void>>(`/api/work-orders/${orderKey}/issue-materials`, null)
+    return response.data
+  },
+
+  async cancelIssueMaterials(orderKey: string | number) {
+    const response = await apiClient.post<ApiResponse<void>>(`/api/work-orders/${orderKey}/issue-materials/cancel`, null)
     return response.data
   },
 

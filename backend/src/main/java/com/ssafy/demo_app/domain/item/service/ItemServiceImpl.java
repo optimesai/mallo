@@ -135,7 +135,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(BomResponse::from)
                 .toList());
         response.setWorkOrders(workOrderRepository.findByItemOrderByOrderIdDesc(item).stream()
-                .map(workOrder -> WorkOrderResponse.from(workOrder, WorkOrderExecutionSummary.empty()))
+                .map(workOrder -> WorkOrderResponse.from(workOrder, WorkOrderExecutionSummary.empty(), false, false))
                 .toList());
         response.setShippingCount(outboundShippingRepository.countByItem(item));
         response.setRecentTransactions(inventoryTransactionHistoryRepository.findTop5ByItemOrderByTransactionIdDesc(item).stream()
