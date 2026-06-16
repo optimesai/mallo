@@ -12,11 +12,13 @@ import {
   Trash2
 } from '@lucide/vue'
 import { factoryRoutingService } from '@/services/factoryRoutingService'
+import { inboundService } from '@/services/inboundService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
 import { useAuthStore } from '@/state/authStore'
 import { formatDateTime } from '@/utils/dateFormat'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
-import type { ProductionExecutionCreateRequest, WorkOrderStatus } from '@/api/workOrderApi'
+import type { LocationResponse } from '@/api/inboundApi'
+import type { ProductionExecutionCreateRequest, WorkOrderSearchParams, WorkOrderStatus } from '@/api/workOrderApi'
 
 type ProductionExecutionTab = 'register' | 'lookup'
 type ExecutionSortOrder = 'latest' | 'oldest'
@@ -26,6 +28,7 @@ const workOrderStore = useWorkOrderStore()
 const authStore = useAuthStore()
 
 const routings = ref<FactoryRoutingResponse[]>([])
+const locations = ref<LocationResponse[]>([])
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
 const activeTab = ref<ProductionExecutionTab>('register')
@@ -52,6 +55,10 @@ const form = reactive<Omit<ProductionExecutionCreateRequest, 'orderKey'>>({
   routingId: 0,
   goodQty: 0,
   defectQty: 0,
+  defectType: '',
+  defectReason: '',
+  reworkable: false,
+  receiptLocationCode: '',
   manHoursMinutes: 0
 })
 
@@ -69,24 +76,14 @@ const executionValidationMessages = computed(() => {
 
   if (!form.routingId) messages.push('실제 수행 공정을 선택해주세요.')
   if (form.goodQty + form.defectQty <= 0) messages.push('양품과 불량 수량의 합계는 1 이상이어야 합니다.')
+  if (form.defectQty > 0 && !form.defectReason?.trim()) messages.push('불량 수량이 있으면 불량 사유를 입력해주세요.')
   if (form.manHoursMinutes <= 0) messages.push('총 소요 시간은 1분 이상이어야 합니다.')
 
   return messages
 })
 const hasExecutionValidationError = computed(() => executionValidationMessages.value.length > 0)
 
-const filteredOrders = computed(() => {
-  const query = appliedKeyword.value.trim().toLowerCase()
-  return workOrderStore.workOrders.filter((order) => {
-    if (appliedStatus.value !== 'ALL' && order.status !== appliedStatus.value) return false
-    if (appliedFactory.value && order.factoryName !== appliedFactory.value) return false
-    if (appliedLine.value && order.lineName !== appliedLine.value) return false
-    if (appliedRoutingId.value && order.routingId !== appliedRoutingId.value) return false
-    if (!query) return true
-    return [order.orderNo, order.itemCode, order.itemName, order.factoryName, order.lineName, order.operationName]
-      .some((value) => value.toLowerCase().includes(query))
-  })
-})
+const filteredOrders = computed(() => workOrderStore.workOrders)
 
 const runnableOrders = computed(() => workOrderStore.workOrders.filter((order) => order.status === 'RUN').length)
 const closeLockedOrders = computed(() => workOrderStore.workOrders.filter((order) => order.status === 'CLOSE').length)
@@ -177,6 +174,10 @@ watch(selectedOrder, (order) => {
     : 0
   form.goodQty = 0
   form.defectQty = 0
+  form.defectType = ''
+  form.defectReason = ''
+  form.reworkable = false
+  form.receiptLocationCode = ''
   form.manHoursMinutes = 0
   executionSortOrder.value = 'latest'
   executionOperationFilter.value = 'ALL'
@@ -225,13 +226,42 @@ function getRemainingQty(requiredQty: number, issuedQty: number) {
 async function loadInitialData() {
   pageError.value = null
   try {
-    const [, routingList] = await Promise.all([
-      workOrderStore.loadWorkOrders(),
-      factoryRoutingService.getRoutings()
+    const [, routingList, locationList] = await Promise.all([
+      loadExecutionOrders(0),
+      factoryRoutingService.getRoutings(),
+      inboundService.getLocations()
     ])
     routings.value = routingList
+    locations.value = locationList
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '생산 실적 데이터를 불러오지 못했습니다.'
+  }
+}
+
+function buildOrderSearchParams(page = 0): WorkOrderSearchParams {
+  const operationName = appliedRoutingId.value
+    ? routings.value.find((routing) => routing.routingId === appliedRoutingId.value)?.operationName
+    : ''
+  const keyword = appliedKeyword.value.trim()
+  return {
+    page,
+    size: 10,
+    sort: 'planDate,desc',
+    status: appliedStatus.value === 'ALL' ? '' : appliedStatus.value,
+    keyword,
+    factoryName: appliedFactory.value,
+    lineName: appliedLine.value,
+    operationName
+  }
+}
+
+async function loadExecutionOrders(page = 0) {
+  pageError.value = null
+  try {
+    await workOrderStore.loadWorkOrders(buildOrderSearchParams(page))
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '작업 지시 목록 조회에 실패했습니다.'
+    throw err
   }
 }
 
@@ -259,6 +289,7 @@ function validateExecutionForm() {
   if (!form.routingId) return '실제 수행 공정을 선택해주세요.'
   if (form.goodQty < 0 || form.defectQty < 0) return '양품/불량 수량은 0 이상이어야 합니다.'
   if (form.goodQty + form.defectQty <= 0) return '양품과 불량 수량의 합계는 1 이상이어야 합니다.'
+  if (form.defectQty > 0 && !form.defectReason?.trim()) return '불량 수량이 있으면 불량 사유를 입력해주세요.'
   if (form.manHoursMinutes < 1) return '총 소요 시간은 1분 이상이어야 합니다.'
   return null
 }
@@ -278,11 +309,19 @@ async function submitExecution() {
       routingId: Number(form.routingId),
       goodQty: Number(form.goodQty),
       defectQty: Number(form.defectQty),
+      defectType: form.defectType?.trim() || undefined,
+      defectReason: form.defectReason?.trim() || undefined,
+      reworkable: Boolean(form.reworkable),
+      receiptLocationCode: form.receiptLocationCode || undefined,
       manHoursMinutes: Number(form.manHoursMinutes)
     })
     showToast(`작업 지시 [${selectedOrder.value.orderNo}] 실적이 등록되었습니다.`)
     form.goodQty = 0
     form.defectQty = 0
+    form.defectType = ''
+    form.defectReason = ''
+    form.reworkable = false
+    form.receiptLocationCode = ''
     form.manHoursMinutes = 0
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '생산 실적 등록에 실패했습니다.'
@@ -302,21 +341,23 @@ async function deleteExecution(executionId: number) {
   }
 }
 
-function selectRunnableFilter() {
+async function selectRunnableFilter() {
   statusInput.value = 'RUN'
   appliedStatus.value = 'RUN'
+  await loadExecutionOrders(0)
 }
 
-function applyOrderSearch() {
+async function applyOrderSearch() {
   appliedKeyword.value = keywordInput.value
   appliedStatus.value = statusInput.value
   appliedFactory.value = factoryInput.value
   appliedLine.value = lineInput.value
   appliedRoutingId.value = routingInput.value
   isKeywordSuggestOpen.value = false
+  await loadExecutionOrders(0)
 }
 
-function resetOrderSearch() {
+async function resetOrderSearch() {
   keywordInput.value = ''
   statusInput.value = 'RUN'
   factoryInput.value = ''
@@ -328,6 +369,7 @@ function resetOrderSearch() {
   appliedLine.value = ''
   appliedRoutingId.value = ''
   isKeywordSuggestOpen.value = false
+  await loadExecutionOrders(0)
 }
 
 function selectKeywordSuggestion(orderNo: string) {
@@ -394,7 +436,7 @@ function selectKeywordSuggestion(orderNo: string) {
     </nav>
 
     <section class="pe-layout">
-      <aside class="wo-panel pe-order-panel">
+      <section class="wo-panel pe-order-panel">
         <div class="wo-panel-head">
           <div class="wo-head-inline">
             <FileText class="wo-icon" />
@@ -474,38 +516,102 @@ function selectKeywordSuggestion(orderNo: string) {
             </button>
           </div>
         </div>
-        <div class="pe-order-list">
-          <button
-            v-for="order in filteredOrders"
-            :key="order.orderId"
-            class="pe-order-card"
-            :class="{ 'is-active': selectedOrder?.orderId === order.orderId }"
-            type="button"
-            @click="selectOrder(order.orderNo)"
-          >
-            <span class="pe-order-top">
-              <strong>{{ order.orderNo }}</strong>
-              <span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span>
-            </span>
-            <span class="pe-order-name">{{ order.itemName }}</span>
-            <span class="pe-order-meta">{{ order.factoryName }} / {{ order.lineName }} / {{ order.operationSeq }}. {{ order.operationName }}</span>
-            <span class="pe-order-progress">
-              <span class="wo-progress"><span :style="{ width: `${Math.min(order.progressRate, 100)}%` }"></span></span>
-              <span>{{ order.progressRate }}%</span>
-            </span>
-          </button>
-          <div v-if="!workOrderStore.isLoading && filteredOrders.length === 0" class="wo-empty-panel">
-            <FileText class="wo-empty-icon" />
-            <span>조건에 맞는 작업 지시가 없습니다.</span>
-          </div>
-          <div v-if="workOrderStore.isLoading" class="wo-empty-panel">
-            <Loader2 class="wo-empty-icon wo-spin" />
-            <span>작업 지시를 불러오고 있습니다.</span>
+        <div class="pe-order-list wo-table-wrap">
+          <table class="wo-table pe-order-table">
+            <thead>
+              <tr>
+                <th class="wo-status-cell">No</th>
+                <th>작업지시번호</th>
+                <th>품목</th>
+                <th>공장</th>
+                <th>라인</th>
+                <th>공정</th>
+                <th class="wo-status-cell">상태</th>
+                <th>진행률</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="workOrderStore.isLoading">
+                <td colspan="8" class="wo-empty">
+                  <Loader2 class="wo-empty-icon wo-spin" />
+                  작업 지시를 불러오고 있습니다.
+                </td>
+              </tr>
+              <tr v-else-if="filteredOrders.length === 0">
+                <td colspan="8" class="wo-empty">
+                  <FileText class="wo-empty-icon" />
+                  조건에 맞는 작업 지시가 없습니다.
+                </td>
+              </tr>
+              <template v-else>
+                <tr
+                  v-for="(order, idx) in filteredOrders"
+                  :key="order.orderId"
+                  class="pe-order-table-row"
+                  :class="{ 'wo-row-selected': selectedOrder?.orderId === order.orderId }"
+                  @click="selectOrder(order.orderNo)"
+                >
+                  <td class="wo-mono wo-status-cell">{{ workOrderStore.page * workOrderStore.size + idx + 1 }}</td>
+                  <td><strong class="wo-mono">{{ order.orderNo }}</strong></td>
+                  <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
+                  <td>{{ order.factoryName }}</td>
+                  <td>{{ order.lineName }}</td>
+                  <td><strong>{{ order.operationSeq }}. {{ order.operationName }}</strong></td>
+                  <td class="wo-status-cell">
+                    <span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span>
+                  </td>
+                  <td>
+                    <div class="pe-order-progress-cell">
+                      <span class="wo-progress"><span :style="{ width: `${Math.min(order.progressRate, 100)}%` }"></span></span>
+                      <span class="wo-progress-label">{{ order.progressRate }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="wo-toolbar wo-toolbar-between pe-order-pagination">
+          <span class="wo-count">
+            총 {{ formatNumber(workOrderStore.totalElements) }}건
+            · {{ workOrderStore.totalElements === 0 ? 0 : workOrderStore.page * workOrderStore.size + 1 }}-{{ Math.min((workOrderStore.page + 1) * workOrderStore.size, workOrderStore.totalElements) }} 표시
+            · 10건씩
+            · {{ workOrderStore.page + 1 }} / {{ Math.max(workOrderStore.totalPages, 1) }} 페이지
+          </span>
+          <div class="wo-head-inline">
+            <button
+              class="wo-button wo-button-subtle"
+              :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
+              @click="loadExecutionOrders(0)"
+            >
+              처음
+            </button>
+            <button
+              class="wo-button wo-button-subtle"
+              :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
+              @click="loadExecutionOrders(workOrderStore.page - 1)"
+            >
+              이전
+            </button>
+            <button
+              class="wo-button wo-button-subtle"
+              :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
+              @click="loadExecutionOrders(workOrderStore.page + 1)"
+            >
+              다음
+            </button>
+            <button
+              class="wo-button wo-button-subtle"
+              :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
+              @click="loadExecutionOrders(workOrderStore.totalPages - 1)"
+            >
+              마지막
+            </button>
           </div>
         </div>
-      </aside>
+      </section>
 
-      <main class="pe-main">
+      <section class="pe-main">
         <section v-if="selectedOrder" class="wo-panel">
           <div class="wo-detail-head">
             <div>
@@ -539,7 +645,7 @@ function selectKeywordSuggestion(orderNo: string) {
             <div class="wo-panel-head">
               <div class="wo-head-inline">
                 <ClipboardCheck class="wo-icon" />
-                <h2 class="wo-section-title">생산 실적 등록</h2>
+                <h2 class="wo-section-title">실제 생산실적 등록</h2>
               </div>
               <span v-if="!canSubmitExecution" class="wo-badge-danger">RUN 상태 필요</span>
             </div>
@@ -561,6 +667,30 @@ function selectKeywordSuggestion(orderNo: string) {
               <label class="wo-field">
                 <span class="wo-label">불량 수량</span>
                 <input v-model.number="form.defectQty" class="wo-control" type="number" min="0" :disabled="!canSubmitExecution" />
+              </label>
+              <label class="wo-field">
+                <span class="wo-label">불량 유형</span>
+                <input v-model="form.defectType" class="wo-control" placeholder="예) 치수, 외관, 조립" :disabled="!canSubmitExecution || form.defectQty <= 0" />
+              </label>
+              <label class="wo-field">
+                <span class="wo-label">불량 사유</span>
+                <input v-model="form.defectReason" class="wo-control" placeholder="불량 원인 입력" :disabled="!canSubmitExecution || form.defectQty <= 0" />
+              </label>
+              <label class="wo-field">
+                <span class="wo-label">재작업 여부</span>
+                <select v-model="form.reworkable" class="wo-control" :disabled="!canSubmitExecution || form.defectQty <= 0">
+                  <option :value="false">재작업 불가</option>
+                  <option :value="true">재작업 가능</option>
+                </select>
+              </label>
+              <label class="wo-field">
+                <span class="wo-label">생산 입고 로케이션</span>
+                <select v-model="form.receiptLocationCode" class="wo-control" :disabled="!canSubmitExecution || form.goodQty <= 0">
+                  <option value="">기본 로케이션</option>
+                  <option v-for="location in locations" :key="location.locationId" :value="location.locationCode">
+                    {{ location.locationCode }} · {{ location.warehouseName }}{{ location.productionReceiptDefault ? ' · 기본' : '' }}
+                  </option>
+                </select>
               </label>
               <label class="wo-field">
                 <span class="wo-label">총 소요 시간(분)</span>
@@ -712,7 +842,7 @@ function selectKeywordSuggestion(orderNo: string) {
             </div>
           </div>
         </section>
-      </main>
+      </section>
     </section>
   </div>
 </template>

@@ -68,6 +68,7 @@ export interface LocationResponse {
   warehouseName: string
   rackRow: string
   rackColumn: string
+  productionReceiptDefault: boolean
 }
 
 export const inboundApi = {
@@ -129,7 +130,12 @@ export const inboundApi = {
   },
 
   async getLocations() {
-    const response = await apiClient.get<ApiResponse<LocationResponse[]>>('/api/locations')
-    return response.data
+    const response = await apiClient.get<ApiResponse<PageResponse<LocationResponse>>>('/api/locations', {
+      params: { page: 0, size: 100, sort: 'locationCode,asc' }
+    })
+    return {
+      ...response.data,
+      data: response.data.data.content
+    }
   }
 }

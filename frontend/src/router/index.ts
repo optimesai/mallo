@@ -109,6 +109,11 @@ const router = createRouter({
           component: () => import('../views/WorkOrderView.vue')
         },
         {
+          path: 'production/work-orders/:id',
+          name: 'production-work-order-detail',
+          component: () => import('../views/WorkOrderDetailView.vue')
+        },
+        {
           path: 'production/issue',
           name: 'production-issue',
           component: () => import('../views/MaterialIssueView.vue')

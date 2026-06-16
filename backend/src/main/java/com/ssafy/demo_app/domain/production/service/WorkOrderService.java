@@ -7,20 +7,24 @@ import com.ssafy.demo_app.api.production.dto.WorkOrderResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderStatusUpdateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
+import com.ssafy.demo_app.global.response.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.util.List;
 
 public interface WorkOrderService {
     WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request);
-    List<WorkOrderResponse> getWorkOrders(
+    PageResponse<WorkOrderResponse> getWorkOrders(
+            Pageable pageable,
             WorkOrder.OrderStatus status,
             LocalDate planDate,
             LocalDate fromDate,
             LocalDate toDate,
             String keyword,
+            String itemKeyword,
             String factoryName,
-            String lineName
+            String lineName,
+            String operationName
     );
     WorkOrderDetailResponse getWorkOrder(String orderKey);
     WorkOrderResponse updateWorkOrder(String orderKey, WorkOrderUpdateRequest request);
@@ -28,4 +32,5 @@ public interface WorkOrderService {
     WorkOrderResponse updateStatus(String orderKey, WorkOrderStatusUpdateRequest request);
     WorkOrderResponse closeWorkOrder(String orderKey, WorkOrderCloseRequest request);
     void issueMaterials(String orderKey, Integer workerId);
+    void cancelIssueMaterials(String orderKey, Integer workerId);
 }

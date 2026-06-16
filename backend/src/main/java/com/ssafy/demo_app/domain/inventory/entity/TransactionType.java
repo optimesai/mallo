@@ -5,6 +5,9 @@ public enum TransactionType {
     INBOUND,            // 입고
     OUTBOUND,           // 출고
     PRODUCTION_ISSUE,   // 생산 투입
+    PRODUCTION_ISSUE_CANCEL, // 생산 투입 취소
+    PRODUCTION_RECEIPT, // 생산 입고
+    PRODUCTION_RECEIPT_CANCEL, // 생산 입고 취소
     ADJUSTMENT,         // 재고 조정 (실사 차이)
     TRANSFER_OUT,       // 로케이션 이동 - 출발
     TRANSFER_IN,        // 로케이션 이동 - 도착

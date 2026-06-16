@@ -9,15 +9,15 @@ import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
 import com.ssafy.demo_app.domain.production.service.WorkOrderService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 public class WorkOrderController implements WorkOrderApi {
@@ -33,23 +33,29 @@ public class WorkOrderController implements WorkOrderApi {
     }
 
     @Override
-    public ResponseEntity<ApiResponse<List<WorkOrderResponse>>> getWorkOrders(
+    public ResponseEntity<ApiResponse<PageResponse<WorkOrderResponse>>> getWorkOrders(
+            Pageable pageable,
             WorkOrder.OrderStatus status,
             LocalDate planDate,
             LocalDate fromDate,
             LocalDate toDate,
             String keyword,
+            String itemKeyword,
             String factoryName,
-            String lineName
+            String lineName,
+            String operationName
     ) {
         return ResponseEntity.ok(ApiResponse.success(workOrderService.getWorkOrders(
+                pageable,
                 status,
                 planDate,
                 fromDate,
                 toDate,
                 keyword,
+                itemKeyword,
                 factoryName,
-                lineName
+                lineName,
+                operationName
         )));
     }
 
@@ -89,5 +95,14 @@ public class WorkOrderController implements WorkOrderApi {
     ) {
         workOrderService.issueMaterials(orderKey, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("BOM 기반 생산 자재 출고 처리가 완료되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> cancelIssueMaterials(
+            CustomUserDetails userDetails,
+            String orderKey
+    ) {
+        workOrderService.cancelIssueMaterials(orderKey, userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("BOM 기반 생산 자재 출고가 취소되었습니다."));
     }
 }

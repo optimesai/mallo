@@ -180,6 +180,7 @@ class WorkOrderServiceTest {
         User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
         FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        location.setProductionReceiptDefault(true);
         ItemMaster item = createItem("WO-FG-CLOSE", "미달마감 완제품", ItemMaster.ItemType.FG);
         ItemMaster material = createItem("WO-RM-CLOSE", "미달마감 원자재", ItemMaster.ItemType.RAW);
         createBom(item, material, 2);
@@ -188,10 +189,9 @@ class WorkOrderServiceTest {
         em.flush();
         em.clear();
 
-        ProductionExecutionResponse execution = productionExecutionService.createExecution(
-                worker.getUserId(),
-                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 8, 1, 120)
-        );
+        ProductionExecutionCreateRequest request = new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 8, 1, 120);
+        request.setDefectReason("테스트 불량");
+        ProductionExecutionResponse execution = productionExecutionService.createExecution(worker.getUserId(), request);
         assertThat(execution.getRoutingId()).isEqualTo(routing.getRoutingId());
         assertThat(execution.getOperationName()).isEqualTo(routing.getOperationName());
 
@@ -232,12 +232,43 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    @DisplayName("작업 지시 검색 성공 - 일반 키워드로 작업 지시 번호를 조회할 수 있다")
+    void getWorkOrders_keywordSearchesOrderNo() {
+        // Given
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-SEARCH", "검색검증 완제품", ItemMaster.ItemType.FG);
+        WorkOrder workOrder = createWorkOrder("WO-SEARCH-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        // When
+        PageResponse<WorkOrderResponse> response = workOrderService.getWorkOrders(
+                Pageable.unpaged(),
+                WorkOrder.OrderStatus.RUN,
+                null,
+                null,
+                null,
+                workOrder.getOrderNo(),
+                null,
+                null,
+                null,
+                null
+        );
+
+        // Then
+        assertThat(response.getContent())
+                .extracting(WorkOrderResponse::getOrderNo)
+                .contains(workOrder.getOrderNo());
+    }
+
+    @Test
     @DisplayName("생산 실적 등록 성공 - 실적 수량 기준 BOM 자재가 자동 차감된다")
     void createExecution_autoIssuesMaterialsByExecutedQty() {
         // Given
         User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
         FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        location.setProductionReceiptDefault(true);
         ItemMaster item = createItem("WO-FG-AUTO-ISSUE", "자동불출 완제품", ItemMaster.ItemType.FG);
         ItemMaster material = createItem("WO-RM-AUTO-ISSUE", "자동불출 원자재", ItemMaster.ItemType.RAW);
         createBom(item, material, 2);
@@ -247,10 +278,9 @@ class WorkOrderServiceTest {
         em.clear();
 
         // When
-        productionExecutionService.createExecution(
-                worker.getUserId(),
-                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 4, 1, 60)
-        );
+        ProductionExecutionCreateRequest request = new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 4, 1, 60);
+        request.setDefectReason("테스트 불량");
+        productionExecutionService.createExecution(worker.getUserId(), request);
 
         // Then
         CurrentInventory inventory = em.createQuery(
@@ -258,6 +288,71 @@ class WorkOrderServiceTest {
                 .setParameter("itemCode", "WO-RM-AUTO-ISSUE")
                 .getSingleResult();
         assertThat(inventory.getCurrentQty()).isEqualTo(90);
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 성공 - 기본 생산 입고 로케이션이 없으면 첫 로케이션을 사용한다")
+    void createExecution_usesFirstLocationWhenDefaultMissing() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        List<WarehouseLocation> locations = em.createQuery("select l from WarehouseLocation l order by l.locationId asc", WarehouseLocation.class).getResultList();
+        locations.forEach(location -> location.setProductionReceiptDefault(false));
+        WarehouseLocation fallbackLocation = locations.get(0);
+        ItemMaster item = createItem("WO-FG-DEFAULT-FALLBACK", "기본입고대체 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-DEFAULT-FALLBACK", "기본입고대체 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, 1);
+        createInventory(material, fallbackLocation, 100);
+        WorkOrder workOrder = createWorkOrder("WO-DEFAULT-FALLBACK-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        // When
+        productionExecutionService.createExecution(
+                worker.getUserId(),
+                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 3, 0, 30)
+        );
+
+        // Then
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode and ci.location.locationId = :locationId",
+                        CurrentInventory.class)
+                .setParameter("itemCode", "WO-FG-DEFAULT-FALLBACK")
+                .setParameter("locationId", fallbackLocation.getLocationId())
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("생산 실적 등록 성공 - 지정 로케이션에 lot 재고가 있어도 lot 없는 생산 입고 재고를 생성한다")
+    void createExecution_receivesToSpecifiedLocationWithLotInventories() {
+        // Given
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("WO-FG-LOT-RECEIPT", "Lot입고 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-LOT-RECEIPT", "Lot입고 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, 1);
+        createInventory(material, location, 100);
+        createInventory(item, location, 4, "LOT-A");
+        createInventory(item, location, 6, "LOT-B");
+        WorkOrder workOrder = createWorkOrder("WO-LOT-RECEIPT-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
+        em.flush();
+        em.clear();
+
+        // When
+        ProductionExecutionCreateRequest request = new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 5, 0, 30);
+        request.setReceiptLocationCode(location.getLocationCode());
+        productionExecutionService.createExecution(worker.getUserId(), request);
+
+        // Then
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode and ci.location.locationId = :locationId and ci.lotNumber is null",
+                        CurrentInventory.class)
+                .setParameter("itemCode", "WO-FG-LOT-RECEIPT")
+                .setParameter("locationId", location.getLocationId())
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(5);
     }
 
     @Test
@@ -509,9 +604,14 @@ class WorkOrderServiceTest {
     }
 
     private void createInventory(ItemMaster item, WarehouseLocation location, Integer currentQty) {
+        createInventory(item, location, currentQty, null);
+    }
+
+    private void createInventory(ItemMaster item, WarehouseLocation location, Integer currentQty, String lotNumber) {
         CurrentInventory inventory = new CurrentInventory();
         inventory.setItem(item);
         inventory.setLocation(location);
+        inventory.setLotNumber(lotNumber);
         inventory.setCurrentQty(currentQty);
         em.persist(inventory);
     }

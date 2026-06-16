@@ -1800,7 +1800,7 @@
   }
 
   .pe-layout {
-    @apply grid grid-cols-1 gap-6 xl:grid-cols-[24rem_minmax(0,1fr)];
+    @apply grid grid-cols-1 gap-6;
   }
 
   .pe-main {
@@ -1864,46 +1864,24 @@
   }
 
   .pe-order-list {
-    @apply max-h-[48rem] overflow-y-auto p-3;
+    @apply max-h-[34rem] overflow-auto;
   }
 
-  .pe-order-card {
-    @apply mb-2 block w-full rounded-xl border p-4 text-left transition;
-    background-color: var(--wo-color-surface);
-    border-color: var(--wo-color-border);
-    color: var(--wo-color-text-soft);
+  .pe-order-table {
+    @apply min-w-[980px];
   }
 
-  .pe-order-card:hover,
-  .pe-order-card.is-active {
-    background-color: var(--wo-color-primary-soft);
-    border-color: var(--wo-color-primary);
+  .pe-order-table-row {
+    @apply cursor-pointer transition;
   }
 
-  .pe-order-top {
+  .pe-order-progress-cell {
     @apply flex items-center justify-between gap-2;
   }
 
-  .pe-order-top strong,
-  .pe-order-name {
-    color: var(--wo-color-text);
-    font-weight: var(--wo-font-weight-strong);
-  }
-
-  .pe-order-name,
-  .pe-order-meta,
-  .pe-order-progress {
-    @apply mt-2 block text-xs;
-  }
-
-  .pe-order-meta,
-  .pe-order-progress {
-    color: var(--wo-color-text-muted);
-  }
-
-  .pe-order-progress {
-    @apply flex items-center gap-2;
-    font-weight: var(--wo-font-weight-label);
+  .pe-order-pagination {
+    @apply flex flex-col gap-3 border-t px-5 py-3 md:flex-row md:items-center md:justify-between;
+    border-color: var(--wo-color-border);
   }
 
   .pe-preview-note {

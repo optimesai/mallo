@@ -78,9 +78,9 @@ INSERT IGNORE INTO bom_structure (parent_item_id, child_item_id, quantity, bom_v
 -- ===================================================================
 
 -- [warehouse_location] 인서트
-INSERT IGNORE INTO warehouse_location (location_code, warehouse_name, rack_row, rack_column) VALUES
-('WH01-RACK-A1', '원자재 창고', 'A열', '1단'),
-('WH01-RACK-A2', '원자재 창고', 'A열', '2단'),
-('WH02-RACK-B1', '반제품 창고', 'B열', '1단'),
-('WH03-RACK-C1', '완제품 창고', 'C열', '1단'),
-('WH03-RACK-C2', '완제품 창고', 'C열', '2단');
+INSERT IGNORE INTO warehouse_location (location_code, warehouse_name, rack_row, rack_column, production_receipt_default) VALUES
+('WH01-RACK-A1', '원자재 창고', 'A열', '1단', false),
+('WH01-RACK-A2', '원자재 창고', 'A열', '2단', false),
+('WH02-RACK-B1', '반제품 창고', 'B열', '1단', false),
+('WH03-RACK-C1', '완제품 창고', 'C열', '1단', true),
+('WH03-RACK-C2', '완제품 창고', 'C열', '2단', false);

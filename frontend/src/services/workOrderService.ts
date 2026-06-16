@@ -10,6 +10,7 @@ import type {
   WorkOrderSearchParams,
   WorkOrderStatusUpdateRequest
 } from '@/api/workOrderApi'
+import type { PageResponse } from '@/api/types'
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AxiosError) {
@@ -19,7 +20,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export const workOrderService = {
-  async getWorkOrders(params: WorkOrderSearchParams = {}): Promise<WorkOrderResponse[]> {
+  async getWorkOrders(params: WorkOrderSearchParams = {}): Promise<PageResponse<WorkOrderResponse>> {
     try {
       const response = await workOrderApi.getWorkOrders(params)
       return response.data
@@ -86,6 +87,14 @@ export const workOrderService = {
       await workOrderApi.issueMaterials(orderKey)
     } catch (error) {
       throw new Error(getErrorMessage(error, '자재 출고 처리에 실패했습니다.'))
+    }
+  },
+
+  async cancelIssueMaterials(orderKey: string | number): Promise<void> {
+    try {
+      await workOrderApi.cancelIssueMaterials(orderKey)
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '자재 출고 취소에 실패했습니다.'))
     }
   },
 

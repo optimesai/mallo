@@ -40,10 +40,17 @@ public class WorkOrderResponse {
     private Boolean canHold;
     private Boolean canClose;
     private Boolean canRegisterExecution;
+    private Boolean canCancelIssue;
+    private Boolean canDeleteExecution;
     private Boolean canUpdate;
     private Boolean canDelete;
 
-    public static WorkOrderResponse from(WorkOrder workOrder, WorkOrderExecutionSummary summary) {
+    public static WorkOrderResponse from(
+            WorkOrder workOrder,
+            WorkOrderExecutionSummary summary,
+            boolean canCancelIssue,
+            boolean canDeleteExecution
+    ) {
         int totalGoodQty = summary.totalGoodQty();
         int totalDefectQty = summary.totalDefectQty();
         int totalExecutedQty = totalGoodQty + totalDefectQty;
@@ -80,6 +87,8 @@ public class WorkOrderResponse {
                 .canHold(status == WorkOrder.OrderStatus.RUN)
                 .canClose(status == WorkOrder.OrderStatus.RUN || status == WorkOrder.OrderStatus.HOLD)
                 .canRegisterExecution(status == WorkOrder.OrderStatus.RUN)
+                .canCancelIssue(canCancelIssue)
+                .canDeleteExecution(canDeleteExecution)
                 .canUpdate(status == WorkOrder.OrderStatus.READY)
                 .canDelete(status == WorkOrder.OrderStatus.READY)
                 .build();

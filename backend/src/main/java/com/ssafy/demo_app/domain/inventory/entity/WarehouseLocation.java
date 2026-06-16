@@ -29,4 +29,7 @@ public class WarehouseLocation {
 
     @Column(name = "rack_column")
     private String rackColumn;
+
+    @Column(name = "production_receipt_default", nullable = false)
+    private Boolean productionReceiptDefault = false;
 }
