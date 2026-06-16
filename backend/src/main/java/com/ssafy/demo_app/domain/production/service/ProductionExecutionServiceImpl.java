@@ -1,12 +1,12 @@
 package com.ssafy.demo_app.domain.production.service;
-import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.production.dto.ProductionExecutionCreateRequest;
 import com.ssafy.demo_app.api.production.dto.ProductionExecutionResponse;
-import com.ssafy.demo_app.domain.bom.entity.BomStructure;
-import com.ssafy.demo_app.domain.bom.repository.BomStructureRepository;
+import com.ssafy.demo_app.domain.bom.service.BomRequirement;
+import com.ssafy.demo_app.domain.bom.service.BomService;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 import com.ssafy.demo_app.domain.inventory.repository.CurrentInventoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.InventoryTransactionHistoryRepository;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -36,7 +35,7 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
     private final WorkOrderRepository workOrderRepository;
     private final UserRepository userRepository;
     private final FactoryRoutingRepository factoryRoutingRepository;
-    private final BomStructureRepository bomStructureRepository;
+    private final BomService bomService;
     private final CurrentInventoryRepository currentInventoryRepository;
     private final InventoryTransactionHistoryRepository transactionHistoryRepository;
 
@@ -120,18 +119,19 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
     }
 
     private void issueMaterialsForExecution(WorkOrder workOrder, User worker, int newExecutedQty) {
-        List<BomStructure> bomList = bomStructureRepository.findByParentItem(workOrder.getItem());
-        if (bomList.isEmpty()) {
-            throw new BusinessException(ErrorCode.BOM_NOT_FOUND);
-        }
-
         int cumulativeExecutedQty = getCurrentExecutedQty(workOrder) + newExecutedQty;
-        for (BomStructure bom : bomList) {
-            int requiredDeltaQty = calculateRequiredQty(bom, cumulativeExecutedQty) - getIssuedQty(workOrder, bom.getChildItem());
+        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
+                workOrder.getItem(),
+                workOrder.getBomVersion(),
+                cumulativeExecutedQty
+        );
+
+        for (BomRequirement requirement : requirements) {
+            int requiredDeltaQty = requirement.requiredQty() - getIssuedQty(workOrder, requirement.item());
             if (requiredDeltaQty <= 0) {
                 continue;
             }
-            int totalAvailableQty = currentInventoryRepository.findByItem(bom.getChildItem()).stream()
+            int totalAvailableQty = currentInventoryRepository.findByItem(requirement.item()).stream()
                     .mapToInt(CurrentInventory::getCurrentQty)
                     .sum();
             if (totalAvailableQty < requiredDeltaQty) {
@@ -139,9 +139,9 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
             }
         }
 
-        for (BomStructure bom : bomList) {
-            ItemMaster childItem = bom.getChildItem();
-            int remainingQty = calculateRequiredQty(bom, cumulativeExecutedQty) - getIssuedQty(workOrder, childItem);
+        for (BomRequirement requirement : requirements) {
+            ItemMaster childItem = requirement.item();
+            int remainingQty = requirement.requiredQty() - getIssuedQty(workOrder, childItem);
             if (remainingQty <= 0) {
                 continue;
             }
@@ -177,10 +177,6 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
         return productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder).stream()
                 .mapToInt(execution -> execution.getGoodQty() + execution.getDefectQty())
                 .sum();
-    }
-
-    private int calculateRequiredQty(BomStructure bom, Integer targetQty) {
-        return bom.getQuantity().multiply(BigDecimal.valueOf(targetQty)).intValue();
     }
 
     private int getIssuedQty(WorkOrder workOrder, ItemMaster item) {

@@ -174,8 +174,9 @@ com.ssafy.demo_app
 | 3 | 내 정보 (`GET/PATCH /api/users/me`) | 인증 |
 | 4 | 사용자 관리 (`/api/users/**`) | ADMIN |
 | 5 | BOM 조회 (`GET /api/boms/**`) | 인증 |
-| 6 | BOM 변경 (`POST/PUT/DELETE /api/boms/**`) | ADMIN, MANAGER |
-| 7 | 기본 (`/**`) | 인증 |
+| 6 | BOM 등록/수정/상태 변경 (`POST/PUT/PATCH /api/boms/**`) | ADMIN, MANAGER |
+| 7 | BOM 삭제/비활성화 (`DELETE /api/boms/**`) | ADMIN |
+| 8 | 기본 (`/**`) | 인증 |
 
 ## 토큰
 
@@ -285,13 +286,20 @@ WarehouseLocation ──┬── InboundReceipt
 
 ### BOM (`/api/boms`)
 
+- BOM 소요량(`quantity`)은 단위(`ea`, `kg`, `box`, `l`, `m`)와 무관하게 `Integer` 정수로만 입력/저장/계산한다.
+- 작업지시 목표 수량, 생산 실적 수량, 재고/불출 수량도 정수 기준으로 계산한다.
+
 | 메서드 | 경로 | 권한 | 설명 |
 |--------|------|------|------|
+| GET | `/api/boms/groups` | 인증 | 상위 품목 + BOM 버전 기준 그룹 목록 페이지 조회 |
+| GET | `/api/boms/groups/{parentItemId}?bomVersion={version}` | 인증 | BOM 그룹 상세 구성 품목 조회 |
 | GET | `/api/boms` | 인증 | BOM 목록/트리 조회 |
 | GET | `/api/boms/{id}` | 인증 | BOM 단건 조회 |
 | POST | `/api/boms` | ADMIN/MANAGER | BOM 등록 |
+| POST | `/api/boms/bulk` | ADMIN/MANAGER | 상위 품목 1개 + 구성 품목 다건 BOM 일괄 등록 |
 | PUT | `/api/boms/{id}` | ADMIN/MANAGER | BOM 수정 |
-| DELETE | `/api/boms/{id}` | ADMIN/MANAGER | BOM 삭제 |
+| PATCH | `/api/boms/{id}/status` | ADMIN/MANAGER | BOM 상태 변경 |
+| DELETE | `/api/boms/{id}` | ADMIN | BOM 비활성화 |
 
 ### 입고 (`/api/inbounds`)
 

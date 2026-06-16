@@ -33,7 +33,6 @@ import com.ssafy.demo_app.global.response.PageResponse;
 
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -124,10 +123,12 @@ class WorkOrderServiceTest {
         // Given
         FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
         ItemMaster item = createItem("WO-FG-AUTO", "자동번호 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-AUTO", "자동번호 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, 1);
         LocalDate planDate = LocalDate.of(2026, 6, 3);
 
         WorkOrderResponse response = workOrderService.createWorkOrder(
-                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, planDate)
+                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, "v1.0", planDate)
         );
 
         assertThat(response.getOrderNo()).startsWith("WO-20260603-");
@@ -141,11 +142,13 @@ class WorkOrderServiceTest {
         FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
         routing.setRoutingStatus(FactoryRouting.RoutingStatus.INACTIVE);
         ItemMaster item = createItem("WO-FG-INACTIVE", "비활성라우팅 완제품", ItemMaster.ItemType.FG);
+        ItemMaster material = createItem("WO-RM-INACTIVE", "비활성라우팅 원자재", ItemMaster.ItemType.RAW);
+        createBom(item, material, 1);
         em.flush();
         em.clear();
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(
-                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, LocalDate.now())
+                new WorkOrderCreateRequest(item.getItemCode(), routing.getRoutingId(), 10, "v1.0", LocalDate.now())
         ))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROUTING_INACTIVE);
@@ -164,7 +167,7 @@ class WorkOrderServiceTest {
         // When & Then
         assertThatThrownBy(() -> workOrderService.updateWorkOrder(
                 String.valueOf(workOrder.getOrderId()),
-                new WorkOrderUpdateRequest(item.getItemCode(), routing.getRoutingId(), 20, LocalDate.now())
+                new WorkOrderUpdateRequest(item.getItemCode(), routing.getRoutingId(), 20, "v1.0", LocalDate.now())
         ))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORK_ORDER_STATUS_INVALID);
@@ -179,7 +182,7 @@ class WorkOrderServiceTest {
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
         ItemMaster item = createItem("WO-FG-CLOSE", "미달마감 완제품", ItemMaster.ItemType.FG);
         ItemMaster material = createItem("WO-RM-CLOSE", "미달마감 원자재", ItemMaster.ItemType.RAW);
-        createBom(item, material, BigDecimal.valueOf(2));
+        createBom(item, material, 2);
         createInventory(material, location, 100);
         WorkOrder workOrder = createWorkOrder("WO-CLOSE-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
         em.flush();
@@ -237,7 +240,7 @@ class WorkOrderServiceTest {
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
         ItemMaster item = createItem("WO-FG-AUTO-ISSUE", "자동불출 완제품", ItemMaster.ItemType.FG);
         ItemMaster material = createItem("WO-RM-AUTO-ISSUE", "자동불출 원자재", ItemMaster.ItemType.RAW);
-        createBom(item, material, BigDecimal.valueOf(2));
+        createBom(item, material, 2);
         createInventory(material, location, 100);
         WorkOrder workOrder = createWorkOrder("WO-AUTO-ISSUE-001", item, routing, 10, WorkOrder.OrderStatus.RUN);
         em.flush();
@@ -318,7 +321,7 @@ class WorkOrderServiceTest {
         BomStructure bom = new BomStructure();
         bom.setParentItem(parentItem);
         bom.setChildItem(childItem);
-        bom.setQuantity(BigDecimal.valueOf(2.0));
+        bom.setQuantity(2);
         em.persist(bom);
 
         // 3. 재고 설정
@@ -367,6 +370,78 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    @DisplayName("BOM 기반 생산 자재 출고 성공 - 작업지시에 지정된 BOM 버전만 사용한다")
+    void issueMaterials_usesWorkOrderBomVersion() {
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster parentItem = createItem("WO-FG-BOM-VERSION", "버전 완제품", ItemMaster.ItemType.FG);
+        ItemMaster childItem = createItem("WO-RM-BOM-VERSION", "버전 원자재", ItemMaster.ItemType.RAW);
+        createBom(parentItem, childItem, 1, "v1.0");
+        createBom(parentItem, childItem, 3, "v2.0");
+        createInventory(childItem, location, 20);
+        WorkOrder workOrder = createWorkOrder("WO-BOM-VERSION-001", parentItem, routing, 2, WorkOrder.OrderStatus.READY, "v2.0");
+        em.flush();
+        em.clear();
+
+        workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId());
+
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode", CurrentInventory.class)
+                .setParameter("itemCode", "WO-RM-BOM-VERSION")
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(14);
+    }
+
+    @Test
+    @DisplayName("BOM 기반 생산 자재 출고 성공 - 반제품 BOM은 하위 원자재까지 전개한다")
+    void issueMaterials_expandsHalfItemBom() {
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster finishedItem = createItem("WO-FG-MULTI", "다단계 완제품", ItemMaster.ItemType.FG);
+        ItemMaster halfItem = createItem("WO-HALF-MULTI", "다단계 반제품", ItemMaster.ItemType.HALF);
+        ItemMaster rawItem = createItem("WO-RM-MULTI", "다단계 원자재", ItemMaster.ItemType.RAW);
+        createBom(finishedItem, halfItem, 2);
+        createBom(halfItem, rawItem, 3);
+        createInventory(rawItem, location, 20);
+        WorkOrder workOrder = createWorkOrder("WO-MULTI-001", finishedItem, routing, 2, WorkOrder.OrderStatus.READY);
+        em.flush();
+        em.clear();
+
+        workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId());
+
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode", CurrentInventory.class)
+                .setParameter("itemCode", "WO-RM-MULTI")
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(8);
+    }
+
+    @Test
+    @DisplayName("BOM 기반 생산 자재 출고 성공 - 정수 BOM 소요량 기준으로 차감한다")
+    void issueMaterials_usesIntegerBomQuantity() {
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        FactoryRouting routing = em.createQuery("select r from FactoryRouting r", FactoryRouting.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster parentItem = createItem("WO-FG-INTEGER", "정수 완제품", ItemMaster.ItemType.FG);
+        ItemMaster childItem = createItem("WO-RM-INTEGER", "정수 원자재", ItemMaster.ItemType.RAW);
+        createBom(parentItem, childItem, 2);
+        createInventory(childItem, location, 10);
+        WorkOrder workOrder = createWorkOrder("WO-INTEGER-001", parentItem, routing, 3, WorkOrder.OrderStatus.READY);
+        em.flush();
+        em.clear();
+
+        workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId());
+
+        CurrentInventory inventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode", CurrentInventory.class)
+                .setParameter("itemCode", "WO-RM-INTEGER")
+                .getSingleResult();
+        assertThat(inventory.getCurrentQty()).isEqualTo(4);
+    }
+
+    @Test
     @DisplayName("BOM 기반 생산 자재 출고 실패 - 재고 부족 시 INSUFFICIENT_STOCK 예외 발생")
     void issueMaterials_insufficientStock() {
         // Given
@@ -380,7 +455,7 @@ class WorkOrderServiceTest {
         BomStructure bom = new BomStructure();
         bom.setParentItem(parentItem);
         bom.setChildItem(childItem);
-        bom.setQuantity(BigDecimal.valueOf(5.0));
+        bom.setQuantity(5);
         em.persist(bom);
 
         // 현재고 3개 설정
@@ -420,11 +495,16 @@ class WorkOrderServiceTest {
         return item;
     }
 
-    private void createBom(ItemMaster parentItem, ItemMaster childItem, BigDecimal quantity) {
+    private void createBom(ItemMaster parentItem, ItemMaster childItem, Integer quantity) {
+        createBom(parentItem, childItem, quantity, "v1.0");
+    }
+
+    private void createBom(ItemMaster parentItem, ItemMaster childItem, Integer quantity, String bomVersion) {
         BomStructure bom = new BomStructure();
         bom.setParentItem(parentItem);
         bom.setChildItem(childItem);
         bom.setQuantity(quantity);
+        bom.setBomVersion(bomVersion);
         em.persist(bom);
     }
 
@@ -448,6 +528,27 @@ class WorkOrderServiceTest {
         workOrder.setItem(item);
         workOrder.setRouting(routing);
         workOrder.setTargetQty(targetQty);
+        workOrder.setBomVersion("v1.0");
+        workOrder.setPlanDate(LocalDate.now());
+        workOrder.setStatus(status);
+        em.persist(workOrder);
+        return workOrder;
+    }
+
+    private WorkOrder createWorkOrder(
+            String orderNo,
+            ItemMaster item,
+            FactoryRouting routing,
+            Integer targetQty,
+            WorkOrder.OrderStatus status,
+            String bomVersion
+    ) {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setOrderNo(orderNo);
+        workOrder.setItem(item);
+        workOrder.setRouting(routing);
+        workOrder.setTargetQty(targetQty);
+        workOrder.setBomVersion(bomVersion);
         workOrder.setPlanDate(LocalDate.now());
         workOrder.setStatus(status);
         em.persist(workOrder);

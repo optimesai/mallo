@@ -16,6 +16,7 @@ export interface WorkOrderResponse {
   operationSeq: number
   operationName: string
   targetQty: number
+  bomVersion: string
   status: WorkOrderStatus
   planDate: string
   createdAt: string
@@ -75,6 +76,7 @@ export interface WorkOrderRequest {
   itemCode: string
   routingId: number
   targetQty: number
+  bomVersion?: string
   planDate: string
 }
 

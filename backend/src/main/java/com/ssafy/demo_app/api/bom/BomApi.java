@@ -1,18 +1,24 @@
 package com.ssafy.demo_app.api.bom;
 
+import com.ssafy.demo_app.api.bom.dto.BomBulkRequest;
+import com.ssafy.demo_app.api.bom.dto.BomGroupResponse;
 import com.ssafy.demo_app.api.bom.dto.BomRequest;
 import com.ssafy.demo_app.api.bom.dto.BomResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseTreeResponse;
+import com.ssafy.demo_app.api.bom.dto.BomStatusUpdateRequest;
 import com.ssafy.demo_app.api.bom.dto.BomTreeResponse;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -26,6 +32,22 @@ import java.util.List;
 @RequestMapping("/api/boms")
 public interface BomApi {
 
+    @Operation(summary = "BOM 그룹 목록 조회", description = "상위 품목과 BOM 버전 기준으로 묶은 BOM 목록을 페이지 단위로 조회합니다.")
+    @GetMapping("/groups")
+    ResponseEntity<ApiResponse<PageResponse<BomGroupResponse>>> getBomGroups(
+            Pageable pageable,
+            @Parameter(description = "부모 품목 ID, 품목명, 품목 코드 검색어") @RequestParam(required = false) String parentKeyword,
+            @Parameter(description = "자식 품목 ID, 품목명, 품목 코드 검색어") @RequestParam(required = false) String childKeyword,
+            @Parameter(description = "BOM 버전") @RequestParam(required = false) String bomVersion
+    );
+
+    @Operation(summary = "BOM 그룹 상세 조회", description = "상위 품목 ID와 BOM 버전으로 하나의 BOM 그룹에 포함된 구성 품목 목록을 조회합니다.")
+    @GetMapping("/groups/{parentItemId}")
+    ResponseEntity<ApiResponse<List<BomResponse>>> getBomGroup(
+            @Parameter(description = "부모 품목 ID", required = true) @PathVariable Integer parentItemId,
+            @Parameter(description = "BOM 버전", required = true) @RequestParam String bomVersion
+    );
+
     @Operation(summary = "BOM 목록 조회", description = "BOM 목록을 조회합니다. parentKeyword, childKeyword, bomVersion 필터링이 가능합니다. keyword는 품목 ID, 품목명, 품목 코드를 검색합니다.")
     @GetMapping
     ResponseEntity<ApiResponse<List<BomResponse>>> getBoms(
@@ -36,9 +58,9 @@ public interface BomApi {
 
     @Operation(
             summary = "BOM 단건 상세 조회",
-            description = "BOM 목록에서 선택한 row의 bomId로 상세 정보를 조회하는 보조 API입니다. 사용자가 품목명으로 직접 검색하는 용도는 BOM 목록/부모/자식 조회 API를 사용합니다."
+            description = "BOM 목록에서 선택한 row의 bomId로 상세 정보를 조회하는 API입니다. 사용자가 품목명으로 직접 검색하는 용도는 BOM 목록/부모/자식 조회 API를 사용합니다."
     )
-    @GetMapping("/details/{bomId}")
+    @GetMapping("/{bomId}")
     ResponseEntity<ApiResponse<BomResponse>> getBom(
             @Parameter(description = "BOM ID", required = true) @PathVariable Integer bomId
     );
@@ -49,6 +71,12 @@ public interface BomApi {
             @Valid @RequestBody BomRequest request
     );
 
+    @Operation(summary = "BOM 일괄 등록", description = "상위 품목 1개와 동일 BOM 버전에 구성 품목 여러 개를 한 번에 등록합니다.")
+    @PostMapping("/bulk")
+    ResponseEntity<ApiResponse<List<BomResponse>>> createBoms(
+            @Valid @RequestBody BomBulkRequest request
+    );
+
     @Operation(summary = "BOM 수정", description = "BOM ID에 해당하는 구성 정보를 수정합니다.")
     @PutMapping("/{bomId}")
     ResponseEntity<ApiResponse<BomResponse>> updateBom(
@@ -56,10 +84,17 @@ public interface BomApi {
             @Valid @RequestBody BomRequest request
     );
 
-    @Operation(summary = "BOM 삭제", description = "BOM ID에 해당하는 구성 정보를 하드 삭제합니다.")
+    @Operation(summary = "BOM 삭제", description = "BOM ID에 해당하는 구성 정보를 비활성화합니다.")
     @DeleteMapping("/{bomId}")
     ResponseEntity<ApiResponse<Void>> deleteBom(
             @Parameter(description = "BOM ID", required = true) @PathVariable Integer bomId
+    );
+
+    @Operation(summary = "BOM 상태 변경", description = "BOM ID에 해당하는 구성 정보의 활성/비활성 상태를 변경합니다.")
+    @PatchMapping("/{bomId}/status")
+    ResponseEntity<ApiResponse<BomResponse>> updateBomStatus(
+            @Parameter(description = "BOM ID", required = true) @PathVariable Integer bomId,
+            @Valid @RequestBody BomStatusUpdateRequest request
     );
 
     @Operation(summary = "부모 품목 기준 BOM 조회", description = "부모 품목 ID, 품목명, 품목 코드 중 하나로 직접 하위 BOM 목록을 조회합니다. bomVersion은 /api/boms/parents/versions에서 받은 목록 중 선택한 값을 전달합니다.")

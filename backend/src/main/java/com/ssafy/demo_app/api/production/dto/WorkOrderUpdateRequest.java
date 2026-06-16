@@ -31,6 +31,9 @@ public class WorkOrderUpdateRequest {
     @Min(value = 1, message = "생산 목표 수량은 1 이상이어야 합니다.")
     private Integer targetQty;
 
+    @Schema(description = "BOM 버전", example = "v1.0")
+    private String bomVersion;
+
     @Schema(description = "생산 계획일", example = "2026-06-03")
     @NotNull(message = "생산 계획일은 필수입니다.")
     private LocalDate planDate;

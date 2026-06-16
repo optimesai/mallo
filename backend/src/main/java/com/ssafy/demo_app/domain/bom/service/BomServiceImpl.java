@@ -1,9 +1,13 @@
 package com.ssafy.demo_app.domain.bom.service;
 
+import com.ssafy.demo_app.api.bom.dto.BomBulkLineRequest;
+import com.ssafy.demo_app.api.bom.dto.BomBulkRequest;
+import com.ssafy.demo_app.api.bom.dto.BomGroupResponse;
 import com.ssafy.demo_app.api.bom.dto.BomRequest;
 import com.ssafy.demo_app.api.bom.dto.BomResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseTreeResponse;
+import com.ssafy.demo_app.api.bom.dto.BomStatusUpdateRequest;
 import com.ssafy.demo_app.api.bom.dto.BomTreeResponse;
 import com.ssafy.demo_app.domain.bom.entity.BomStructure;
 import com.ssafy.demo_app.domain.bom.repository.BomStructureRepository;
@@ -11,13 +15,17 @@ import com.ssafy.demo_app.domain.item.entity.ItemMaster;
 import com.ssafy.demo_app.domain.item.repository.ItemMasterRepository;
 import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
+import com.ssafy.demo_app.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -31,16 +39,45 @@ public class BomServiceImpl implements BomService {
     private final ItemMasterRepository itemMasterRepository;
 
     @Override
+    public PageResponse<BomGroupResponse> getBomGroups(
+            Pageable pageable,
+            String parentKeyword,
+            String childKeyword,
+            String bomVersion
+    ) {
+        return PageResponse.from(bomStructureRepository.searchBomGroups(
+                normalize(parentKeyword),
+                normalize(childKeyword),
+                normalize(bomVersion),
+                BomStructure.BomStatus.ACTIVE,
+                pageable
+        ));
+    }
+
+    @Override
     public List<BomResponse> getBoms(
             String parentKeyword,
             String childKeyword,
             String bomVersion
     ) {
-        return bomStructureRepository.findAllByOrderByBomIdAsc()
+        return bomStructureRepository.searchBoms(
+                        normalize(parentKeyword),
+                        normalize(childKeyword),
+                        normalize(bomVersion)
+                )
                 .stream()
-                .filter(bom -> !hasText(parentKeyword) || matchesItemKeyword(bom.getParentItem(), parentKeyword))
-                .filter(bom -> !hasText(childKeyword) || matchesItemKeyword(bom.getChildItem(), childKeyword))
-                .filter(bom -> !hasText(bomVersion) || bom.getBomVersion().equals(trimRequired(bomVersion)))
+                .map(BomResponse::from)
+                .toList();
+    }
+
+    @Override
+    public List<BomResponse> getBomGroup(Integer parentItemId, String bomVersion) {
+        ItemMaster parentItem = findItem(parentItemId);
+        return bomStructureRepository.findByParentItemAndBomVersionOrderByBomIdAsc(
+                        parentItem,
+                        normalizeVersion(bomVersion)
+                )
+                .stream()
                 .map(BomResponse::from)
                 .toList();
     }
@@ -48,6 +85,35 @@ public class BomServiceImpl implements BomService {
     @Override
     public BomResponse getBom(Integer bomId) {
         return BomResponse.from(findBom(bomId));
+    }
+
+    @Override
+    @Transactional
+    public List<BomResponse> createBoms(BomBulkRequest request) {
+        ItemMaster parentItem = findItem(request.getParentItemId());
+        String bomVersion = normalizeVersion(request.getBomVersion());
+        Set<Integer> childItemIds = new HashSet<>();
+        List<BomStructure> boms = new ArrayList<>();
+
+        for (BomBulkLineRequest line : request.getLines()) {
+            if (!childItemIds.add(line.getChildItemId())) {
+                throw new BusinessException(ErrorCode.BOM_DUPLICATE);
+            }
+            ItemMaster childItem = findItem(line.getChildItemId());
+            validateBom(parentItem, childItem, line.getQuantity(), bomVersion, null);
+
+            BomStructure bom = new BomStructure();
+            bom.setParentItem(parentItem);
+            bom.setChildItem(childItem);
+            bom.setQuantity(line.getQuantity());
+            bom.setBomVersion(bomVersion);
+            boms.add(bom);
+        }
+
+        return bomStructureRepository.saveAll(boms)
+                .stream()
+                .map(BomResponse::from)
+                .toList();
     }
 
     @Override
@@ -90,15 +156,23 @@ public class BomServiceImpl implements BomService {
     @Transactional
     public void deleteBom(Integer bomId) {
         BomStructure bom = findBom(bomId);
-        bomStructureRepository.delete(bom);
+        bom.setBomStatus(BomStructure.BomStatus.INACTIVE);
+        bomStructureRepository.save(bom);
+    }
+
+    @Override
+    @Transactional
+    public BomResponse updateBomStatus(Integer bomId, BomStatusUpdateRequest request) {
+        BomStructure bom = findBom(bomId);
+        bom.setBomStatus(request.getBomStatus());
+        return BomResponse.from(bomStructureRepository.save(bom));
     }
 
     @Override
     public List<BomResponse> getBomsByParentKeyword(String keyword, String bomVersion) {
-        return bomStructureRepository.findAllByOrderByBomIdAsc()
+        return findItemsByKeyword(keyword)
                 .stream()
-                .filter(bom -> matchesItemKeyword(bom.getParentItem(), keyword))
-                .filter(bom -> !hasText(bomVersion) || bom.getBomVersion().equals(trimRequired(bomVersion)))
+                .flatMap(parentItem -> findBomsByParent(parentItem, bomVersion).stream())
                 .map(BomResponse::from)
                 .toList();
     }
@@ -117,10 +191,9 @@ public class BomServiceImpl implements BomService {
 
     @Override
     public List<BomReverseResponse> getParentsByChildKeyword(String keyword, String bomVersion) {
-        return bomStructureRepository.findAllByOrderByBomIdAsc()
+        return findItemsByKeyword(keyword)
                 .stream()
-                .filter(bom -> matchesItemKeyword(bom.getChildItem(), keyword))
-                .filter(bom -> !hasText(bomVersion) || bom.getBomVersion().equals(trimRequired(bomVersion)))
+                .flatMap(childItem -> findBomsByChild(childItem, bomVersion).stream())
                 .map(BomReverseResponse::from)
                 .toList();
     }
@@ -140,7 +213,8 @@ public class BomServiceImpl implements BomService {
     public List<String> getBomVersionsByParentKeyword(String keyword) {
         return findItemsByKeyword(keyword)
                 .stream()
-                .flatMap(parentItem -> bomStructureRepository.findDistinctBomVersionsByParentItem(parentItem).stream())
+                .flatMap(parentItem -> findBomsByParent(parentItem, null).stream())
+                .map(BomStructure::getBomVersion)
                 .distinct()
                 .sorted()
                 .toList();
@@ -150,11 +224,107 @@ public class BomServiceImpl implements BomService {
     public List<String> getBomVersionsByChildKeyword(String keyword) {
         return findItemsByKeyword(keyword)
                 .stream()
-                .flatMap(childItem -> findBomsByChild(childItem, null).stream())
-                .map(BomStructure::getBomVersion)
+                .flatMap(childItem -> bomStructureRepository.findDistinctActiveBomVersionsByChildItem(childItem).stream())
                 .distinct()
                 .sorted()
                 .toList();
+    }
+
+    @Override
+    public void validateActiveBomVersion(ItemMaster parentItem, String bomVersion) {
+        if (findBomsByParent(parentItem, bomVersion).isEmpty()) {
+            throw new BusinessException(ErrorCode.BOM_NOT_FOUND);
+        }
+    }
+
+    @Override
+    public List<BomRequirement> calculateMaterialRequirements(
+            ItemMaster parentItem,
+            String bomVersion,
+            Integer targetQty
+    ) {
+        String normalizedBomVersion = normalizeVersion(bomVersion);
+        if (findBomsByParent(parentItem, normalizedBomVersion).isEmpty()) {
+            throw new BusinessException(ErrorCode.BOM_NOT_FOUND);
+        }
+        Map<Integer, RequirementAccumulator> requirements = new LinkedHashMap<>();
+        collectRequirements(
+                parentItem,
+                normalizedBomVersion,
+                1,
+                new HashSet<>(),
+                requirements
+        );
+        if (requirements.isEmpty()) {
+            throw new BusinessException(ErrorCode.BOM_NOT_FOUND);
+        }
+
+        return requirements.values()
+                .stream()
+                .map(accumulator -> new BomRequirement(
+                        accumulator.item(),
+                        accumulator.quantity(),
+                        calculateRequiredQty(accumulator.quantity(), targetQty)
+                ))
+                .toList();
+    }
+
+    private void collectRequirements(
+            ItemMaster parentItem,
+            String bomVersion,
+            Integer parentQuantity,
+            Set<Integer> visitedItemIds,
+            Map<Integer, RequirementAccumulator> requirements
+    ) {
+        if (!visitedItemIds.add(parentItem.getItemId())) {
+            throw new BusinessException(ErrorCode.BOM_CYCLE_DETECTED);
+        }
+
+        List<BomStructure> childBoms = findBomsByParent(parentItem, bomVersion);
+        if (childBoms.isEmpty()) {
+            addRequirement(requirements, parentItem, parentQuantity);
+            return;
+        }
+
+        for (BomStructure bom : childBoms) {
+            ItemMaster childItem = bom.getChildItem();
+            Integer nextQuantity = parentQuantity * bom.getQuantity();
+            if (childItem.getItemType() == ItemMaster.ItemType.HALF
+                    && !findBomsByParent(childItem, bomVersion).isEmpty()) {
+                collectRequirements(
+                        childItem,
+                        bomVersion,
+                        nextQuantity,
+                        new HashSet<>(visitedItemIds),
+                        requirements
+                );
+                continue;
+            }
+            addRequirement(requirements, childItem, nextQuantity);
+        }
+    }
+
+    private void addRequirement(
+            Map<Integer, RequirementAccumulator> requirements,
+            ItemMaster item,
+            Integer quantity
+    ) {
+        RequirementAccumulator current = requirements.get(item.getItemId());
+        if (current == null) {
+            requirements.put(item.getItemId(), new RequirementAccumulator(item, quantity));
+            return;
+        }
+        requirements.put(item.getItemId(), new RequirementAccumulator(item, current.quantity() + quantity));
+    }
+
+    private Integer calculateRequiredQty(Integer bomQuantity, Integer targetQty) {
+        return bomQuantity * targetQty;
+    }
+
+    private record RequirementAccumulator(
+            ItemMaster item,
+            Integer quantity
+    ) {
     }
 
     private List<BomTreeResponse> buildDownwardChildren(
@@ -166,7 +336,7 @@ public class BomServiceImpl implements BomService {
             throw new BusinessException(ErrorCode.BOM_CYCLE_DETECTED);
         }
 
-        List<BomTreeResponse> children = findBomsByParent(parentItem, bomVersion)
+        return findBomsByParent(parentItem, bomVersion)
                 .stream()
                 .map(bom -> BomTreeResponse.of(
                         bom.getChildItem(),
@@ -175,8 +345,6 @@ public class BomServiceImpl implements BomService {
                         buildDownwardChildren(bom.getChildItem(), bomVersion, new HashSet<>(visitedItemIds))
                 ))
                 .toList();
-
-        return children;
     }
 
     private List<BomReverseTreeResponse> buildUpwardParents(
@@ -202,14 +370,14 @@ public class BomServiceImpl implements BomService {
     private void validateBom(
             ItemMaster parentItem,
             ItemMaster childItem,
-            BigDecimal quantity,
+            Integer quantity,
             String bomVersion,
             Integer updatingBomId
     ) {
         if (parentItem.getItemId().equals(childItem.getItemId())) {
             throw new BusinessException(ErrorCode.BOM_SELF_REFERENCE);
         }
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+        if (quantity == null || quantity <= 0) {
             throw new BusinessException(ErrorCode.BOM_INVALID_QUANTITY);
         }
         if (parentItem.getItemType() == ItemMaster.ItemType.RAW || childItem.getItemType() == ItemMaster.ItemType.FG) {
@@ -272,22 +440,30 @@ public class BomServiceImpl implements BomService {
 
     private List<BomStructure> findBomsByParent(ItemMaster parentItem, String bomVersion) {
         if (hasText(bomVersion)) {
-            return bomStructureRepository.findByParentItemAndBomVersionOrderByBomIdAsc(
+            return bomStructureRepository.findByParentItemAndBomVersionAndBomStatusOrderByBomIdAsc(
                     parentItem,
-                    trimRequired(bomVersion)
+                    trimRequired(bomVersion),
+                    BomStructure.BomStatus.ACTIVE
             );
         }
-        return bomStructureRepository.findByParentItemOrderByBomIdAsc(parentItem);
+        return bomStructureRepository.findByParentItemAndBomStatusOrderByBomIdAsc(
+                parentItem,
+                BomStructure.BomStatus.ACTIVE
+        );
     }
 
     private List<BomStructure> findBomsByChild(ItemMaster childItem, String bomVersion) {
         if (hasText(bomVersion)) {
-            return bomStructureRepository.findByChildItemAndBomVersionOrderByBomIdAsc(
+            return bomStructureRepository.findByChildItemAndBomVersionAndBomStatusOrderByBomIdAsc(
                     childItem,
-                    trimRequired(bomVersion)
+                    trimRequired(bomVersion),
+                    BomStructure.BomStatus.ACTIVE
             );
         }
-        return bomStructureRepository.findByChildItemOrderByBomIdAsc(childItem);
+        return bomStructureRepository.findByChildItemAndBomStatusOrderByBomIdAsc(
+                childItem,
+                BomStructure.BomStatus.ACTIVE
+        );
     }
 
     private BomStructure findBom(Integer bomId) {
@@ -313,6 +489,10 @@ public class BomServiceImpl implements BomService {
 
     private String normalizeVersion(String bomVersion) {
         return hasText(bomVersion) ? trimRequired(bomVersion) : DEFAULT_BOM_VERSION;
+    }
+
+    private String normalize(String value) {
+        return hasText(value) ? trimRequired(value) : null;
     }
 
     private boolean hasText(String value) {

@@ -19,6 +19,7 @@ import {
 } from '@lucide/vue'
 import { itemMasterService } from '@/services/itemMasterService'
 import { factoryRoutingService } from '@/services/factoryRoutingService'
+import { bomMasterService } from '@/services/bomMasterService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
 import { useAuthStore } from '@/state/authStore'
 import { formatDateTime } from '@/utils/dateFormat'
@@ -44,6 +45,7 @@ const itemQuery = ref('')
 const isItemSuggestOpen = ref(false)
 const formFactoryName = ref('')
 const formLineName = ref('')
+const bomVersions = ref<string[]>([])
 const keywordQuery = ref('')
 const isKeywordSuggestOpen = ref(false)
 
@@ -61,6 +63,7 @@ const form = reactive<Omit<WorkOrderRequest, 'targetQty'> & { targetQty: number 
   itemCode: '',
   routingId: 0,
   targetQty: null,
+  bomVersion: 'v1.0',
   planDate: ''
 })
 
@@ -166,10 +169,11 @@ function syncRoutingFields(routingId: number) {
   form.routingId = routing.routingId
 }
 
-function selectProductionItem(item: ItemMasterResponse) {
+async function selectProductionItem(item: ItemMasterResponse) {
   form.itemCode = item.itemCode
   itemQuery.value = `${item.itemCode} · ${item.itemName}`
   isItemSuggestOpen.value = false
+  await loadBomVersions(item.itemCode)
 }
 
 function selectKeywordSuggestion(keyword: string) {
@@ -212,6 +216,21 @@ async function loadProductionItems(itemType: ItemType) {
   return [firstPage, ...restPages].flatMap((page) => page.content)
 }
 
+async function loadBomVersions(itemCode: string) {
+  try {
+    bomVersions.value = await bomMasterService.getParentVersions(itemCode)
+    if (bomVersions.value.length === 0) {
+      form.bomVersion = ''
+      return
+    }
+    if (!form.bomVersion || !bomVersions.value.includes(form.bomVersion)) {
+      form.bomVersion = bomVersions.value[0]
+    }
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : 'BOM 버전 목록을 불러오지 못했습니다.'
+  }
+}
+
 async function searchWorkOrders() {
   pageError.value = null
   filters.keyword = keywordQuery.value.trim()
@@ -240,20 +259,24 @@ function resetForm() {
   formLineName.value = ''
   form.routingId = 0
   form.targetQty = null
+  form.bomVersion = 'v1.0'
+  bomVersions.value = []
   form.planDate = ''
   isEditing.value = false
   editingOrderKey.value = null
 }
 
-function fillEditForm(order: WorkOrderResponse) {
+async function fillEditForm(order: WorkOrderResponse) {
   const item = productionItems.value.find((candidate) => candidate.itemCode === order.itemCode)
-  if (item) selectProductionItem(item)
+  if (item) await selectProductionItem(item)
   else {
     form.itemCode = order.itemCode
     itemQuery.value = `${order.itemCode} · ${order.itemName}`
+    await loadBomVersions(order.itemCode)
   }
   syncRoutingFields(order.routingId)
   form.targetQty = order.targetQty
+  form.bomVersion = order.bomVersion
   form.planDate = order.planDate
   isEditing.value = true
   editingOrderKey.value = order.orderNo
@@ -262,8 +285,8 @@ function fillEditForm(order: WorkOrderResponse) {
 }
 
 async function submitWorkOrder() {
-  if (!form.itemCode || !form.routingId || !form.planDate || !form.targetQty || form.targetQty < 1) {
-    pageError.value = '생산 품목, 공장/라인/공정, 목표 수량, 계획일을 모두 올바르게 입력해주세요.'
+  if (!form.itemCode || !form.routingId || !form.bomVersion || !form.planDate || !form.targetQty || form.targetQty < 1) {
+    pageError.value = '생산 품목, BOM 버전, 공장/라인/공정, 목표 수량, 계획일을 모두 올바르게 입력해주세요.'
     return
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.planDate)) {
@@ -429,6 +452,14 @@ async function closeOrder(order: WorkOrderResponse) {
           </label>
 
           <label class="wo-field">
+            <span class="wo-label">BOM 버전</span>
+            <select v-model="form.bomVersion" class="wo-control" :disabled="!form.itemCode || bomVersions.length === 0">
+              <option value="">BOM 버전 선택</option>
+              <option v-for="version in bomVersions" :key="version" :value="version">{{ version }}</option>
+            </select>
+          </label>
+
+          <label class="wo-field">
             <span class="wo-label">공장</span>
             <select v-model="formFactoryName" class="wo-control">
               <option value="">공장 선택</option>
@@ -468,6 +499,10 @@ async function closeOrder(order: WorkOrderResponse) {
             <strong>{{ selectedItem ? `${selectedItem.itemCode} · ${selectedItem.itemName}` : '품목 미선택' }}</strong>
           </div>
           <div>
+            <span class="wo-preview-label">BOM 버전</span>
+            <strong>{{ form.bomVersion || '버전 미선택' }}</strong>
+          </div>
+          <div>
             <span class="wo-preview-label">선택 라우팅</span>
             <strong>{{ selectedRouting ? `${selectedRouting.factoryName} / ${selectedRouting.lineName} / ${selectedRouting.operationName}` : '공장/라인/공정 미선택' }}</strong>
           </div>
@@ -498,6 +533,7 @@ async function closeOrder(order: WorkOrderResponse) {
                 <th>작업지시번호</th>
                 <th>품목</th>
                 <th>라우팅</th>
+                <th>BOM</th>
                 <th>상태</th>
                 <th>계획일</th>
               </tr>
@@ -507,11 +543,12 @@ async function closeOrder(order: WorkOrderResponse) {
                 <td class="wo-mono">{{ order.orderNo }}</td>
                 <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
                 <td><strong>{{ order.factoryName }} / {{ order.lineName }}</strong><span>{{ order.operationName }}</span></td>
+                <td class="wo-mono">{{ order.bomVersion }}</td>
                 <td class="wo-status-cell"><span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span></td>
                 <td class="wo-mono">{{ order.planDate }}</td>
               </tr>
               <tr v-if="recentOrders.length === 0">
-                <td colspan="5" class="wo-empty">등록된 작업지시가 없습니다.</td>
+                <td colspan="6" class="wo-empty">등록된 작업지시가 없습니다.</td>
               </tr>
             </tbody>
           </table>
@@ -599,6 +636,7 @@ async function closeOrder(order: WorkOrderResponse) {
                 <th>작업지시번호</th>
                 <th>품목</th>
                 <th>라우팅</th>
+                <th>BOM</th>
                 <th>목표</th>
                 <th>실적</th>
                 <th>진행률</th>
@@ -609,7 +647,7 @@ async function closeOrder(order: WorkOrderResponse) {
             </thead>
             <tbody>
               <tr v-if="workOrderStore.isLoading">
-                <td colspan="9" class="wo-empty"><Loader2 class="wo-empty-icon wo-spin" />데이터를 불러오고 있습니다.</td>
+                <td colspan="10" class="wo-empty"><Loader2 class="wo-empty-icon wo-spin" />데이터를 불러오고 있습니다.</td>
               </tr>
               <tr
                 v-for="order in workOrderStore.workOrders"
@@ -620,6 +658,7 @@ async function closeOrder(order: WorkOrderResponse) {
                 <td class="wo-mono">{{ order.orderNo }}</td>
                 <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
                 <td><strong>{{ order.factoryName }} / {{ order.lineName }}</strong><span>{{ order.operationSeq }}. {{ order.operationName }}</span></td>
+                <td class="wo-mono">{{ order.bomVersion }}</td>
                 <td class="wo-number">{{ formatNumber(order.targetQty) }}</td>
                 <td class="wo-number">{{ formatNumber(order.totalExecutedQty) }}</td>
                 <td><div class="wo-progress"><span :style="{ width: `${Math.min(order.progressRate, 100)}%` }"></span></div><span class="wo-progress-label">{{ order.progressRate }}%</span></td>
@@ -633,7 +672,7 @@ async function closeOrder(order: WorkOrderResponse) {
                 </td>
               </tr>
               <tr v-if="!workOrderStore.isLoading && workOrderStore.workOrders.length === 0">
-                <td colspan="9" class="wo-empty"><FileText class="wo-empty-icon" />조회된 작업지시가 없습니다.</td>
+                <td colspan="10" class="wo-empty"><FileText class="wo-empty-icon" />조회된 작업지시가 없습니다.</td>
               </tr>
             </tbody>
           </table>
@@ -654,6 +693,7 @@ async function closeOrder(order: WorkOrderResponse) {
           </div>
           <div class="wo-info-list">
             <div><span>생산 품목</span><strong>{{ selectedOrder.itemCode }} · {{ selectedOrder.itemName }}</strong></div>
+            <div><span>BOM 버전</span><strong>{{ selectedOrder.bomVersion }}</strong></div>
             <div><span>라우팅</span><strong>{{ selectedOrder.factoryName }} / {{ selectedOrder.lineName }} / {{ selectedOrder.operationName }}</strong></div>
             <div><span>계획일</span><strong>{{ selectedOrder.planDate }}</strong></div>
             <div><span>등록일</span><strong>{{ formatDateTime(selectedOrder.createdAt) }}</strong></div>

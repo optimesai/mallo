@@ -1,13 +1,18 @@
 package com.ssafy.demo_app.api.bom;
 
+import com.ssafy.demo_app.api.bom.dto.BomBulkRequest;
+import com.ssafy.demo_app.api.bom.dto.BomGroupResponse;
 import com.ssafy.demo_app.api.bom.dto.BomRequest;
 import com.ssafy.demo_app.api.bom.dto.BomResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseResponse;
 import com.ssafy.demo_app.api.bom.dto.BomReverseTreeResponse;
+import com.ssafy.demo_app.api.bom.dto.BomStatusUpdateRequest;
 import com.ssafy.demo_app.api.bom.dto.BomTreeResponse;
 import com.ssafy.demo_app.domain.bom.service.BomService;
 import com.ssafy.demo_app.global.response.ApiResponse;
+import com.ssafy.demo_app.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +24,26 @@ import java.util.List;
 public class BomController implements BomApi {
 
     private final BomService bomService;
+
+    @Override
+    public ResponseEntity<ApiResponse<PageResponse<BomGroupResponse>>> getBomGroups(
+            Pageable pageable,
+            String parentKeyword,
+            String childKeyword,
+            String bomVersion
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(bomService.getBomGroups(
+                pageable,
+                parentKeyword,
+                childKeyword,
+                bomVersion
+        )));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<List<BomResponse>>> getBomGroup(Integer parentItemId, String bomVersion) {
+        return ResponseEntity.ok(ApiResponse.success(bomService.getBomGroup(parentItemId, bomVersion)));
+    }
 
     @Override
     public ResponseEntity<ApiResponse<List<BomResponse>>> getBoms(
@@ -47,6 +72,14 @@ public class BomController implements BomApi {
     }
 
     @Override
+    public ResponseEntity<ApiResponse<List<BomResponse>>> createBoms(BomBulkRequest request) {
+        List<BomResponse> response = bomService.createBoms(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("BOM이 일괄 등록되었습니다.", response));
+    }
+
+    @Override
     public ResponseEntity<ApiResponse<BomResponse>> updateBom(Integer bomId, BomRequest request) {
         BomResponse response = bomService.updateBom(bomId, request);
         return ResponseEntity.ok(ApiResponse.success("BOM이 수정되었습니다.", response));
@@ -55,7 +88,13 @@ public class BomController implements BomApi {
     @Override
     public ResponseEntity<ApiResponse<Void>> deleteBom(Integer bomId) {
         bomService.deleteBom(bomId);
-        return ResponseEntity.ok(ApiResponse.success("BOM이 삭제되었습니다."));
+        return ResponseEntity.ok(ApiResponse.success("BOM이 비활성화되었습니다."));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<BomResponse>> updateBomStatus(Integer bomId, BomStatusUpdateRequest request) {
+        BomResponse response = bomService.updateBomStatus(bomId, request);
+        return ResponseEntity.ok(ApiResponse.success("BOM 상태가 변경되었습니다.", response));
     }
 
     @Override

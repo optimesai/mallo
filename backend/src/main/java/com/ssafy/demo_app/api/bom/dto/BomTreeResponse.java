@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -18,17 +17,17 @@ public class BomTreeResponse {
     private String itemName;
     private String itemType;
     private String unit;
-    private BigDecimal quantity;
+    private Integer quantity;
     private String bomVersion;
     private List<BomTreeResponse> children;
 
     public static BomTreeResponse root(ItemMaster item, List<BomTreeResponse> children) {
-        return of(item, BigDecimal.ONE, null, children);
+        return of(item, 1, null, children);
     }
 
     public static BomTreeResponse of(
             ItemMaster item,
-            BigDecimal quantity,
+            Integer quantity,
             String bomVersion,
             List<BomTreeResponse> children
     ) {

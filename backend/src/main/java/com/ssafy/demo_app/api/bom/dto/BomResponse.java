@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -23,8 +22,9 @@ public class BomResponse {
     private String childItemName;
     private String childItemType;
     private String childUnit;
-    private BigDecimal quantity;
+    private Integer quantity;
     private String bomVersion;
+    private String bomStatus;
     private LocalDateTime createdAt;
 
     public static BomResponse from(BomStructure bom) {
@@ -41,6 +41,7 @@ public class BomResponse {
                 bom.getChildItem().getUnit().name(),
                 bom.getQuantity(),
                 bom.getBomVersion(),
+                bom.getBomStatus().name(),
                 bom.getCreatedAt()
         );
     }

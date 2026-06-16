@@ -1,5 +1,4 @@
 package com.ssafy.demo_app.domain.production.service;
-import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 
 import com.ssafy.demo_app.api.production.dto.ProductionExecutionResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderCloseRequest;
@@ -10,10 +9,11 @@ import com.ssafy.demo_app.api.production.dto.WorkOrderMaterialRequirementRespons
 import com.ssafy.demo_app.api.production.dto.WorkOrderResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderStatusUpdateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
-import com.ssafy.demo_app.domain.bom.entity.BomStructure;
-import com.ssafy.demo_app.domain.bom.repository.BomStructureRepository;
+import com.ssafy.demo_app.domain.bom.service.BomRequirement;
+import com.ssafy.demo_app.domain.bom.service.BomService;
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
 import com.ssafy.demo_app.domain.inventory.entity.InventoryTransactionHistory;
+import com.ssafy.demo_app.domain.inventory.entity.TransactionType;
 import com.ssafy.demo_app.domain.inventory.repository.CurrentInventoryRepository;
 import com.ssafy.demo_app.domain.inventory.repository.InventoryTransactionHistoryRepository;
 import com.ssafy.demo_app.domain.item.entity.ItemMaster;
@@ -32,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -44,9 +43,10 @@ import java.util.Locale;
 public class WorkOrderServiceImpl implements WorkOrderService {
 
     private static final DateTimeFormatter ORDER_NO_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String DEFAULT_BOM_VERSION = "v1.0";
 
     private final WorkOrderRepository workOrderRepository;
-    private final BomStructureRepository bomStructureRepository;
+    private final BomService bomService;
     private final UserRepository userRepository;
     private final CurrentInventoryRepository currentInventoryRepository;
     private final InventoryTransactionHistoryRepository transactionHistoryRepository;
@@ -59,12 +59,15 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
         ItemMaster item = findProductionItem(request.getItemCode());
         FactoryRouting routing = findRouting(request.getRoutingId());
+        String bomVersion = normalizeBomVersion(request.getBomVersion());
+        bomService.validateActiveBomVersion(item, bomVersion);
 
         WorkOrder workOrder = new WorkOrder();
         workOrder.setOrderNo(generateOrderNo(request.getPlanDate()));
         workOrder.setItem(item);
         workOrder.setRouting(routing);
         workOrder.setTargetQty(request.getTargetQty());
+        workOrder.setBomVersion(bomVersion);
         workOrder.setPlanDate(request.getPlanDate());
         workOrder.setStatus(WorkOrder.OrderStatus.READY);
 
@@ -118,9 +121,14 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         WorkOrder workOrder = findWorkOrder(orderKey);
         validateEditable(workOrder);
 
-        workOrder.setItem(findProductionItem(request.getItemCode()));
+        ItemMaster item = findProductionItem(request.getItemCode());
+        String bomVersion = normalizeBomVersion(request.getBomVersion());
+        bomService.validateActiveBomVersion(item, bomVersion);
+
+        workOrder.setItem(item);
         workOrder.setRouting(findRouting(request.getRoutingId()));
         workOrder.setTargetQty(request.getTargetQty());
+        workOrder.setBomVersion(bomVersion);
         workOrder.setPlanDate(request.getPlanDate());
 
         return toResponse(workOrderRepository.save(workOrder));
@@ -190,17 +198,18 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             throw new BusinessException(ErrorCode.WORK_ORDER_STATUS_INVALID);
         }
 
-        List<BomStructure> bomList = bomStructureRepository.findByParentItem(workOrder.getItem());
-        if (bomList.isEmpty()) {
-            throw new BusinessException(ErrorCode.BOM_NOT_FOUND);
-        }
+        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
+                workOrder.getItem(),
+                workOrder.getBomVersion(),
+                workOrder.getTargetQty()
+        );
 
-        for (BomStructure bom : bomList) {
-            int requiredQty = calculateRequiredQty(bom, workOrder.getTargetQty()) - getIssuedQty(workOrder, bom.getChildItem());
+        for (BomRequirement requirement : requirements) {
+            int requiredQty = requirement.requiredQty() - getIssuedQty(workOrder, requirement.item());
             if (requiredQty <= 0) {
                 continue;
             }
-            int totalAvailableQty = currentInventoryRepository.findByItem(bom.getChildItem()).stream()
+            int totalAvailableQty = currentInventoryRepository.findByItem(requirement.item()).stream()
                     .mapToInt(CurrentInventory::getCurrentQty)
                     .sum();
 
@@ -209,9 +218,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             }
         }
 
-        for (BomStructure bom : bomList) {
-            ItemMaster childItem = bom.getChildItem();
-            int remainingQty = calculateRequiredQty(bom, workOrder.getTargetQty()) - getIssuedQty(workOrder, childItem);
+        for (BomRequirement requirement : requirements) {
+            ItemMaster childItem = requirement.item();
+            int remainingQty = requirement.requiredQty() - getIssuedQty(workOrder, childItem);
             if (remainingQty <= 0) {
                 continue;
             }
@@ -314,10 +323,14 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     private List<WorkOrderMaterialRequirementResponse> getMaterialRequirements(WorkOrder workOrder) {
-        return bomStructureRepository.findByParentItem(workOrder.getItem()).stream()
-                .map(bom -> {
-                    ItemMaster childItem = bom.getChildItem();
-                    int requiredQty = calculateRequiredQty(bom, workOrder.getTargetQty());
+        return bomService.calculateMaterialRequirements(
+                        workOrder.getItem(),
+                        workOrder.getBomVersion(),
+                        workOrder.getTargetQty()
+                )
+                .stream()
+                .map(requirement -> {
+                    ItemMaster childItem = requirement.item();
                     int issuedQty = transactionHistoryRepository.findByReasonDescContainingOrderByTransactionIdAsc(workOrder.getOrderNo()).stream()
                             .filter(history -> history.getItem().getItemId().equals(childItem.getItemId()))
                             .mapToInt(InventoryTransactionHistory::getQuantity)
@@ -331,17 +344,13 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                             childItem.getItemName(),
                             childItem.getItemType().name(),
                             childItem.getUnit().name(),
-                            bom.getQuantity(),
-                            requiredQty,
+                            requirement.bomQuantity(),
+                            requirement.requiredQty(),
                             issuedQty,
                             availableQty
                     );
                 })
                 .toList();
-    }
-
-    private int calculateRequiredQty(BomStructure bom, Integer targetQty) {
-        return bom.getQuantity().multiply(BigDecimal.valueOf(targetQty)).intValue();
     }
 
     private int getIssuedQty(WorkOrder workOrder, ItemMaster item) {
@@ -356,6 +365,10 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return order.getOrderNo().toLowerCase(Locale.ROOT).contains(keyword)
                 || order.getItem().getItemCode().toLowerCase(Locale.ROOT).contains(keyword)
                 || order.getItem().getItemName().toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private String normalizeBomVersion(String bomVersion) {
+        return bomVersion == null || bomVersion.isBlank() ? DEFAULT_BOM_VERSION : bomVersion.trim();
     }
 
     private String normalize(String value) {

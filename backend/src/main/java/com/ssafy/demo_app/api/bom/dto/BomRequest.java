@@ -1,15 +1,13 @@
 package com.ssafy.demo_app.api.bom.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -26,10 +24,10 @@ public class BomRequest {
     @NotNull(message = "자식 품목 ID는 필수입니다.")
     private Integer childItemId;
 
-    @Schema(description = "부모 1단위 생산에 필요한 자식 품목 소요량", example = "1.0000")
+    @Schema(description = "부모 1단위 생산에 필요한 자식 품목 정수 소요량", example = "1")
     @NotNull(message = "소요량은 필수입니다.")
-    @DecimalMin(value = "0.0001", message = "소요량은 0보다 커야 합니다.")
-    private BigDecimal quantity;
+    @Min(value = 1, message = "소요량은 1 이상이어야 합니다.")
+    private Integer quantity;
 
     @Schema(description = "BOM 버전", example = "v1.0")
     @Size(max = 20, message = "BOM 버전은 20자 이하여야 합니다.")

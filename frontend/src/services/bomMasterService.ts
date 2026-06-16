@@ -2,12 +2,16 @@ import { AxiosError } from 'axios'
 import { bomMasterApi } from '@/api/bomMasterApi'
 import type { ItemMasterResponse, ItemType } from '@/api/itemMasterApi'
 import type {
+  BomBulkRequest,
+  BomGroupResponse,
+  BomGroupSearchParams,
   BomMasterRequest,
   BomMasterResponse,
   BomMasterSearchParams,
   BomReverseResponse,
   BomTreeNode
 } from '@/api/bomMasterApi'
+import type { PageResponse } from '@/api/types'
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AxiosError) {
@@ -17,6 +21,24 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export const bomMasterService = {
+  async getBomGroups(params: BomGroupSearchParams = {}): Promise<PageResponse<BomGroupResponse>> {
+    try {
+      const response = await bomMasterApi.getBomGroups(params)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'BOM 목록을 불러오지 못했습니다.'))
+    }
+  },
+
+  async getBomGroup(parentItemId: number, bomVersion: string): Promise<BomMasterResponse[]> {
+    try {
+      const response = await bomMasterApi.getBomGroup(parentItemId, bomVersion)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'BOM 상세를 불러오지 못했습니다.'))
+    }
+  },
+
   async getBoms(params: BomMasterSearchParams = {}): Promise<BomMasterResponse[]> {
     try {
       const response = await bomMasterApi.getBoms(params)
@@ -35,6 +57,15 @@ export const bomMasterService = {
     }
   },
 
+  async createBoms(request: BomBulkRequest): Promise<BomMasterResponse[]> {
+    try {
+      const response = await bomMasterApi.createBoms(request)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'BOM 일괄 등록에 실패했습니다.'))
+    }
+  },
+
   async updateBom(bomId: number, request: BomMasterRequest): Promise<BomMasterResponse> {
     try {
       const response = await bomMasterApi.updateBom(bomId, request)
@@ -49,6 +80,15 @@ export const bomMasterService = {
       await bomMasterApi.deleteBom(bomId)
     } catch (error) {
       throw new Error(getErrorMessage(error, 'BOM 삭제에 실패했습니다.'))
+    }
+  },
+
+  async updateBomStatus(bomId: number, bomStatus: 'ACTIVE' | 'INACTIVE'): Promise<BomMasterResponse> {
+    try {
+      const response = await bomMasterApi.updateBomStatus(bomId, bomStatus)
+      return response.data
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'BOM 상태 변경에 실패했습니다.'))
     }
   },
 
@@ -99,8 +139,17 @@ export const bomMasterService = {
 
   async getItems(itemType?: ItemType, keyword?: string): Promise<ItemMasterResponse[]> {
     try {
-      const response = await bomMasterApi.getItems(itemType, keyword)
-      return response.data.content
+      const firstResponse = await bomMasterApi.getItems(itemType, keyword)
+      const firstPage = firstResponse.data
+      if (firstPage.totalPages <= 1) return firstPage.content
+
+      const restPages = await Promise.all(
+        Array.from({ length: firstPage.totalPages - 1 }, (_, index) => bomMasterApi.getItems(itemType, keyword, index + 1))
+      )
+      return [
+        firstPage.content,
+        ...restPages.map((response) => response.data.content)
+      ].flat()
     } catch (error) {
       throw new Error(getErrorMessage(error, '품목 목록을 불러오지 못했습니다.'))
     }

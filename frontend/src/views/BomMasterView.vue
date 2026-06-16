@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Boxes,
   ChevronDown,
@@ -16,11 +17,12 @@ import {
 import { useAuthStore } from '@/state/authStore'
 import { useBomMasterStore } from '@/state/bomMasterStore'
 import BomTreeList from '@/ui/BomTreeList.vue'
-import type { BomMasterRequest, BomMasterResponse, BomTreeNode } from '@/api/bomMasterApi'
+import type { BomGroupResponse, BomMasterRequest, BomMasterResponse, BomTreeNode } from '@/api/bomMasterApi'
 import type { ItemMasterResponse } from '@/api/itemMasterApi'
 
 const bomStore = useBomMasterStore()
 const authStore = useAuthStore()
+const router = useRouter()
 
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
@@ -30,7 +32,9 @@ const activeTab = ref<'list' | 'downward' | 'reverse'>('list')
 const filterParent = ref('')
 const filterChild = ref('')
 const filterVersion = ref('')
-const selectedBomGroupKey = ref<string | null>(null)
+const page = ref(0)
+const isFilterParentPickerOpen = ref(false)
+const isFilterChildPickerOpen = ref(false)
 
 const isFormOpen = ref(false)
 const editingBomId = ref<number | null>(null)
@@ -41,6 +45,13 @@ const form = ref({
   quantity: 1,
   bomVersion: 'v1.0'
 })
+const formLines = ref<Array<{
+  childItemId: number
+  childItemCode: string
+  childItemName: string
+  childItemType: string
+  quantity: number
+}>>([])
 const formParentKeyword = ref('')
 const formChildKeyword = ref('')
 const isFormParentPickerOpen = ref(false)
@@ -59,59 +70,37 @@ const isReversePickerOpen = ref(false)
 const hasSearchedReverse = ref(false)
 
 const canWrite = computed(() => ['ADMIN', 'MANAGER'].includes(authStore.user?.role || ''))
+const canDelete = computed(() => authStore.user?.role === 'ADMIN')
+const pageStart = computed(() => {
+  if (bomStore.bomGroups.totalElements === 0) return 0
+  return bomStore.bomGroups.page * bomStore.bomGroups.size + 1
+})
+const pageEnd = computed(() => {
+  return Math.min((bomStore.bomGroups.page + 1) * bomStore.bomGroups.size, bomStore.bomGroups.totalElements)
+})
 
-interface BomParentGroup {
+interface BomParentGroup extends BomGroupResponse {
   key: string
-  parentItemId: number
-  parentItemCode: string
-  parentItemName: string
-  parentItemType: string
-  bomVersion: string
-  childCount: number
-  createdAt: string
-  lines: BomMasterResponse[]
 }
 
-const bomParentGroups = computed<BomParentGroup[]>((() => {
-  const groups = new Map<string, BomParentGroup>()
-
-  bomStore.boms.forEach((bom) => {
-    const key = `${bom.parentItemId}:${bom.bomVersion}`
-    const group = groups.get(key)
-
-    if (group) {
-      group.lines.push(bom)
-      group.childCount = group.lines.length
-      if (bom.createdAt < group.createdAt) group.createdAt = bom.createdAt
-      return
-    }
-
-    groups.set(key, {
-      key,
-      parentItemId: bom.parentItemId,
-      parentItemCode: bom.parentItemCode,
-      parentItemName: bom.parentItemName,
-      parentItemType: bom.parentItemType,
-      bomVersion: bom.bomVersion,
-      childCount: 1,
-      createdAt: bom.createdAt,
-      lines: [bom]
-    })
-  })
-
-  return Array.from(groups.values())
-}))
-
-const selectedBomGroup = computed(() => {
-  if (!selectedBomGroupKey.value) return null
-  return bomParentGroups.value.find((group) => group.key === selectedBomGroupKey.value) || null
+const bomParentGroups = computed<BomParentGroup[]>(() => {
+  return bomStore.bomGroups.content.map((group) => ({
+    ...group,
+    key: `${group.parentItemId}:${group.bomVersion}`
+  }))
 })
 
 const stats = computed(() => {
-  const versions = new Set(bomStore.boms.map((bom) => bom.bomVersion)).size
-  const parents = new Set(bomStore.boms.map((bom) => bom.parentItemId)).size
-  const children = new Set(bomStore.boms.map((bom) => bom.childItemId)).size
-  return { total: bomParentGroups.value.length, versions, parents, children }
+  const groups = bomStore.bomGroupStats
+  const parents = new Set(groups.map((bom) => bom.parentItemId)).size
+  const versions = new Set(groups.map((bom) => bom.bomVersion)).size
+  const children = groups.reduce((sum, group) => sum + group.childCount, 0)
+  return {
+    total: bomStore.bomGroups.totalElements,
+    versions,
+    parents,
+    children
+  }
 })
 
 const selectedParent = computed(() => {
@@ -124,6 +113,14 @@ const selectedChild = computed(() => {
 
 const filteredDownwardItems = computed(() => {
   return filterItemCandidates(bomStore.parentItems, downwardKeyword.value)
+})
+
+const filteredParentFilterItems = computed(() => {
+  return filterItemCandidates(bomStore.parentItems, filterParent.value)
+})
+
+const filteredChildFilterItems = computed(() => {
+  return filterItemCandidates(bomStore.childItems, filterChild.value)
 })
 
 const filteredReverseItems = computed(() => {
@@ -154,18 +151,22 @@ onMounted(async () => {
 async function fetchPageData() {
   try {
     pageError.value = null
+    closeFilterPickers()
+    const searchParams = {
+      parentKeyword: filterParent.value || undefined,
+      childKeyword: filterChild.value || undefined,
+      bomVersion: filterVersion.value || undefined
+    }
     await Promise.all([
-      bomStore.loadBoms({
-        parentKeyword: filterParent.value || undefined,
-        childKeyword: filterChild.value || undefined,
-        bomVersion: filterVersion.value || undefined
+      bomStore.loadBomGroups({
+        page: page.value,
+        size: 10,
+        ...searchParams
       }),
+      bomStore.loadBomGroupStats(searchParams),
       bomStore.loadParentItems(),
       bomStore.loadChildItems()
     ])
-    if (selectedBomGroupKey.value && !bomParentGroups.value.some((group) => group.key === selectedBomGroupKey.value)) {
-      selectedBomGroupKey.value = null
-    }
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : 'BOM 데이터를 불러오지 못했습니다.'
   }
@@ -175,11 +176,22 @@ function resetFilters() {
   filterParent.value = ''
   filterChild.value = ''
   filterVersion.value = ''
+  page.value = 0
+  closeFilterPickers()
 }
 
-function selectGroup(group: BomParentGroup) {
-  selectedBomGroupKey.value = selectedBomGroupKey.value === group.key ? null : group.key
-  bomStore.selectBom(group.lines[0] || null)
+async function selectGroup(group: BomParentGroup) {
+  await router.push({
+    name: 'bom-master-detail',
+    params: { parentItemId: group.parentItemId },
+    query: { bomVersion: group.bomVersion }
+  })
+}
+
+async function changePage(nextPage: number) {
+  if (nextPage < 0 || nextPage >= bomStore.bomGroups.totalPages) return
+  page.value = nextPage
+  await fetchPageData()
 }
 
 function filterItemCandidates(items: ItemMasterResponse[], keyword: string) {
@@ -193,6 +205,47 @@ function filterItemCandidates(items: ItemMasterResponse[], keyword: string) {
   })
 
   return candidates.slice(0, 8)
+}
+
+async function refreshParentCandidates(keyword: string) {
+  try {
+    await bomStore.loadParentItems(keyword.trim() || undefined)
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '상위 품목 목록을 불러오지 못했습니다.'
+  }
+}
+
+async function refreshChildCandidates(keyword: string) {
+  try {
+    await bomStore.loadChildItems(keyword.trim() || undefined)
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '구성 품목 목록을 불러오지 못했습니다.'
+  }
+}
+
+function selectParentFilterItem(item: ItemMasterResponse) {
+  filterParent.value = item.itemCode
+  isFilterParentPickerOpen.value = false
+}
+
+function selectChildFilterItem(item: ItemMasterResponse) {
+  filterChild.value = item.itemCode
+  isFilterChildPickerOpen.value = false
+}
+
+async function handleFilterParentInput() {
+  isFilterParentPickerOpen.value = filterParent.value.trim().length > 0
+  if (isFilterParentPickerOpen.value) await refreshParentCandidates(filterParent.value)
+}
+
+async function handleFilterChildInput() {
+  isFilterChildPickerOpen.value = filterChild.value.trim().length > 0
+  if (isFilterChildPickerOpen.value) await refreshChildCandidates(filterChild.value)
+}
+
+function closeFilterPickers() {
+  isFilterParentPickerOpen.value = false
+  isFilterChildPickerOpen.value = false
 }
 
 function buildLocalDownwardTree(item: ItemMasterResponse, visitedItemIds: Set<number>): BomTreeNode {
@@ -255,8 +308,7 @@ function clearDownwardItem() {
   downwardVersion.value = ''
   downwardBaseQuantity.value = 1
   hasSearchedDownward.value = false
-  bomStore.parentVersions = []
-  bomStore.parentTree = []
+  bomStore.clearParentSearchState()
 }
 
 async function selectReverseItem(item: ItemMasterResponse) {
@@ -272,26 +324,25 @@ function clearReverseItem() {
   reverseKeyword.value = ''
   reverseVersion.value = ''
   hasSearchedReverse.value = false
-  bomStore.childVersions = []
-  bomStore.childParentTree = []
+  bomStore.clearChildSearchState()
 }
 
-function handleDownwardKeywordInput() {
+async function handleDownwardKeywordInput() {
   selectedDownwardItem.value = null
   downwardVersion.value = ''
   hasSearchedDownward.value = false
-  bomStore.parentVersions = []
-  bomStore.parentTree = []
+  bomStore.clearParentSearchState()
   isDownwardPickerOpen.value = downwardKeyword.value.trim().length > 0
+  if (isDownwardPickerOpen.value) await refreshParentCandidates(downwardKeyword.value)
 }
 
-function handleReverseKeywordInput() {
+async function handleReverseKeywordInput() {
   selectedReverseItem.value = null
   reverseVersion.value = ''
   hasSearchedReverse.value = false
-  bomStore.childVersions = []
-  bomStore.childParentTree = []
+  bomStore.clearChildSearchState()
   isReversePickerOpen.value = reverseKeyword.value.trim().length > 0
+  if (isReversePickerOpen.value) await refreshChildCandidates(reverseKeyword.value)
 }
 
 function selectFormParentItem(item: ItemMasterResponse) {
@@ -306,9 +357,10 @@ function clearFormParentItem() {
   isFormParentPickerOpen.value = false
 }
 
-function handleFormParentKeywordInput() {
+async function handleFormParentKeywordInput() {
   form.value.parentItemId = null
   isFormParentPickerOpen.value = formParentKeyword.value.trim().length > 0
+  if (isFormParentPickerOpen.value) await refreshParentCandidates(formParentKeyword.value)
 }
 
 function selectFormChildItem(item: ItemMasterResponse) {
@@ -323,9 +375,10 @@ function clearFormChildItem() {
   isFormChildPickerOpen.value = false
 }
 
-function handleFormChildKeywordInput() {
+async function handleFormChildKeywordInput() {
   form.value.childItemId = null
   isFormChildPickerOpen.value = formChildKeyword.value.trim().length > 0
+  if (isFormChildPickerOpen.value) await refreshChildCandidates(formChildKeyword.value)
 }
 
 function openCreateForm() {
@@ -337,6 +390,7 @@ function openCreateForm() {
     quantity: 1,
     bomVersion: 'v1.0'
   }
+  formLines.value = []
   formParentKeyword.value = ''
   formChildKeyword.value = ''
   isFormParentPickerOpen.value = false
@@ -354,6 +408,7 @@ function openEditForm(bom: BomMasterResponse) {
     quantity: Number(bom.quantity),
     bomVersion: bom.bomVersion
   }
+  formLines.value = []
   formParentKeyword.value = `${bom.parentItemCode} / ${bom.parentItemName}`
   formChildKeyword.value = `${bom.childItemCode} / ${bom.childItemName}`
   isFormParentPickerOpen.value = false
@@ -372,6 +427,7 @@ function openAddChildForm(group: BomParentGroup) {
     quantity: 1,
     bomVersion: group.bomVersion
   }
+  formLines.value = []
   formParentKeyword.value = parentItem
     ? `${parentItem.itemCode} / ${parentItem.itemName}`
     : `${group.parentItemCode} / ${group.parentItemName}`
@@ -389,21 +445,72 @@ function closeForm() {
 
 function validateForm() {
   if (!form.value.parentItemId) return '상위 품목을 선택해주세요.'
-  if (!form.value.childItemId) return '구성 품목을 선택해주세요.'
-  if (form.value.parentItemId === form.value.childItemId) return '상위 품목과 구성 품목은 같을 수 없습니다.'
-  if (!form.value.quantity || form.value.quantity <= 0) return '소요량은 0보다 커야 합니다.'
+  if (editingBomId.value) {
+    if (!form.value.childItemId) return '구성 품목을 선택해주세요.'
+    if (form.value.parentItemId === form.value.childItemId) return '상위 품목과 구성 품목은 같을 수 없습니다.'
+    if (!Number.isInteger(form.value.quantity) || form.value.quantity <= 0) return '소요량은 1 이상의 정수여야 합니다.'
+  } else if (buildFormLines().length === 0) {
+    return '구성 품목을 1개 이상 추가해주세요.'
+  }
   if ((form.value.bomVersion || '').length > 20) return 'BOM 버전은 20자 이하여야 합니다.'
   if (selectedParent.value?.itemType === 'RAW') return '상위 품목은 원자재가 될 수 없습니다.'
-  if (selectedChild.value?.itemType === 'FG') return '구성 품목은 완제품이 될 수 없습니다.'
+  if (editingBomId.value && selectedChild.value?.itemType === 'FG') return '구성 품목은 완제품이 될 수 없습니다.'
   return null
 }
 
+function buildFormLines() {
+  const lines = [...formLines.value]
+  if (form.value.childItemId && selectedChild.value) {
+    lines.push({
+      childItemId: form.value.childItemId,
+      childItemCode: selectedChild.value.itemCode,
+      childItemName: selectedChild.value.itemName,
+      childItemType: selectedChild.value.itemType,
+      quantity: normalizeQuantity(form.value.quantity)
+    })
+  }
+  return lines
+}
+
+function addFormLine() {
+  if (!selectedChild.value || !form.value.childItemId) {
+    formError.value = '구성 품목을 선택해주세요.'
+    return
+  }
+  if (form.value.parentItemId === form.value.childItemId) {
+    formError.value = '상위 품목과 구성 품목은 같을 수 없습니다.'
+    return
+  }
+  if (selectedChild.value.itemType === 'FG') {
+    formError.value = '구성 품목은 완제품이 될 수 없습니다.'
+    return
+  }
+  if (formLines.value.some((line) => line.childItemId === form.value.childItemId)) {
+    formError.value = '이미 추가한 구성 품목입니다.'
+    return
+  }
+  formLines.value.push({
+    childItemId: form.value.childItemId,
+    childItemCode: selectedChild.value.itemCode,
+    childItemName: selectedChild.value.itemName,
+    childItemType: selectedChild.value.itemType,
+    quantity: normalizeQuantity(form.value.quantity)
+  })
+  clearFormChildItem()
+  form.value.quantity = 1
+  formError.value = null
+}
+
+function removeFormLine(childItemId: number) {
+  formLines.value = formLines.value.filter((line) => line.childItemId !== childItemId)
+}
+
 function normalizeQuantity(value: number) {
-  return Number(Number(value).toFixed(2))
+  return Math.max(1, Math.trunc(Number(value) || 1))
 }
 
 function formatQuantity(value: number) {
-  return Number(value || 0).toFixed(2)
+  return normalizeQuantity(value).toLocaleString()
 }
 
 async function submitForm() {
@@ -413,49 +520,70 @@ async function submitForm() {
     return
   }
 
-  const request: BomMasterRequest = {
-    parentItemId: form.value.parentItemId as number,
-    childItemId: form.value.childItemId as number,
-    quantity: normalizeQuantity(form.value.quantity),
-    bomVersion: form.value.bomVersion.trim() || undefined
-  }
-
   try {
     formError.value = null
-    const nextSelectedGroupKey = `${request.parentItemId}:${request.bomVersion || 'v1.0'}`
     if (editingBomId.value) {
+      const request: BomMasterRequest = {
+        parentItemId: form.value.parentItemId as number,
+        childItemId: form.value.childItemId as number,
+        quantity: normalizeQuantity(form.value.quantity),
+        bomVersion: form.value.bomVersion.trim() || undefined
+      }
       await bomStore.updateBom(editingBomId.value, request)
       showToast('BOM이 수정되었습니다.')
     } else {
-      await bomStore.createBom(request)
-      showToast('BOM이 등록되었습니다.')
+      const lines = buildFormLines()
+      const childItemIds = new Set(lines.map((line) => line.childItemId))
+      if (childItemIds.size !== lines.length) {
+        formError.value = '구성 품목이 중복되었습니다.'
+        return
+      }
+      await bomStore.createBoms({
+        parentItemId: form.value.parentItemId as number,
+        bomVersion: form.value.bomVersion.trim() || undefined,
+        lines: lines.map((line) => ({
+          childItemId: line.childItemId,
+          quantity: line.quantity
+        }))
+      })
+      showToast('BOM이 일괄 등록되었습니다.')
     }
     closeForm()
+    page.value = 0
     await fetchPageData()
-    selectedBomGroupKey.value = nextSelectedGroupKey
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'BOM 저장에 실패했습니다.'
   }
 }
 
 async function deleteBom(bom: BomMasterResponse) {
-  if (!canWrite.value) return
-  if (!confirm(`${bom.parentItemCode} > ${bom.childItemCode} BOM을 삭제하시겠습니까?`)) return
+  if (!canDelete.value) return
+  if (!confirm(`${bom.parentItemCode} > ${bom.childItemCode} BOM을 비활성화하시겠습니까?`)) return
 
   try {
     await bomStore.deleteBom(bom.bomId)
-    if (selectedBomGroupKey.value && !bomParentGroups.value.some((group) => group.key === selectedBomGroupKey.value)) {
-      selectedBomGroupKey.value = null
-    }
-    showToast('BOM이 삭제되었습니다.')
+    await fetchPageData()
+    showToast('BOM이 비활성화되었습니다.')
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'BOM 삭제에 실패했습니다.')
+    alert(err instanceof Error ? err.message : 'BOM 비활성화에 실패했습니다.')
+  }
+}
+
+async function toggleBomStatus(bom: BomMasterResponse) {
+  if (!canWrite.value) return
+  const nextStatus = bom.bomStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+  try {
+    await bomStore.updateBomStatus(bom.bomId, nextStatus)
+    await fetchPageData()
+    showToast(`BOM 상태가 ${nextStatus === 'ACTIVE' ? '활성' : '비활성'}으로 변경되었습니다.`)
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'BOM 상태 변경에 실패했습니다.')
   }
 }
 
 async function loadDownwardVersions() {
   if (!selectedDownwardItem.value) {
-    bomStore.parentVersions = []
+    bomStore.clearParentSearchState()
     downwardVersion.value = ''
     return
   }
@@ -470,7 +598,7 @@ async function loadDownwardVersions() {
 
 async function loadReverseVersions() {
   if (!selectedReverseItem.value) {
-    bomStore.childVersions = []
+    bomStore.clearChildSearchState()
     reverseVersion.value = ''
     return
   }
@@ -485,7 +613,7 @@ async function loadReverseVersions() {
 
 async function searchDownwardTree() {
   if (!selectedDownwardItem.value) {
-    bomStore.parentTree = []
+    bomStore.clearParentSearchState()
     hasSearchedDownward.value = false
     pageError.value = '정전개할 상위 품목을 선택해주세요.'
     return
@@ -502,7 +630,7 @@ async function searchDownwardTree() {
 
 async function searchReverse() {
   if (!selectedReverseItem.value) {
-    bomStore.childParentTree = []
+    bomStore.clearChildSearchState()
     hasSearchedReverse.value = false
     pageError.value = '역전개할 구성 품목을 선택해주세요.'
     return
@@ -511,6 +639,7 @@ async function searchReverse() {
   try {
     pageError.value = null
     await bomStore.loadChildParentTree(selectedReverseItem.value.itemCode, reverseVersion.value || undefined)
+    await bomStore.loadChildParents(selectedReverseItem.value.itemCode, reverseVersion.value || undefined)
     hasSearchedReverse.value = true
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : 'BOM 역전개 데이터를 불러오지 못했습니다.'
@@ -590,7 +719,7 @@ function formatDateTime(value: string) {
     </div>
 
     <section v-if="activeTab === 'list'" class="bom-section">
-      <div class="bom-panel">
+      <div class="bom-panel bom-query-panel">
         <div class="bom-panel-header">
           <span class="bom-panel-title"><Search /> 조회 검색 조건</span>
           <button type="button" class="bom-icon-button" @click="isSearchExpanded = !isSearchExpanded">
@@ -598,13 +727,55 @@ function formatDateTime(value: string) {
           </button>
         </div>
         <div v-show="isSearchExpanded" class="bom-filter-grid">
-          <label class="bom-field">
+          <label class="bom-field bom-picker">
             <span class="bom-label">상위 품목</span>
-            <input v-model="filterParent" class="bom-input" placeholder="품목 ID, 코드, 이름" @keyup.enter="fetchPageData">
+            <input
+              v-model="filterParent"
+              class="bom-input"
+              placeholder="품목 ID, 코드, 이름"
+              @focus="isFilterParentPickerOpen = filterParent.trim().length > 0"
+              @input="handleFilterParentInput"
+              @keyup.enter="fetchPageData"
+            >
+            <div v-if="isFilterParentPickerOpen && filterParent.trim().length > 0" class="bom-picker-menu">
+              <button
+                v-for="item in filteredParentFilterItems"
+                :key="item.itemId"
+                type="button"
+                class="bom-picker-option"
+                @click="selectParentFilterItem(item)"
+              >
+                <span>{{ item.itemCode }}</span>
+                <strong>{{ item.itemName }}</strong>
+                <em>{{ item.itemType }}</em>
+              </button>
+              <div v-if="filteredParentFilterItems.length === 0" class="bom-picker-empty">검색된 상위 품목이 없습니다.</div>
+            </div>
           </label>
-          <label class="bom-field">
+          <label class="bom-field bom-picker">
             <span class="bom-label">구성 품목</span>
-            <input v-model="filterChild" class="bom-input" placeholder="품목 ID, 코드, 이름" @keyup.enter="fetchPageData">
+            <input
+              v-model="filterChild"
+              class="bom-input"
+              placeholder="품목 ID, 코드, 이름"
+              @focus="isFilterChildPickerOpen = filterChild.trim().length > 0"
+              @input="handleFilterChildInput"
+              @keyup.enter="fetchPageData"
+            >
+            <div v-if="isFilterChildPickerOpen && filterChild.trim().length > 0" class="bom-picker-menu">
+              <button
+                v-for="item in filteredChildFilterItems"
+                :key="item.itemId"
+                type="button"
+                class="bom-picker-option"
+                @click="selectChildFilterItem(item)"
+              >
+                <span>{{ item.itemCode }}</span>
+                <strong>{{ item.itemName }}</strong>
+                <em>{{ item.itemType }}</em>
+              </button>
+              <div v-if="filteredChildFilterItems.length === 0" class="bom-picker-empty">검색된 구성 품목이 없습니다.</div>
+            </div>
           </label>
           <label class="bom-field">
             <span class="bom-label">BOM 버전</span>
@@ -619,7 +790,7 @@ function formatDateTime(value: string) {
 
       <div class="bom-panel">
         <div class="bom-toolbar">
-          <div class="bom-toolbar-meta">조회 결과 <span>{{ bomParentGroups.length }}</span>개 BOM</div>
+          <div class="bom-toolbar-meta">조회 결과 <span>{{ bomStore.bomGroups.totalElements }}</span>개 BOM</div>
           <div class="bom-toolbar-actions">
             <button type="button" class="bom-button bom-button-muted" @click="fetchPageData">
               <RefreshCw /> 새로고침
@@ -639,25 +810,25 @@ function formatDateTime(value: string) {
                 <th>유형</th>
                 <th class="bom-center">구성 품목 수</th>
                 <th>버전</th>
+                <th>상태</th>
                 <th>등록일</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="bomStore.isLoading">
-                <td colspan="6" class="bom-empty"><Loader2 class="bom-spin" /> 데이터를 가져오고 있습니다...</td>
+                <td colspan="7" class="bom-empty"><Loader2 class="bom-spin" /> 데이터를 가져오고 있습니다...</td>
               </tr>
               <tr v-else-if="bomParentGroups.length === 0">
-                <td colspan="6" class="bom-empty">조회된 BOM 데이터가 없습니다.</td>
+                <td colspan="7" class="bom-empty">조회된 BOM 데이터가 없습니다.</td>
               </tr>
               <tr
                 v-for="(group, index) in bomParentGroups"
                 v-else
                 :key="group.key"
                 class="bom-row"
-                :class="{ 'is-selected': selectedBomGroup?.key === group.key }"
                 @click="selectGroup(group)"
               >
-                <td>{{ index + 1 }}</td>
+                <td>{{ bomStore.bomGroups.page * bomStore.bomGroups.size + index + 1 }}</td>
                 <td>
                   <div class="bom-item-main">{{ group.parentItemCode }}</div>
                   <div class="bom-item-sub">{{ group.parentItemName }}</div>
@@ -665,69 +836,28 @@ function formatDateTime(value: string) {
                 <td><span class="bom-badge">{{ group.parentItemType }}</span></td>
                 <td class="bom-center">{{ group.childCount }} 개</td>
                 <td><span class="bom-version">{{ group.bomVersion }}</span></td>
+                <td>
+                  <span class="bom-status" :class="group.bomStatus === 'ACTIVE' ? 'is-active' : 'is-inactive'">
+                    {{ group.bomStatus === 'ACTIVE' ? '활성' : '비활성' }}
+                  </span>
+                </td>
                 <td>{{ formatDateTime(group.createdAt) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm app-font-strong app-text-muted">
+            총 {{ bomStore.bomGroups.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ bomStore.bomGroups.size }}건씩 · {{ bomStore.bomGroups.page + 1 }} / {{ Math.max(bomStore.bomGroups.totalPages, 1) }} 페이지
+          </p>
+          <div class="flex gap-2">
+            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(0)">처음</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(bomStore.bomGroups.page - 1)">이전</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.page + 1)">다음</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.totalPages - 1)">마지막</button>
+          </div>
+        </div>
       </div>
-
-      <aside v-if="selectedBomGroup" class="bom-detail-panel">
-        <div>
-          <p class="bom-detail-kicker">선택 BOM 상세</p>
-          <h2 class="bom-detail-title">{{ selectedBomGroup.parentItemCode }} / {{ selectedBomGroup.parentItemName }}</h2>
-        </div>
-        <div class="bom-detail-grid">
-          <div><span>상위 품목</span><strong>{{ selectedBomGroup.parentItemName }}</strong></div>
-          <div><span>품목 유형</span><strong>{{ selectedBomGroup.parentItemType }}</strong></div>
-          <div><span>구성 품목</span><strong>{{ selectedBomGroup.childCount }} 개</strong></div>
-          <div><span>버전</span><strong>{{ selectedBomGroup.bomVersion }}</strong></div>
-        </div>
-        <div class="bom-detail-lines">
-          <div class="bom-detail-lines-header">
-            <span>구성 품목 목록</span>
-            <div class="bom-detail-lines-actions">
-              <span>{{ selectedBomGroup.lines.length }}건</span>
-              <button v-if="canWrite" type="button" class="bom-button bom-button-primary" @click="openAddChildForm(selectedBomGroup)">
-                <Plus /> 구성 품목 추가
-              </button>
-            </div>
-          </div>
-          <div class="bom-table-wrap">
-            <table class="bom-table bom-detail-table">
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>구성 품목</th>
-                  <th>유형</th>
-                  <th>소요량</th>
-                  <th>단위</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(line, index) in selectedBomGroup.lines" :key="line.bomId">
-                  <td>{{ index + 1 }}</td>
-                  <td>
-                    <div class="bom-item-main">{{ line.childItemCode }}</div>
-                    <div class="bom-item-sub">{{ line.childItemName }}</div>
-                  </td>
-                  <td><span class="bom-badge">{{ line.childItemType }}</span></td>
-                  <td class="bom-number">{{ formatQuantity(line.quantity) }}</td>
-                  <td>{{ line.childUnit }}</td>
-                  <td @click.stop>
-                    <div class="bom-row-actions">
-                      <button v-if="canWrite" type="button" class="bom-table-button" @click="openEditForm(line)"><Pencil /></button>
-                      <button v-if="canWrite" type="button" class="bom-table-button is-danger" @click="deleteBom(line)"><Trash2 /></button>
-                      <span v-if="!canWrite" class="bom-readonly">조회 전용</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </aside>
     </section>
 
     <section v-else-if="activeTab === 'downward'" class="bom-section">
@@ -847,6 +977,39 @@ function formatDateTime(value: string) {
           empty-text="구성 품목을 선택하면 상위 제품 구조가 표시됩니다."
         />
       </div>
+
+      <div v-if="hasSearchedReverse" class="bom-panel">
+        <div class="bom-panel-header">
+          <span class="bom-panel-title">상위 사용처 목록</span>
+          <span class="bom-toolbar-meta">{{ bomStore.childParents.length }}건</span>
+        </div>
+        <div class="bom-table-wrap">
+          <table class="bom-table bom-detail-table">
+            <thead>
+              <tr>
+                <th>상위 품목</th>
+                <th>유형</th>
+                <th>소요량</th>
+                <th>버전</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="parent in bomStore.childParents" :key="parent.bomId">
+                <td>
+                  <div class="bom-item-main">{{ parent.parentItemCode }}</div>
+                  <div class="bom-item-sub">{{ parent.parentItemName }}</div>
+                </td>
+                <td><span class="bom-badge">{{ parent.parentItemType }}</span></td>
+                <td class="bom-number">{{ formatQuantity(parent.quantity) }}</td>
+                <td><span class="bom-version">{{ parent.bomVersion }}</span></td>
+              </tr>
+              <tr v-if="bomStore.childParents.length === 0">
+                <td colspan="4" class="bom-empty">상위 사용처가 없습니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <div v-if="isFormOpen" class="bom-modal-backdrop">
@@ -923,10 +1086,43 @@ function formatDateTime(value: string) {
           </div>
         </div>
 
+        <div v-if="!editingBomId" class="bom-form-lines">
+          <button type="button" class="bom-button bom-button-muted" @click="addFormLine">
+            <Plus /> 구성 품목 추가
+          </button>
+          <div v-if="formLines.length > 0" class="bom-table-wrap">
+            <table class="bom-table bom-detail-table">
+              <thead>
+                <tr>
+                  <th>구성 품목</th>
+                  <th>유형</th>
+                  <th>소요량</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="line in formLines" :key="line.childItemId">
+                  <td>
+                    <div class="bom-item-main">{{ line.childItemCode }}</div>
+                    <div class="bom-item-sub">{{ line.childItemName }}</div>
+                  </td>
+                  <td><span class="bom-badge">{{ line.childItemType }}</span></td>
+                  <td class="bom-number">{{ formatQuantity(line.quantity) }}</td>
+                  <td>
+                    <button type="button" class="bom-table-button is-danger" @click="removeFormLine(line.childItemId)">
+                      <Trash2 />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="bom-form-grid">
           <label class="bom-field">
             <span class="bom-label">소요량</span>
-            <input v-model.number="form.quantity" type="number" min="0.01" step="0.01" class="bom-input" @blur="form.quantity = normalizeQuantity(form.quantity)">
+            <input v-model.number="form.quantity" type="number" min="1" step="1" class="bom-input" @blur="form.quantity = normalizeQuantity(form.quantity)">
           </label>
           <label class="bom-field">
             <span class="bom-label">BOM 버전</span>
@@ -970,8 +1166,8 @@ function formatDateTime(value: string) {
   --bom-radius-pill: var(--radius-pill);
   --bom-shadow-panel: var(--shadow-panel);
   --bom-font-size-2xs: 0.625rem;
-  --bom-font-size-xs: var(--radius-section);
-  --bom-font-size-sm: var(--radius-panel);
+  --bom-font-size-xs: 0.75rem;
+  --bom-font-size-sm: 0.875rem;
   --bom-font-size-lg: 1.25rem;
   --bom-font-size-xl: 1.5rem;
   --bom-font-weight-title: var(--font-weight-title);
@@ -1296,6 +1492,11 @@ function formatDateTime(value: string) {
   overflow-x: auto;
 }
 
+.bom-form-lines {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .bom-table {
   width: 100%;
   min-width: 1120px;
@@ -1345,7 +1546,8 @@ function formatDateTime(value: string) {
 }
 
 .bom-badge,
-.bom-version {
+.bom-version,
+.bom-status {
   display: inline-flex;
   align-items: center;
   padding: 0.1875rem 0.5rem;
@@ -1356,9 +1558,20 @@ function formatDateTime(value: string) {
   font-weight: var(--bom-font-weight-label);
 }
 
+.bom-status.is-active {
+  color: var(--bom-color-success);
+  background: var(--bom-color-success-soft);
+}
+
+.bom-status.is-inactive {
+  color: var(--bom-color-text-muted);
+  background: var(--bom-color-surface-muted);
+}
+
 .bom-table-button {
-  width: 2rem;
+  min-width: 2rem;
   height: 2rem;
+  padding: 0 0.5rem;
   color: var(--bom-color-primary);
   background: var(--bom-color-primary-soft);
   border-radius: var(--bom-radius-control);
@@ -1574,9 +1787,10 @@ function formatDateTime(value: string) {
   inset: 0;
   z-index: 50;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto;
   background: rgb(15 23 42 / 0.45);
 }
 
@@ -1584,7 +1798,29 @@ function formatDateTime(value: string) {
   display: grid;
   gap: 1rem;
   width: min(36rem, 100%);
+  max-height: calc(100vh - 2rem);
   padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.bom-modal-header {
+  position: sticky;
+  top: -1.5rem;
+  z-index: 2;
+  margin: -1.5rem -1.5rem 0;
+  padding: 1.5rem 1.5rem 1rem;
+  background: var(--bom-color-surface);
+  border-bottom: 1px solid var(--bom-color-border);
+}
+
+.bom-modal-actions {
+  position: sticky;
+  bottom: -1.5rem;
+  z-index: 2;
+  margin: 0 -1.5rem -1.5rem;
+  padding: 1rem 1.5rem 1.5rem;
+  background: var(--bom-color-surface);
+  border-top: 1px solid var(--bom-color-border);
 }
 
 .bom-form-grid {
