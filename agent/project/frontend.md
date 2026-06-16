@@ -156,6 +156,8 @@ API 응답 타입(`InboundReceiptResponse` 등)은 api 계층에 정의하고, S
 |------|------|--------|------|
 | `/` | `home` | `HomeView` | 대시보드 |
 | `/me` | `my-info` | `MyInfoView` | 내 정보 |
+| `/master/boms` | `bom-master` | `BomMasterView` | BOM 그룹 목록 |
+| `/master/boms/:parentItemId` | `bom-master-detail` | `BomMasterDetailView` | BOM 그룹 상세 |
 | `/inbound/receipt` | `inbound-receipt` | `InboundReceiptView` | 입고 등록 |
 | `/inbound/stack` | `inbound-stack` | `InboundStackView` | 창고 적재 |
 | `/inventory/status` | `inventory-status` | `InventoryStatusView` | 현재고 현황 |

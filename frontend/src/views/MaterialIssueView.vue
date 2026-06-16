@@ -434,7 +434,7 @@ async function selectRow(order: WorkOrderResponse) {
                 <td class="px-5 py-4 app-muted app-font-strong uppercase">{{ mat.unit }}</td>
                 <!-- 단위 소요 비율 -->
                 <td class="px-5 py-4 text-right font-mono app-muted">
-                  {{ Number(mat.bomQuantity).toFixed(2) }}
+                  {{ Number(mat.bomQuantity).toLocaleString() }}
                 </td>
                 <!-- 총 필요 수량 -->
                 <td class="px-5 py-4 text-right app-font-strong app-text-strong">

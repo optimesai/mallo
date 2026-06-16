@@ -33,6 +33,9 @@ public class WorkOrder extends BaseTimeEntity {
     @Column(name = "target_qty", nullable = false)
     private Integer targetQty;
 
+    @Column(name = "bom_version", nullable = false, columnDefinition = "varchar(255) default 'v1.0'")
+    private String bomVersion = "v1.0";
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private OrderStatus status = OrderStatus.READY;

@@ -25,6 +25,7 @@ public class WorkOrderResponse {
     private Integer operationSeq;
     private String operationName;
     private Integer targetQty;
+    private String bomVersion;
     private String status;
     private LocalDate planDate;
     private LocalDateTime createdAt;
@@ -64,6 +65,7 @@ public class WorkOrderResponse {
                 .operationSeq(workOrder.getRouting().getOperationSeq())
                 .operationName(workOrder.getRouting().getOperationName())
                 .targetQty(workOrder.getTargetQty())
+                .bomVersion(workOrder.getBomVersion())
                 .status(status.name())
                 .planDate(workOrder.getPlanDate())
                 .createdAt(workOrder.getCreatedAt())

@@ -79,6 +79,11 @@ const router = createRouter({
           component: () => import('../views/BomMasterView.vue')
         },
         {
+          path: 'master/boms/:parentItemId',
+          name: 'bom-master-detail',
+          component: () => import('../views/BomMasterDetailView.vue')
+        },
+        {
           path: 'inbound/receipt',
           name: 'inbound-receipt',
           component: () => import('../views/InboundReceiptView.vue')

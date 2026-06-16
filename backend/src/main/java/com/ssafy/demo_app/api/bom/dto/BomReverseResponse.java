@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.math.BigDecimal;
-
 @Getter
 @AllArgsConstructor
 @Schema(description = "BOM 역조회 응답 객체")
@@ -21,7 +19,7 @@ public class BomReverseResponse {
     private String parentItemCode;
     private String parentItemName;
     private String parentItemType;
-    private BigDecimal quantity;
+    private Integer quantity;
     private String bomVersion;
 
     public static BomReverseResponse from(BomStructure bom) {
