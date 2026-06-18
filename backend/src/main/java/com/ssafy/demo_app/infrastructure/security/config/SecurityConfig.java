@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/production-executions", "/api/production-executions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/production-executions").hasAnyRole("ADMIN", "MANAGER", "WORKER")
                         .requestMatchers(HttpMethod.DELETE, "/api/production-executions/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/ai/queries").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
