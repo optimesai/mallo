@@ -36,3 +36,31 @@
     - 없음
 
   </details>
+
+### AI 차트 추천 백엔드 구현 (Codex)
+- **User Intent**: NL2SQL 조회 결과를 기반으로 그래프를 만들 수 있도록, 백엔드에서 AI가 차트 스펙을 추천하고 검증한 뒤 내려주는 구조 구현 요청
+- **Agent Context**: 기존 NL2SQL 성공 응답 뒤에 차트 추천 단계를 추가하되, AI 추천 결과를 그대로 신뢰하지 않고 백엔드에서 지원 타입과 실제 row 컬럼을 검증하는 방식으로 구현
+- **Key Decisions**:
+  - 차트 추천은 `SUCCESS` 상태에서만 실행 — SQL 조회 실패와 차트 추천 실패를 분리하여 데이터 질의 UX를 안정적으로 유지
+  - `NONE`, `STAT`, `BAR`, `LINE`, `DONUT`만 지원 — 프론트에서 구현할 렌더링 범위를 명확히 제한하고 AI가 임의 차트 타입을 반환하지 못하게 검증
+  - AI 추천 결과를 `ChartSpecValidationService`에서 검증 — 실제 rows에 없는 `xKey`/`yKeys`, 숫자가 아닌 y축 컬럼, 차트 타입별 제약 위반을 차단
+  - `AiQueryHistory.chartSpecJson`에 추천 결과 저장 — 질의 이력에서 어떤 차트 스펙이 반환됐는지 추적 가능
+- **Affected Files**: <details><summary>11개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiChartResponse.java` — 차트 추천 응답 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ChartRecommendationGenerator.java` — 차트 스펙 추천 AI 인터페이스
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ChartRecommendationService.java` — 차트 추천 서비스 인터페이스
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ChartRecommendationServiceImpl.java` — AI 추천 호출 및 검증 조립 서비스
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ChartSpecValidationResult.java` — 차트 스펙 검증 결과 객체
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ChartSpecValidationService.java` — 차트 스펙 검증 서비스
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/ChartRecommendationServiceImplTest.java` — 차트 추천 서비스 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/ChartSpecValidationServiceTest.java` — 차트 스펙 검증 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiQueryResponse.java` — AI 질의 응답에 chart 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/entity/AiQueryHistory.java` — 차트 스펙 JSON 저장 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` — 성공 응답에 차트 추천 단계 연결
+  - **Deleted**:
+    - 없음
+
+  </details>

@@ -2,6 +2,7 @@ package com.ssafy.demo_app.domain.ai.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.demo_app.api.ai.dto.AiChartResponse;
 import com.ssafy.demo_app.api.ai.dto.AiQueryResponse;
 import com.ssafy.demo_app.domain.ai.entity.AiQueryHistory;
 import com.ssafy.demo_app.domain.ai.repository.AiQueryHistoryRepository;
@@ -41,6 +42,7 @@ public class AiQueryServiceImpl implements AiQueryService {
     private final SqlValidationService sqlValidationService;
     private final SqlExecutionService sqlExecutionService;
     private final AnswerGenerator answerGenerator;
+    private final ChartRecommendationService chartRecommendationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${langchain4j.open-ai.chat-model.model-name:unknown}")
@@ -65,6 +67,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     null,
                     SQL_GENERATION_FAILED_ANSWER,
                     null,
+                    null,
                     0,
                     elapsedTime(startedAt),
                     AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
@@ -79,6 +82,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     question,
                     null,
                     NOT_DATA_QUESTION_ANSWER,
+                    null,
                     null,
                     0,
                     elapsedTime(startedAt),
@@ -98,6 +102,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     null,
                     SQL_GENERATION_FAILED_ANSWER,
                     null,
+                    null,
                     0,
                     elapsedTime(startedAt),
                     AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
@@ -113,6 +118,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     question,
                     sql,
                     BLOCKED_SQL_ANSWER,
+                    null,
                     null,
                     0,
                     elapsedTime(startedAt),
@@ -131,6 +137,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     question,
                     validation.getNormalizedSql(),
                     SQL_EXECUTION_FAILED_ANSWER,
+                    null,
                     null,
                     0,
                     elapsedTime(startedAt),
@@ -151,6 +158,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     validation.getNormalizedSql(),
                     ANSWER_GENERATION_FAILED_ANSWER,
                     resultJson,
+                    null,
                     rows.size(),
                     elapsedTime(startedAt),
                     AiQueryHistory.ExecutionStatus.ANSWER_GENERATION_FAILED,
@@ -159,12 +167,15 @@ public class AiQueryServiceImpl implements AiQueryService {
             return toResponse(history, rows);
         }
 
+        AiChartResponse chart = chartRecommendationService.recommend(question, rows);
+        String chartSpecJson = toJson(chart);
         AiQueryHistory history = saveHistory(
                 worker,
                 question,
                 validation.getNormalizedSql(),
                 answer,
                 resultJson,
+                chartSpecJson,
                 rows.size(),
                 elapsedTime(startedAt),
                 AiQueryHistory.ExecutionStatus.SUCCESS,
@@ -193,12 +204,21 @@ public class AiQueryServiceImpl implements AiQueryService {
         }
     }
 
+    private String toJson(AiChartResponse chart) {
+        try {
+            return objectMapper.writeValueAsString(chart);
+        } catch (JsonProcessingException exception) {
+            return "{}";
+        }
+    }
+
     private AiQueryHistory saveHistory(
             User worker,
             String question,
             String generatedSql,
             String answer,
             String resultJson,
+            String chartSpecJson,
             Integer rowCount,
             Long executionTimeMs,
             AiQueryHistory.ExecutionStatus status,
@@ -210,6 +230,7 @@ public class AiQueryServiceImpl implements AiQueryService {
         history.setGeneratedSql(generatedSql);
         history.setNaturalAnswer(answer);
         history.setResultJson(resultJson);
+        history.setChartSpecJson(chartSpecJson);
         history.setRowCount(rowCount);
         history.setExecutionTimeMs(executionTimeMs);
         history.setModelName(modelName);
@@ -227,7 +248,20 @@ public class AiQueryServiceImpl implements AiQueryService {
         response.setRowCount(history.getRowCount());
         response.setAnswer(history.getNaturalAnswer());
         response.setExecutionStatus(history.getExecutionStatus());
+        response.setChart(resolveChart(history));
         return response;
+    }
+
+    private AiChartResponse resolveChart(AiQueryHistory history) {
+        if (history.getChartSpecJson() == null || history.getChartSpecJson().isBlank()) {
+            return AiChartResponse.none("차트로 표현할 수 있는 데이터가 없습니다.");
+        }
+
+        try {
+            return objectMapper.readValue(history.getChartSpecJson(), AiChartResponse.class);
+        } catch (JsonProcessingException exception) {
+            return AiChartResponse.none("차트 추천 결과를 해석할 수 없습니다.");
+        }
     }
 
     private long elapsedTime(long startedAt) {

@@ -18,4 +18,5 @@ public class AiQueryResponse {
     private Integer rowCount;
     private String answer;
     private AiQueryHistory.ExecutionStatus executionStatus;
+    private AiChartResponse chart;
 }
