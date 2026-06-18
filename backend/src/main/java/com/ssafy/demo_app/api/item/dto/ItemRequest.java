@@ -1,0 +1,48 @@
+package com.ssafy.demo_app.api.item.dto;
+
+import com.ssafy.demo_app.domain.item.entity.ItemMaster;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "품목 마스터 생성/수정 요청 객체")
+public class ItemRequest {
+
+    @Schema(description = "품목 코드. 미입력 시 ITEM-0001 형식으로 자동 생성됩니다.", example = "ITEM-0001")
+    @Pattern(regexp = "^[A-Za-z0-9-]*$", message = "품목 코드는 영문, 숫자, 하이픈만 사용할 수 있습니다.")
+    @Size(max = 50, message = "품목 코드는 50자 이하여야 합니다.")
+    private String itemCode;
+
+    @Schema(description = "품목명", example = "고탄소 탄소강판")
+    @NotBlank(message = "품목명은 필수입니다.")
+    @Size(max = 100, message = "품목명은 100자 이하여야 합니다.")
+    private String itemName;
+
+    @Schema(description = "규격 및 사이즈", example = "2.0T * 1219 * 2438")
+    @Size(max = 100, message = "규격은 100자 이하여야 합니다.")
+    private String spec;
+
+    @Schema(description = "기본 단위", example = "kg")
+    @NotNull(message = "기본 단위는 필수입니다.")
+    private ItemMaster.Unit unit;
+
+    @Schema(description = "품목 분류", example = "RAW")
+    @NotNull(message = "품목 분류는 필수입니다.")
+    private ItemMaster.ItemType itemType;
+
+    @Schema(description = "안전 재고량", example = "5000")
+    @NotNull(message = "안전 재고량은 필수입니다.")
+    @Min(value = 0, message = "안전 재고량은 0 이상이어야 합니다.")
+    private Integer safetyStock;
+}

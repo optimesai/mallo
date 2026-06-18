@@ -1,0 +1,12 @@
+### [09:27] 생산 실적 화면 구현 (Codex)
+- **User Intent**: 생산 관리 중 생산 실적 관련 기능 구현을 시작하기 위해, 백엔드에 구현된 작업 지시/생산 실적/투입량 API를 조합한 프론트 화면 구현 요청
+- **Agent Context**: 기존 `workOrderApi/service/store`에 생산 실적 API 호출이 이미 구현되어 있어 API 계층 수정 없이 신규 Vue 화면과 라우팅만 추가. 작업 지시 선택, 실적 등록/삭제, BOM 투입량 확인을 한 화면에서 처리하도록 구성.
+- **Key Decisions**:
+  - View → Store → Service → API 계층 흐름을 유지하고 기존 `workOrderStore` 액션을 재사용 — agent/project/frontend.md 계층 아키텍처 준수
+  - 색상/폰트는 HTML 유틸리티 직접 지정 대신 `--wo-*` CSS 변수와 `wo-*`, `pe-*` 클래스 체계로 적용 — 사용자 Tailwind 변수화 요구 및 기존 작업지시 화면 패턴 준수
+  - 작업자 사번과 투입 자재량은 직접 입력하지 않고 백엔드 인증 사용자/BOM 자동 차감 정책을 UI 안내로 처리 — backend 생산 실적 API 제약 준수
+- **Affected Files**:
+  - `frontend/src/views/ProductionExecutionView.vue` (new)
+  - `frontend/src/main.css` (+64/-0)
+  - `frontend/src/router/index.ts` (+5/-0)
+  - `frontend/src/router/navigation.ts` (+1/-1)

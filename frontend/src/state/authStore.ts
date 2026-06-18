@@ -1,0 +1,105 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { configureAuthClient } from '@/api/client'
+import { authService } from '@/services/authService'
+import type { LoginResponse, UserResponse } from '@/api/authApi'
+
+const SESSION_ACTIVE_KEY = 'ssafy-pjt-session-active'
+
+export const useAuthStore = defineStore('auth', () => {
+  const accessToken = ref<string | null>(null)
+  const user = ref<UserResponse | null>(null)
+  const isInitialized = ref(false)
+
+  const employeeId = computed(() => user.value?.employeeNo ?? null)
+  const isLoggedIn = computed(() => Boolean(accessToken.value))
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
+  const isManager = computed(() => user.value?.role === 'MANAGER')
+  const canManageMasterData = computed(() => isAdmin.value || isManager.value)
+
+  configureAuthClient({
+    getAccessToken: () => accessToken.value,
+    refreshAccessToken,
+    handleUnauthorized: clearAuth
+  })
+
+  async function login(inputEmployeeId: string, inputPassword: string) {
+    const response = await authService.login({
+      employeeNo: inputEmployeeId.trim(),
+      password: inputPassword
+    })
+
+    setAuth(response.data)
+    sessionStorage.setItem(SESSION_ACTIVE_KEY, 'true')
+    isInitialized.value = true
+  }
+
+  async function initializeAuth() {
+    if (isInitialized.value) {
+      return
+    }
+
+    if (sessionStorage.getItem(SESSION_ACTIVE_KEY) !== 'true') {
+      clearAuth()
+      isInitialized.value = true
+      return
+    }
+
+    try {
+      await refreshAccessToken()
+    } finally {
+      isInitialized.value = true
+    }
+  }
+
+  async function refreshAccessToken() {
+    try {
+      const response = await authService.refresh()
+      setAuth(response.data)
+      return true
+    } catch {
+      clearAuth()
+      return false
+    }
+  }
+
+  async function logout() {
+    try {
+      await authService.logout()
+    } finally {
+      sessionStorage.removeItem(SESSION_ACTIVE_KEY)
+      clearAuth()
+      isInitialized.value = true
+    }
+  }
+
+  function setUser(nextUser: UserResponse) {
+    user.value = nextUser
+  }
+
+  function setAuth(loginData: LoginResponse) {
+    accessToken.value = loginData.token.accessToken
+    user.value = loginData.user
+  }
+
+  function clearAuth() {
+    accessToken.value = null
+    user.value = null
+  }
+
+  return {
+    accessToken,
+    canManageMasterData,
+    employeeId,
+    isAdmin,
+    isInitialized,
+    isLoggedIn,
+    isManager,
+    user,
+    initializeAuth,
+    login,
+    logout,
+    refreshAccessToken,
+    setUser
+  }
+})

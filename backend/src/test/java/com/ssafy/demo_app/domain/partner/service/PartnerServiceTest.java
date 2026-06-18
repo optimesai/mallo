@@ -1,0 +1,502 @@
+package com.ssafy.demo_app.domain.partner.service;
+
+import com.ssafy.demo_app.api.partner.dto.PartnerRequest;
+import com.ssafy.demo_app.api.partner.dto.PartnerResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerShippedItemResponse;
+import com.ssafy.demo_app.api.partner.dto.PartnerStatsResponse;
+import com.ssafy.demo_app.domain.inventory.repository.InboundReceiptRepository;
+import com.ssafy.demo_app.domain.item.entity.ItemMaster;
+import com.ssafy.demo_app.domain.partner.entity.PartnerMaster;
+import com.ssafy.demo_app.domain.partner.repository.PartnerMasterRepository;
+import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
+import com.ssafy.demo_app.domain.shipping.repository.OutboundShippingRepository;
+import com.ssafy.demo_app.global.exception.BusinessException;
+import com.ssafy.demo_app.global.exception.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class PartnerServiceTest {
+
+    @Mock
+    private PartnerMasterRepository partnerMasterRepository;
+
+    @Mock
+    private InboundReceiptRepository inboundReceiptRepository;
+
+    @Mock
+    private OutboundShippingRepository outboundShippingRepository;
+
+    @InjectMocks
+    private PartnerServiceImpl partnerService;
+
+    private PartnerMaster supplier;
+    private PartnerMaster customer;
+
+    @BeforeEach
+    void setUp() {
+        supplier = new PartnerMaster();
+        supplier.setPartnerId(1);
+        supplier.setPartnerCode("SUP-POSCO-01");
+        supplier.setPartnerName("(주)포스코 인터내셔널");
+        supplier.setPartnerType(PartnerMaster.PartnerType.SUPPLIER);
+        supplier.setBusinessNo("123-45-67890");
+        supplier.setRepresentative("홍길동");
+        supplier.setContactPhone("02-3457-1114");
+
+        customer = new PartnerMaster();
+        customer.setPartnerId(2);
+        customer.setPartnerCode("CUS-HYUNDAI-M");
+        customer.setPartnerName("현대모비스 울산공장");
+        customer.setPartnerType(PartnerMaster.PartnerType.CUSTOMER);
+        customer.setBusinessNo("113-81-22441");
+        customer.setRepresentative("이영희");
+        customer.setContactPhone("052-202-0114");
+    }
+
+    @Test
+    @DisplayName("거래처 등록 성공")
+    void createPartner_success() {
+        PartnerRequest request = new PartnerRequest(
+                " SUP-SAMSUNG-E ",
+                " 삼성전자 디바이스솔루션 ",
+                PartnerMaster.PartnerType.SUPPLIER,
+                "220-81-62517",
+                "김대표",
+                "031-200-1114"
+        );
+
+        given(partnerMasterRepository.existsByPartnerCode("SUP-SAMSUNG-E")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(3);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getPartnerId()).isEqualTo(3);
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-SAMSUNG-E");
+        assertThat(response.getPartnerName()).isEqualTo("삼성전자 디바이스솔루션");
+        assertThat(response.getPartnerType()).isEqualTo(PartnerMaster.PartnerType.SUPPLIER);
+    }
+
+    @Test
+    @DisplayName("거래처 등록 성공 - 비고 저장")
+    void createPartner_successWithNote() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-NOTE-01",
+                "비고 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null,
+                null,
+                " 월말 정산 대상 "
+        );
+
+        given(partnerMasterRepository.existsByPartnerCode("SUP-NOTE-01")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(10);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getNote()).isEqualTo("월말 정산 대상");
+    }
+
+    @Test
+    @DisplayName("거래처 등록 성공 - 공급사 코드 자동 생성")
+    void createPartner_generateSupplierCode() {
+        PartnerRequest request = new PartnerRequest(
+                "",
+                "자동 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null
+        );
+
+        PartnerMaster existing = new PartnerMaster();
+        existing.setPartnerCode("SUP-0003");
+
+        given(partnerMasterRepository.findByPartnerCodeStartingWith("SUP-")).willReturn(List.of(existing));
+        given(partnerMasterRepository.existsByPartnerCode("SUP-0004")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(11);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-0004");
+    }
+
+    @Test
+    @DisplayName("거래처 등록 성공 - 고객사 코드 자동 생성")
+    void createPartner_generateCustomerCode() {
+        PartnerRequest request = new PartnerRequest(
+                "CUS-",
+                "자동 고객사",
+                PartnerMaster.PartnerType.CUSTOMER,
+                null,
+                null,
+                null
+        );
+
+        PartnerMaster existing = new PartnerMaster();
+        existing.setPartnerCode("CUS-0007");
+
+        given(partnerMasterRepository.findByPartnerCodeStartingWith("CUS-")).willReturn(List.of(existing));
+        given(partnerMasterRepository.existsByPartnerCode("CUS-0008")).willReturn(false);
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> {
+            PartnerMaster partner = invocation.getArgument(0);
+            partner.setPartnerId(12);
+            return partner;
+        });
+
+        PartnerResponse response = partnerService.createPartner(request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("CUS-0008");
+    }
+
+    @Test
+    @DisplayName("거래처 등록 실패 - 거래처 코드 중복")
+    void createPartner_duplicateCode() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-POSCO-01",
+                "(주)포스코 인터내셔널",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null
+        );
+
+        given(partnerMasterRepository.existsByPartnerCode("SUP-POSCO-01")).willReturn(true);
+
+        assertThatThrownBy(() -> partnerService.createPartner(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_CODE_DUPLICATE);
+
+        verify(partnerMasterRepository, never()).save(any(PartnerMaster.class));
+    }
+
+    @Test
+    @DisplayName("거래처 등록 실패 - 사업자등록번호 중복")
+    void createPartner_duplicateBusinessNo() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-DUP-BIZ",
+                "중복 사업자 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                " 123-45-67890 ",
+                null,
+                null
+        );
+
+        given(partnerMasterRepository.existsByBusinessNo("123-45-67890")).willReturn(true);
+
+        assertThatThrownBy(() -> partnerService.createPartner(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_BUSINESS_NO_DUPLICATE);
+
+        verify(partnerMasterRepository, never()).save(any(PartnerMaster.class));
+    }
+
+    @Test
+    @DisplayName("거래처 목록 조회 성공")
+    void getPartners_success() {
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier, customer), pageable, 2));
+
+        List<PartnerResponse> responses = partnerService.getPartners(pageable, null, null, null, null).getContent();
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses).extracting(PartnerResponse::getPartnerCode)
+                .containsExactly("SUP-POSCO-01", "CUS-HYUNDAI-M");
+    }
+
+    @Test
+    @DisplayName("거래처 타입 필터 조회 성공")
+    void getPartners_filterByType() {
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier), pageable, 1));
+
+        List<PartnerResponse> responses = partnerService
+                .getPartners(pageable, PartnerMaster.PartnerType.SUPPLIER, null, null, null)
+                .getContent();
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getPartnerType()).isEqualTo(PartnerMaster.PartnerType.SUPPLIER);
+    }
+
+    @Test
+    @DisplayName("거래처 키워드 검색 성공")
+    void getPartners_searchByKeyword() {
+        Pageable pageable = PageRequest.of(0, 20);
+        given(partnerMasterRepository.findAll(anyPartnerSpec(), eq(pageable)))
+                .willReturn(new PageImpl<>(List.of(supplier), pageable, 1));
+
+        List<PartnerResponse> responses = partnerService.getPartners(pageable, null, null, null, "포스코").getContent();
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getPartnerCode()).isEqualTo("SUP-POSCO-01");
+    }
+
+    @Test
+    @DisplayName("거래처 전체 통계 조회 성공")
+    void getPartnerStats_success() {
+        given(partnerMasterRepository.count()).willReturn(7L);
+        given(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.ACTIVE)).willReturn(5L);
+        given(partnerMasterRepository.countByPartnerStatus(PartnerMaster.PartnerStatus.INACTIVE)).willReturn(2L);
+
+        PartnerStatsResponse response = partnerService.getPartnerStats();
+
+        assertThat(response.getTotalCount()).isEqualTo(7);
+        assertThat(response.getActiveCount()).isEqualTo(5);
+        assertThat(response.getInactiveCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("거래처 검색 조회 성공 - ID")
+    void searchPartners_byId_success() {
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(partnerMasterRepository.findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(
+                "1",
+                "1"
+        )).willReturn(List.of());
+
+        List<PartnerResponse> responses = partnerService.searchPartners("1");
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getPartnerId()).isEqualTo(1);
+        assertThat(responses.get(0).getPartnerCode()).isEqualTo("SUP-POSCO-01");
+    }
+
+    @Test
+    @DisplayName("거래처 검색 조회 성공 - 코드")
+    void searchPartners_byCode_success() {
+        given(partnerMasterRepository.findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(
+                "SUP-POSCO",
+                "SUP-POSCO"
+        )).willReturn(List.of(supplier));
+
+        List<PartnerResponse> responses = partnerService.searchPartners("SUP-POSCO");
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getPartnerCode()).isEqualTo("SUP-POSCO-01");
+    }
+
+    @Test
+    @DisplayName("거래처 검색 조회 성공 - 거래처명 다건")
+    void searchPartners_byName_multipleResults() {
+        PartnerMaster anotherCustomer = new PartnerMaster();
+        anotherCustomer.setPartnerId(3);
+        anotherCustomer.setPartnerCode("CUS-HYUNDAI-A");
+        anotherCustomer.setPartnerName("현대모비스 아산공장");
+        anotherCustomer.setPartnerType(PartnerMaster.PartnerType.CUSTOMER);
+
+        given(partnerMasterRepository.findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(
+                "현대모비스",
+                "현대모비스"
+        )).willReturn(List.of(customer, anotherCustomer));
+
+        List<PartnerResponse> responses = partnerService.searchPartners("현대모비스");
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses).extracting(PartnerResponse::getPartnerName)
+                .containsExactly("현대모비스 울산공장", "현대모비스 아산공장");
+    }
+
+    @Test
+    @DisplayName("거래처 검색 조회 실패 - 거래처 없음")
+    void searchPartners_notFound() {
+        given(partnerMasterRepository.findById(999)).willReturn(Optional.empty());
+        given(partnerMasterRepository.findByPartnerNameContainingIgnoreCaseOrPartnerCodeContainingIgnoreCaseOrderByPartnerIdAsc(
+                "999",
+                "999"
+        )).willReturn(List.of());
+
+        assertThatThrownBy(() -> partnerService.searchPartners("999"))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("거래처 수정 성공")
+    void updatePartner_success() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-POSCO-02",
+                "포스코 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                "123-45-67890",
+                "박대표",
+                "02-0000-0000"
+        );
+
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        PartnerResponse response = partnerService.updatePartner(1, request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-01");
+        assertThat(response.getPartnerName()).isEqualTo("포스코 공급사");
+        assertThat(response.getRepresentative()).isEqualTo("박대표");
+    }
+
+    @Test
+    @DisplayName("거래처 수정 시 코드 변경 요청은 무시")
+    void updatePartner_ignoreCodeChange() {
+        PartnerRequest request = new PartnerRequest(
+                "CUS-HYUNDAI-M",
+                "포스코 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                null,
+                null,
+                null
+        );
+
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        PartnerResponse response = partnerService.updatePartner(1, request);
+
+        assertThat(response.getPartnerCode()).isEqualTo("SUP-POSCO-01");
+        assertThat(response.getPartnerName()).isEqualTo("포스코 공급사");
+    }
+
+    @Test
+    @DisplayName("거래처 수정 시 사업자등록번호 변경 요청은 무시")
+    void updatePartner_ignoreBusinessNoChange() {
+        PartnerRequest request = new PartnerRequest(
+                "SUP-POSCO-01",
+                "포스코 공급사",
+                PartnerMaster.PartnerType.SUPPLIER,
+                "999-99-99999",
+                "박대표",
+                "02-0000-0000"
+        );
+
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(partnerMasterRepository.save(any(PartnerMaster.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        PartnerResponse response = partnerService.updatePartner(1, request);
+
+        assertThat(response.getBusinessNo()).isEqualTo("123-45-67890");
+        assertThat(response.getRepresentative()).isEqualTo("박대표");
+    }
+
+    @Test
+    @DisplayName("거래처 삭제 성공 - 참조 이력 없음")
+    void deletePartner_success() {
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(inboundReceiptRepository.existsByPartner(supplier)).willReturn(false);
+        given(outboundShippingRepository.existsByPartner(supplier)).willReturn(false);
+
+        partnerService.deletePartner(1);
+
+        verify(partnerMasterRepository).delete(supplier);
+    }
+
+    @Test
+    @DisplayName("거래처 삭제 실패 - 입고 이력에서 참조 중")
+    void deletePartner_hasInboundReference() {
+        given(partnerMasterRepository.findById(1)).willReturn(Optional.of(supplier));
+        given(inboundReceiptRepository.existsByPartner(supplier)).willReturn(true);
+
+        assertThatThrownBy(() -> partnerService.deletePartner(1))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_HAS_REFERENCES);
+
+        verify(partnerMasterRepository, never()).delete(any(PartnerMaster.class));
+    }
+
+    @Test
+    @DisplayName("거래처 삭제 실패 - 출하 이력에서 참조 중")
+    void deletePartner_hasShippingReference() {
+        given(partnerMasterRepository.findById(2)).willReturn(Optional.of(customer));
+        given(inboundReceiptRepository.existsByPartner(customer)).willReturn(false);
+        given(outboundShippingRepository.existsByPartner(customer)).willReturn(true);
+
+        assertThatThrownBy(() -> partnerService.deletePartner(2))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PARTNER_HAS_REFERENCES);
+
+        verify(partnerMasterRepository, never()).delete(any(PartnerMaster.class));
+    }
+
+    @Test
+    @DisplayName("고객사 출하 품목 이력 조회 성공 - 출하 일시 없음")
+    void getShippedItems_successWithNullShippingDate() {
+        ItemMaster item = new ItemMaster();
+        item.setItemId(1);
+        item.setItemCode("FG-0001");
+        item.setItemName("완제품");
+        item.setItemType(ItemMaster.ItemType.FG);
+        item.setUnit(ItemMaster.Unit.ea);
+
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingId(1);
+        shipping.setPartner(customer);
+        shipping.setItem(item);
+        shipping.setRequestQty(10);
+
+        given(partnerMasterRepository.findById(2)).willReturn(Optional.of(customer));
+        given(outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(customer))
+                .willReturn(List.of(shipping));
+
+        List<PartnerShippedItemResponse> responses = partnerService.getShippedItems(2);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getItemCode()).isEqualTo("FG-0001");
+        assertThat(responses.get(0).getTotalShippingQty()).isEqualTo(10);
+        assertThat(responses.get(0).getShippingCount()).isEqualTo(1);
+        assertThat(responses.get(0).getLastShippingAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("고객사 출하 품목 이력 조회 성공 - 품목 정보 없음")
+    void getShippedItems_successWithMissingItem() {
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingId(1);
+        shipping.setPartner(customer);
+        shipping.setRequestQty(10);
+
+        given(partnerMasterRepository.findById(2)).willReturn(Optional.of(customer));
+        given(outboundShippingRepository.findByPartnerOrderByCreatedAtDescShippingIdDesc(customer))
+                .willReturn(List.of(shipping));
+
+        List<PartnerShippedItemResponse> responses = partnerService.getShippedItems(2);
+
+        assertThat(responses).isEmpty();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Specification<PartnerMaster> anyPartnerSpec() {
+        return any(Specification.class);
+    }
+}

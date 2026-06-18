@@ -1,0 +1,14 @@
+export interface PageResponse<T> {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  sort: string
+}
+
+export interface PageParams {
+  page?: number
+  size?: number
+  sort?: string
+}
