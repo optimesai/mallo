@@ -37,6 +37,10 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
     @Column(name = "result_json", columnDefinition = "TEXT")
     private String resultJson;
 
+    @Lob
+    @Column(name = "chart_spec_json", columnDefinition = "TEXT")
+    private String chartSpecJson;
+
     @Column(name = "row_count")
     private Integer rowCount;
 
