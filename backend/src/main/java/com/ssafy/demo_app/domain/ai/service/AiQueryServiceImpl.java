@@ -38,6 +38,7 @@ public class AiQueryServiceImpl implements AiQueryService {
     private final DatabaseSchemaService databaseSchemaService;
     private final IntentClassifier intentClassifier;
     private final SqlAssistant sqlAssistant;
+    private final FewShotPromptService fewShotPromptService;
     private final SqlSanitizer sqlSanitizer;
     private final SqlValidationService sqlValidationService;
     private final SqlExecutionService sqlExecutionService;
@@ -193,7 +194,8 @@ public class AiQueryServiceImpl implements AiQueryService {
     }
 
     private String generateSql(String question, String schema, String currentTime) {
-        return sqlSanitizer.sanitize(sqlAssistant.generateSql(schema, question, currentTime));
+        String fewShotExamples = fewShotPromptService.getFewShotExamples();
+        return sqlSanitizer.sanitize(sqlAssistant.generateSql(schema, fewShotExamples, question, currentTime));
     }
 
     private String toJson(List<Map<String, Object>> rows) {

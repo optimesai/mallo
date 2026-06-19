@@ -37,6 +37,41 @@
 
   </details>
 
+### AI 스키마 프롬프트 개선 (Codex)
+- **User Intent**: AI NL2SQL 기능의 2번 항목에서 하드코딩된 스키마 설명과 Few-shot 부재를 개선하여 실제 DB 스키마 기반 SQL 생성 품질을 높이고 싶다는 요청
+- **Agent Context**: 기존 `DatabaseSchemaService`가 정적 문자열만 반환하고 `SqlAssistant`가 예시 없이 스키마만 받아 SQL을 생성하는 구조였으므로, `information_schema` 기반 메타데이터 조회와 30분 메모리 캐시, YAML 기반 Few-shot 주입 구조로 교체
+- **Key Decisions**:
+  - 스키마 노출 테이블과 SQL 검증 whitelist를 `AiAllowedSchema`로 공통화 — 백엔드 도메인 서비스 계층 내에서 AI가 볼 수 있는 테이블과 실행 가능한 테이블 기준이 어긋나지 않도록 유지
+  - `information_schema` 조회 결과를 DTO로 구조화한 뒤 `SchemaPromptBuilder`에서 문자열 생성 — 하드코딩 문자열을 제거하면서도 LLM 프롬프트 포맷을 테스트 가능한 단위로 분리
+  - 핵심 JOIN 관계는 `SchemaRelationshipProvider`에서 수동 보강 — 실제 DB FK 존재 여부에 의존하지 않고 제조·물류 도메인의 주요 조인 경로를 안정적으로 프롬프트에 제공
+  - Few-shot 예시는 `backend/src/main/resources/ai/few-shot-examples.yml`로 분리 — SQL 예시를 block scalar로 관리해 Java 문자열보다 리뷰와 수정이 쉬운 리소스 형태로 유지
+- **Affected Files**: <details><summary>19개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiAllowedSchema.java` (+23/-0) — AI 허용 테이블 whitelist 공통 상수
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/FewShotExample.java` (+15/-0) — Few-shot YAML 항목 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/FewShotPromptService.java` (+71/-0) — YAML Few-shot 로딩 및 프롬프트 변환 서비스
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/AiSchemaColumn.java` (+15/-0) — 스키마 컬럼 메타데이터 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/AiSchemaRelationship.java` (+28/-0) — 조인 관계 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/AiSchemaTable.java` (+16/-0) — 스키마 테이블 메타데이터 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/DatabaseSchemaMetadataReader.java` (+68/-0) — `information_schema` 기반 허용 테이블 메타데이터 조회 컴포넌트
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/SchemaPromptBuilder.java` (+67/-0) — 스키마 DTO와 관계 정보를 LLM 프롬프트 문자열로 변환
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/schema/SchemaRelationshipProvider.java` (+32/-0) — 핵심 도메인 조인 관계 제공 컴포넌트
+    - `backend/src/main/resources/ai/few-shot-examples.yml` (+88/-0) — 생산·재고·BOM 대표 NL2SQL Few-shot 예시
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/DatabaseSchemaServiceTest.java` (+68/-0) — 스키마 캐시 재사용 및 갱신 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/FewShotPromptServiceTest.java` (+20/-0) — YAML Few-shot 로딩 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/schema/SchemaPromptBuilderTest.java` (+57/-0) — 스키마 프롬프트 생성 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/schema/SchemaRelationshipProviderTest.java` (+27/-0) — 핵심 조인 관계 제공 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` (+3/-1) — SQL 생성 시 Few-shot 프롬프트 전달
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/DatabaseSchemaService.java` (+36/-133) — 하드코딩 스키마 문자열을 메타데이터 조회 기반 캐시 구조로 교체
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/SqlAssistant.java` (+5/-0) — Few-shot 예시와 관계 기반 JOIN 우선 규칙 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/SqlValidationService.java` (+1/-15) — 허용 테이블 목록을 공통 whitelist로 대체
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 차트 추천 백엔드 구현 (Codex)
 - **User Intent**: NL2SQL 조회 결과를 기반으로 그래프를 만들 수 있도록, 백엔드에서 AI가 차트 스펙을 추천하고 검증한 뒤 내려주는 구조 구현 요청
 - **Agent Context**: 기존 NL2SQL 성공 응답 뒤에 차트 추천 단계를 추가하되, AI 추천 결과를 그대로 신뢰하지 않고 백엔드에서 지원 타입과 실제 row 컬럼을 검증하는 방식으로 구현

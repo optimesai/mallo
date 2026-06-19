@@ -32,20 +32,6 @@ public class SqlValidationService {
             "LOCK",
             "UNLOCK"
     );
-    private static final Set<String> ALLOWED_TABLES = Set.of(
-            "item_master",
-            "partner_master",
-            "inbound_receipt",
-            "current_inventory",
-            "inventory_transaction_history",
-            "warehouse_location",
-            "outbound_shipping",
-            "work_order",
-            "production_execution",
-            "factory_routing",
-            "bom_structure"
-    );
-
     public SqlValidationResult validate(String sql) {
         if (sql == null || sql.isBlank()) {
             return SqlValidationResult.invalid("SQL이 비어 있습니다.");
@@ -95,7 +81,7 @@ public class SqlValidationService {
         while (matcher.find()) {
             foundTable = true;
             String tableName = normalizeTableName(matcher.group(2));
-            if (!ALLOWED_TABLES.contains(tableName)) {
+            if (!AiAllowedSchema.ALLOWED_TABLES.contains(tableName)) {
                 return false;
             }
         }
