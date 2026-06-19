@@ -13,7 +13,21 @@ public class FewShotPromptService {
 
     private static final String FEW_SHOT_RESOURCE = "ai/few-shot-examples.yml";
 
-    public String getFewShotExamples() {
+    private String cachedFewShotExamples;
+
+    public synchronized String getFewShotExamples() {
+        if (cachedFewShotExamples != null) {
+            return cachedFewShotExamples;
+        }
+        cachedFewShotExamples = loadAndBuildPrompt();
+        return cachedFewShotExamples;
+    }
+
+    public synchronized void evictCache() {
+        cachedFewShotExamples = null;
+    }
+
+    private String loadAndBuildPrompt() {
         List<FewShotExample> examples = loadExamples();
         if (examples.isEmpty()) {
             return "No examples.";

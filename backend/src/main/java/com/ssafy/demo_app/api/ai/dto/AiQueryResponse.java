@@ -19,4 +19,6 @@ public class AiQueryResponse {
     private String answer;
     private AiQueryHistory.ExecutionStatus executionStatus;
     private AiChartResponse chart;
+    private Boolean clarificationRequired;
+    private String clarificationQuestion;
 }

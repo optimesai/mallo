@@ -37,6 +37,35 @@
 
   </details>
 
+### AI 질의 안정성 개선 (Codex)
+- **User Intent**: AI NL2SQL 백엔드에서 스키마 조회 실패가 500으로 이어질 수 있는 문제, Few-shot YAML 반복 파싱, 모호한 질문에 대한 재질문 부재를 먼저 개선해달라는 요청
+- **Agent Context**: 기존 `AiQueryServiceImpl`는 스키마 컨텍스트 로딩을 예외 처리 밖에서 수행하고, `FewShotPromptService`는 매 요청마다 YAML을 읽으며, 데이터 질문이 모호해도 곧바로 SQL 생성을 시도했다. 스키마 실패를 히스토리 상태로 저장하고, Few-shot은 메모리 캐시로 재사용하며, 규칙 기반 후보 감지 후 후보일 때만 LLM 재질문 생성을 수행하도록 변경
+- **Key Decisions**:
+  - `SCHEMA_LOAD_FAILED`, `CLARIFICATION_REQUIRED` 상태를 추가 — SQL 생성 실패와 스키마 로딩 실패, 사용자 추가 입력 필요 상태를 구분하여 API 응답과 히스토리에서 원인을 추적 가능하게 유지
+  - Few-shot은 TTL 없는 메모리 캐시로 유지 — YAML 리소스는 배포 산출물이라 런타임 변경 가능성이 낮고, 요청마다 파싱하는 비용을 제거하는 단순 캐시가 적합
+  - 재질문 판단은 규칙 기반 후보 감지 후 LLM 호출 — 모든 데이터 질문마다 LLM 호출을 추가하지 않고, 불량률·추이·비교·재고처럼 모호성 가능성이 높은 질문에만 재질문 생성 비용을 사용
+  - 재질문 LLM 실패는 `notRequired`로 fallback — 재질문 생성 실패 때문에 전체 데이터 질의가 막히지 않도록 SQL 생성 단계로 진행
+- **Affected Files**: <details><summary>12개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ClarificationAssistant.java` (+37/-0) — 재질문 필요 여부와 질문 문구를 JSON으로 생성하는 AI 인터페이스
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ClarificationCandidateService.java` (+75/-0) — 불량률·추이·비교·재고 질문의 모호성 후보 규칙 감지
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ClarificationResult.java` (+26/-0) — 재질문 판단 결과 DTO
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ClarificationService.java` (+47/-0) — 후보 감지, LLM 호출, JSON 파싱, fallback 조립 서비스
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImplTest.java` (+97/-0) — 스키마 실패와 재질문 분기 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/ClarificationCandidateServiceTest.java` (+35/-0) — 규칙 기반 모호성 후보 감지 테스트
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/ClarificationServiceTest.java` (+59/-0) — 재질문 LLM 호출/파싱/fallback 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiQueryResponse.java` (+2/-0) — 재질문 필요 여부와 재질문 문구 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/entity/AiQueryHistory.java` (+2/-0) — 스키마 실패와 재질문 필요 실행 상태 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` (+71/-4) — 스키마 실패 처리, Few-shot 로딩 실패 처리, 재질문 분기 연결
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/FewShotPromptService.java` (+16/-1) — YAML Few-shot 프롬프트 메모리 캐시와 evict 메서드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/FewShotPromptServiceTest.java` (+10/-0) — 캐시 evict 후 재로드 가능성 테스트
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 스키마 프롬프트 개선 (Codex)
 - **User Intent**: AI NL2SQL 기능의 2번 항목에서 하드코딩된 스키마 설명과 Few-shot 부재를 개선하여 실제 DB 스키마 기반 SQL 생성 품질을 높이고 싶다는 요청
 - **Agent Context**: 기존 `DatabaseSchemaService`가 정적 문자열만 반환하고 `SqlAssistant`가 예시 없이 스키마만 받아 SQL을 생성하는 구조였으므로, `information_schema` 기반 메타데이터 조회와 30분 메모리 캐시, YAML 기반 Few-shot 주입 구조로 교체

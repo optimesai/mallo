@@ -65,6 +65,8 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
         BLOCKED_UNSAFE_SQL,
         SQL_EXECUTION_FAILED,
         ANSWER_GENERATION_FAILED,
+        SCHEMA_LOAD_FAILED,
+        CLARIFICATION_REQUIRED,
         TIMEOUT
     }
 }

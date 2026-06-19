@@ -17,4 +17,14 @@ class FewShotPromptServiceTest {
         assertThat(prompt).contains("current_inventory");
         assertThat(prompt).contains("bom_structure");
     }
+
+    @Test
+    void evictCache_keepsExamplesReloadable() {
+        String first = fewShotPromptService.getFewShotExamples();
+
+        fewShotPromptService.evictCache();
+        String second = fewShotPromptService.getFewShotExamples();
+
+        assertThat(second).isEqualTo(first);
+    }
 }
