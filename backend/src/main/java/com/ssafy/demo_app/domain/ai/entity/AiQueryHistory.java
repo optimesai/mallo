@@ -51,7 +51,7 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
     private String modelName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "execution_status", nullable = false)
+    @Column(name = "execution_status", nullable = false, length = 50, columnDefinition = "VARCHAR(50)")
     private ExecutionStatus executionStatus = ExecutionStatus.SUCCESS;
 
     @Lob

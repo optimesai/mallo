@@ -37,6 +37,24 @@
 
   </details>
 
+### AI 실행 상태 컬럼 보정 (Codex)
+- **User Intent**: 모호한 AI 질의에서 500 오류가 반복되어, 원인으로 판단한 `execution_status` enum 컬럼 불일치 문제를 수정 요청
+- **Agent Context**: Java enum에는 `SCHEMA_LOAD_FAILED`, `CLARIFICATION_REQUIRED`가 추가되었지만 기존 MySQL 테이블의 enum 컬럼은 이전 값 목록을 유지할 수 있어 새 상태 저장 시 DB 오류가 발생할 수 있었다. 신규 생성 테이블은 문자열 컬럼으로 생성되도록 엔티티를 고정하고, 기존 테이블은 앱 시작 시 `data.sql` 보정 SQL로 `VARCHAR(50)`로 변경되도록 처리
+- **Key Decisions**:
+  - `execution_status`를 DB enum이 아닌 `VARCHAR(50)`로 고정 — 향후 AI 실행 상태가 늘어나도 MySQL enum 목록 변경 때문에 저장 실패가 발생하지 않도록 함
+  - `data.sql`에 스키마 보정 SQL 추가 — 마이그레이션 도구가 없는 프로젝트 구조에서 기존 로컬/서버 DB 컬럼을 시작 시점에 보정하기 위한 최소 변경
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/entity/AiQueryHistory.java` (+1/-1) — 실행 상태 컬럼을 `VARCHAR(50)`로 명시
+    - `backend/src/main/resources/data.sql` (+6/-0) — 기존 `ai_query_history.execution_status` 컬럼 보정 SQL 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 질의 인증 오류 처리 (Codex)
 - **User Intent**: Swagger에서 `POST /api/ai/queries` 요청 시 500 응답이 발생하여 원인 확인과 수정 요청
 - **Agent Context**: `AiQueryController`가 `@AuthenticationPrincipal`로 받은 `CustomUserDetails`를 null 확인 없이 사용하여, 인증 principal이 주입되지 않은 경우 NPE가 전역 핸들러에서 500으로 변환될 수 있었다. 인증 누락은 서버 오류가 아니라 401 응답이어야 하므로 명시적 인증 예외로 변경
