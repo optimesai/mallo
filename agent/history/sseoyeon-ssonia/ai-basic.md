@@ -37,6 +37,29 @@
 
   </details>
 
+### AI 데이터 질문 분류 개선 (Codex)
+- **User Intent**: `출고 비교해줘`, `라인 상태 알려줘`처럼 제조·물류 데이터와 관련된 질문이 `데이터 조회와 관련 없는 질문`으로 분류되는 문제의 원인 판단과 수정 요청
+- **Agent Context**: 기존 흐름은 LLM intent가 `NO`를 반환하면 clarification 단계에 도달하지 못하고 즉시 종료했다. 모호하지만 데이터 도메인에 속하는 질문을 구제하기 위해 intent 프롬프트를 도메인 관련성 판단으로 완화하고, 규칙 기반 도메인 키워드 후보 감지를 추가하여 LLM intent가 `NO`여도 clarification/SQL 생성 흐름으로 진행할 수 있게 변경
+- **Key Decisions**:
+  - `DataQuestionCandidateService`를 추가 — LLM intent 결과만 의존하지 않고 출고·입고·재고·생산·라인·BOM 등 도메인 키워드로 데이터 질문 후보를 보정
+  - intent 프롬프트를 “즉시 SQL 가능 여부”가 아닌 “제조·물류 데이터 관련 여부”로 완화 — 모호한 질문은 `NO`가 아니라 clarification 단계에서 처리되도록 유도
+  - clarification 후보 규칙에 출고/입고 비교, 라인 상태, 생산 문제를 추가 — 사용자가 기준을 생략한 질문에 재질문을 반환할 가능성을 높임
+- **Affected Files**: <details><summary>8개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/DataQuestionCandidateService.java` (+49/-0) — 도메인 키워드 기반 데이터 질문 후보 감지 서비스
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/DataQuestionCandidateServiceTest.java` (+22/-0) — 데이터 질문 후보 감지 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` (+4/-1) — LLM intent가 `NO`여도 도메인 후보면 다음 단계로 진행
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/ClarificationCandidateService.java` (+23/-1) — 출고/입고 비교, 라인 상태, 생산 문제 모호성 규칙 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/IntentClassifier.java` (+5/-1) — 데이터 도메인 관련성 기준으로 프롬프트 완화
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImplTest.java` (+3/-0) — 신규 도메인 후보 서비스 주입 반영
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/ClarificationCandidateServiceTest.java` (+10/-0) — 출고 비교와 라인 상태 후보 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 실행 상태 컬럼 보정 (Codex)
 - **User Intent**: 모호한 AI 질의에서 500 오류가 반복되어, 원인으로 판단한 `execution_status` enum 컬럼 불일치 문제를 수정 요청
 - **Agent Context**: Java enum에는 `SCHEMA_LOAD_FAILED`, `CLARIFICATION_REQUIRED`가 추가되었지만 기존 MySQL 테이블의 enum 컬럼은 이전 값 목록을 유지할 수 있어 새 상태 저장 시 DB 오류가 발생할 수 있었다. 신규 생성 테이블은 문자열 컬럼으로 생성되도록 엔티티를 고정하고, 기존 테이블은 앱 시작 시 `data.sql` 보정 SQL로 `VARCHAR(50)`로 변경되도록 처리

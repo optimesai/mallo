@@ -11,7 +11,10 @@ public interface IntentClassifier {
             Analyze the user's request: '{{text}}'
             Current Time: {{currentTime}}
 
-            Based on the following database schema, is this a request that can be answered by querying the database?
+            Decide whether the user's request is related to manufacturing, logistics, inventory,
+            inbound, shipping, production, defect, line, routing, BOM, item, partner, or warehouse data.
+            Respond YES even when the request is ambiguous and may need a clarification question.
+            Respond NO only when the request is unrelated to the database domain.
 
             Schema:
             {{schema}}

@@ -39,6 +39,7 @@ public class AiQueryServiceImpl implements AiQueryService {
     private final AiQueryHistoryRepository aiQueryHistoryRepository;
     private final DatabaseSchemaService databaseSchemaService;
     private final IntentClassifier intentClassifier;
+    private final DataQuestionCandidateService dataQuestionCandidateService;
     private final SqlAssistant sqlAssistant;
     private final FewShotPromptService fewShotPromptService;
     private final ClarificationService clarificationService;
@@ -97,7 +98,8 @@ public class AiQueryServiceImpl implements AiQueryService {
             return toResponse(history, List.of());
         }
 
-        if (!intent.contains("YES")) {
+        boolean dataQuestionCandidate = dataQuestionCandidateService.isCandidate(question);
+        if (!intent.contains("YES") && !dataQuestionCandidate) {
             AiQueryHistory history = saveHistory(
                     worker,
                     question,

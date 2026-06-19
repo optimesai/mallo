@@ -32,4 +32,14 @@ class ClarificationCandidateServiceTest {
     void isCandidate_detectsInventoryWithoutCondition() {
         assertThat(clarificationCandidateService.isCandidate("재고 보여줘")).isTrue();
     }
+
+    @Test
+    void isCandidate_detectsShippingComparisonWithoutGroup() {
+        assertThat(clarificationCandidateService.isCandidate("출고 비교해줘")).isTrue();
+    }
+
+    @Test
+    void isCandidate_detectsLineStatusWithoutMetric() {
+        assertThat(clarificationCandidateService.isCandidate("라인 상태 알려줘")).isTrue();
+    }
 }

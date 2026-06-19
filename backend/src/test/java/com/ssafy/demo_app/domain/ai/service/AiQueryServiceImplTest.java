@@ -23,6 +23,7 @@ class AiQueryServiceImplTest {
     private final AiQueryHistoryRepository aiQueryHistoryRepository = mock(AiQueryHistoryRepository.class);
     private final DatabaseSchemaService databaseSchemaService = mock(DatabaseSchemaService.class);
     private final IntentClassifier intentClassifier = mock(IntentClassifier.class);
+    private final DataQuestionCandidateService dataQuestionCandidateService = mock(DataQuestionCandidateService.class);
     private final SqlAssistant sqlAssistant = mock(SqlAssistant.class);
     private final FewShotPromptService fewShotPromptService = mock(FewShotPromptService.class);
     private final ClarificationService clarificationService = mock(ClarificationService.class);
@@ -37,6 +38,7 @@ class AiQueryServiceImplTest {
             aiQueryHistoryRepository,
             databaseSchemaService,
             intentClassifier,
+            dataQuestionCandidateService,
             sqlAssistant,
             fewShotPromptService,
             clarificationService,
@@ -70,6 +72,7 @@ class AiQueryServiceImplTest {
                 .willAnswer(invocation -> invocation.getArgument(0));
         given(databaseSchemaService.getSchemaDescription()).willReturn("schema");
         given(intentClassifier.classify(any(), any(), any())).willReturn("YES");
+        given(dataQuestionCandidateService.isCandidate("이번 달 불량률 보여줘")).willReturn(true);
         given(fewShotPromptService.getFewShotExamples()).willReturn("few shot");
         given(clarificationService.evaluate(any(), any(), any()))
                 .willReturn(ClarificationResult.required("불량률을 라인별, 공정별, 품목별 중 어떤 기준으로 조회할까요?"));
