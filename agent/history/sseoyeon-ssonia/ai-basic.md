@@ -37,6 +37,23 @@
 
   </details>
 
+### AI 질의 인증 오류 처리 (Codex)
+- **User Intent**: Swagger에서 `POST /api/ai/queries` 요청 시 500 응답이 발생하여 원인 확인과 수정 요청
+- **Agent Context**: `AiQueryController`가 `@AuthenticationPrincipal`로 받은 `CustomUserDetails`를 null 확인 없이 사용하여, 인증 principal이 주입되지 않은 경우 NPE가 전역 핸들러에서 500으로 변환될 수 있었다. 인증 누락은 서버 오류가 아니라 401 응답이어야 하므로 명시적 인증 예외로 변경
+- **Key Decisions**:
+  - 컨트롤러 진입부에서 `userDetails == null`을 검사 — API 계층에서 인증 컨텍스트 누락을 빠르게 차단하여 도메인 서비스로 잘못된 userId가 전달되지 않도록 함
+  - 기존 `ErrorCode.UNAUTHORIZED`와 `BusinessException` 사용 — 프로젝트 전역 예외 처리 규칙을 따르고 응답 포맷을 `ApiResponse.fail()`로 유지
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/AiQueryController.java` (+5/-0) — 인증 principal 누락 시 401 예외 처리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 질의 안정성 개선 (Codex)
 - **User Intent**: AI NL2SQL 백엔드에서 스키마 조회 실패가 500으로 이어질 수 있는 문제, Few-shot YAML 반복 파싱, 모호한 질문에 대한 재질문 부재를 먼저 개선해달라는 요청
 - **Agent Context**: 기존 `AiQueryServiceImpl`는 스키마 컨텍스트 로딩을 예외 처리 밖에서 수행하고, `FewShotPromptService`는 매 요청마다 YAML을 읽으며, 데이터 질문이 모호해도 곧바로 SQL 생성을 시도했다. 스키마 실패를 히스토리 상태로 저장하고, Few-shot은 메모리 캐시로 재사용하며, 규칙 기반 후보 감지 후 후보일 때만 LLM 재질문 생성을 수행하도록 변경
