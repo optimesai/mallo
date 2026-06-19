@@ -28,6 +28,8 @@ public class AiQueryServiceImpl implements AiQueryService {
 
     private static final DateTimeFormatter CURRENT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String NOT_DATA_QUESTION_ANSWER = "데이터 조회와 관련 없는 질문입니다.";
+    private static final String SCHEMA_LOAD_FAILED_ANSWER = "데이터 스키마 정보를 불러오는 중 오류가 발생했습니다.";
+    private static final String CLARIFICATION_REQUIRED_ANSWER = "질문을 조금 더 구체화해주세요.";
     private static final String SQL_GENERATION_FAILED_ANSWER = "SQL 생성 중 오류가 발생했습니다.";
     private static final String BLOCKED_SQL_ANSWER = "보안 정책상 실행할 수 없는 요청입니다.";
     private static final String SQL_EXECUTION_FAILED_ANSWER = "쿼리 실행 중 오류가 발생했습니다.";
@@ -37,7 +39,10 @@ public class AiQueryServiceImpl implements AiQueryService {
     private final AiQueryHistoryRepository aiQueryHistoryRepository;
     private final DatabaseSchemaService databaseSchemaService;
     private final IntentClassifier intentClassifier;
+    private final DataQuestionCandidateService dataQuestionCandidateService;
     private final SqlAssistant sqlAssistant;
+    private final FewShotPromptService fewShotPromptService;
+    private final ClarificationService clarificationService;
     private final SqlSanitizer sqlSanitizer;
     private final SqlValidationService sqlValidationService;
     private final SqlExecutionService sqlExecutionService;
@@ -54,8 +59,25 @@ public class AiQueryServiceImpl implements AiQueryService {
         User worker = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         long startedAt = System.currentTimeMillis();
-        String schema = databaseSchemaService.getSchemaDescription();
         String currentTime = LocalDateTime.now().format(CURRENT_TIME_FORMATTER);
+        String schema;
+        try {
+            schema = databaseSchemaService.getSchemaDescription();
+        } catch (Exception exception) {
+            AiQueryHistory history = saveHistory(
+                    worker,
+                    question,
+                    null,
+                    SCHEMA_LOAD_FAILED_ANSWER,
+                    null,
+                    null,
+                    0,
+                    elapsedTime(startedAt),
+                    AiQueryHistory.ExecutionStatus.SCHEMA_LOAD_FAILED,
+                    exception.getMessage()
+            );
+            return toResponse(history, List.of());
+        }
 
         String intent;
         try {
@@ -76,7 +98,8 @@ public class AiQueryServiceImpl implements AiQueryService {
             return toResponse(history, List.of());
         }
 
-        if (!intent.contains("YES")) {
+        boolean dataQuestionCandidate = dataQuestionCandidateService.isCandidate(question);
+        if (!intent.contains("YES") && !dataQuestionCandidate) {
             AiQueryHistory history = saveHistory(
                     worker,
                     question,
@@ -92,9 +115,45 @@ public class AiQueryServiceImpl implements AiQueryService {
             return toResponse(history, List.of());
         }
 
+        String fewShotExamples;
+        try {
+            fewShotExamples = fewShotPromptService.getFewShotExamples();
+        } catch (Exception exception) {
+            AiQueryHistory history = saveHistory(
+                    worker,
+                    question,
+                    null,
+                    SQL_GENERATION_FAILED_ANSWER,
+                    null,
+                    null,
+                    0,
+                    elapsedTime(startedAt),
+                    AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
+                    exception.getMessage()
+            );
+            return toResponse(history, List.of());
+        }
+
+        ClarificationResult clarification = clarificationService.evaluate(question, schema, currentTime);
+        if (clarification.isClarificationRequired()) {
+            AiQueryHistory history = saveHistory(
+                    worker,
+                    question,
+                    null,
+                    clarification.getQuestion(),
+                    null,
+                    null,
+                    0,
+                    elapsedTime(startedAt),
+                    AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED,
+                    null
+            );
+            return toResponse(history, List.of());
+        }
+
         String sql;
         try {
-            sql = generateSql(question, schema, currentTime);
+            sql = generateSql(question, schema, fewShotExamples, currentTime);
         } catch (Exception exception) {
             AiQueryHistory history = saveHistory(
                     worker,
@@ -192,8 +251,8 @@ public class AiQueryServiceImpl implements AiQueryService {
         return rawIntent.toUpperCase(Locale.ROOT).replaceAll("[^A-Z]", "");
     }
 
-    private String generateSql(String question, String schema, String currentTime) {
-        return sqlSanitizer.sanitize(sqlAssistant.generateSql(schema, question, currentTime));
+    private String generateSql(String question, String schema, String fewShotExamples, String currentTime) {
+        return sqlSanitizer.sanitize(sqlAssistant.generateSql(schema, fewShotExamples, question, currentTime));
     }
 
     private String toJson(List<Map<String, Object>> rows) {
@@ -246,9 +305,15 @@ public class AiQueryServiceImpl implements AiQueryService {
         response.setGeneratedSql(history.getGeneratedSql());
         response.setRows(rows);
         response.setRowCount(history.getRowCount());
-        response.setAnswer(history.getNaturalAnswer());
         response.setExecutionStatus(history.getExecutionStatus());
         response.setChart(resolveChart(history));
+        response.setClarificationRequired(history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED);
+        if (Boolean.TRUE.equals(response.getClarificationRequired())) {
+            response.setAnswer(CLARIFICATION_REQUIRED_ANSWER);
+            response.setClarificationQuestion(history.getNaturalAnswer());
+        } else {
+            response.setAnswer(history.getNaturalAnswer());
+        }
         return response;
     }
 

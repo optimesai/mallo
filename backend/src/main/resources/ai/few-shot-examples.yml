@@ -1,0 +1,88 @@
+examples:
+  - id: production-defect-rate-by-line
+    category: production
+    question: "이번 달 A 라인에서 불량률이 가장 높은 공정과 원인은 뭐야?"
+    sql: |
+      SELECT
+        fr.line_name,
+        fr.operation_name,
+        pe.defect_reason,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN factory_routing fr ON pe.routing_id = fr.routing_id
+      WHERE fr.line_name = 'A'
+        AND pe.created_at >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')
+        AND pe.created_at < DATE_ADD(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01'), INTERVAL 1 MONTH)
+      GROUP BY fr.line_name, fr.operation_name, pe.defect_reason
+      ORDER BY defect_rate DESC
+      LIMIT 1
+    notes: "이번 달은 CURRENT_DATE 기준 월초 이상, 다음 달 월초 미만으로 처리한다."
+
+  - id: production-defect-rate-period
+    category: production
+    question: "지난 7일 동안 라인별 불량률을 비교해줘."
+    sql: |
+      SELECT
+        fr.line_name,
+        SUM(pe.defect_qty) AS defect_qty,
+        SUM(pe.good_qty + pe.defect_qty) AS total_qty,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN factory_routing fr ON pe.routing_id = fr.routing_id
+      WHERE pe.created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY fr.line_name
+      ORDER BY defect_rate DESC
+      LIMIT 100
+    notes: "불량률은 defect_qty / (good_qty + defect_qty)로 계산한다."
+
+  - id: inventory-below-safety-stock
+    category: inventory
+    question: "현재고가 안전재고 이하인 품목을 알려줘."
+    sql: |
+      SELECT
+        im.item_code,
+        im.item_name,
+        im.safety_stock,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      GROUP BY im.item_id, im.item_code, im.item_name, im.safety_stock
+      HAVING COALESCE(SUM(ci.current_qty), 0) <= im.safety_stock
+      ORDER BY current_qty ASC
+      LIMIT 100
+    notes: "품목별 현재고는 current_inventory를 item_id 기준으로 합산한다."
+
+  - id: inventory-transaction-recent-trend
+    category: inventory
+    question: "최근 7일 품목별 입출고 수량 추이를 보여줘."
+    sql: |
+      SELECT
+        DATE(ith.created_at) AS transaction_date,
+        im.item_code,
+        im.item_name,
+        ith.transaction_type,
+        SUM(ith.quantity) AS total_qty
+      FROM inventory_transaction_history ith
+      JOIN item_master im ON ith.item_id = im.item_id
+      WHERE ith.created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY DATE(ith.created_at), im.item_code, im.item_name, ith.transaction_type
+      ORDER BY transaction_date ASC, im.item_code ASC
+      LIMIT 100
+    notes: "수불 추이는 inventory_transaction_history.created_at을 기준으로 집계한다."
+
+  - id: bom-material-requirement
+    category: bom
+    question: "완제품 FG-100을 100개 생산하려면 필요한 원자재 수량을 알려줘."
+    sql: |
+      SELECT
+        child.item_code AS child_item_code,
+        child.item_name AS child_item_name,
+        bs.quantity * 100 AS required_qty
+      FROM bom_structure bs
+      JOIN item_master parent ON bs.parent_item_id = parent.item_id
+      JOIN item_master child ON bs.child_item_id = child.item_id
+      WHERE parent.item_code = 'FG-100'
+        AND bs.bom_status = 'ACTIVE'
+      ORDER BY child.item_code ASC
+      LIMIT 100
+    notes: "BOM 소요량은 bom_structure.quantity에 생산 목표 수량을 곱한다."

@@ -51,7 +51,7 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
     private String modelName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "execution_status", nullable = false)
+    @Column(name = "execution_status", nullable = false, length = 50, columnDefinition = "VARCHAR(50)")
     private ExecutionStatus executionStatus = ExecutionStatus.SUCCESS;
 
     @Lob
@@ -65,6 +65,8 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
         BLOCKED_UNSAFE_SQL,
         SQL_EXECUTION_FAILED,
         ANSWER_GENERATION_FAILED,
+        SCHEMA_LOAD_FAILED,
+        CLARIFICATION_REQUIRED,
         TIMEOUT
     }
 }

@@ -3,6 +3,8 @@ package com.ssafy.demo_app.api.ai;
 import com.ssafy.demo_app.api.ai.dto.AiQueryRequest;
 import com.ssafy.demo_app.api.ai.dto.AiQueryResponse;
 import com.ssafy.demo_app.domain.ai.service.AiQueryService;
+import com.ssafy.demo_app.global.exception.BusinessException;
+import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.ApiResponse;
 import com.ssafy.demo_app.infrastructure.security.details.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -26,6 +28,9 @@ public class AiQueryController {
             @Valid @RequestBody AiQueryRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
+        if (userDetails == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
         AiQueryResponse response = aiQueryService.ask(userDetails.getUserId(), request.getQuestion());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
