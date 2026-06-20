@@ -1,6 +1,4 @@
 package com.ssafy.demo_app.domain.ai.service.schema;
-
-import com.ssafy.demo_app.domain.ai.service.AiAllowedSchema;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
