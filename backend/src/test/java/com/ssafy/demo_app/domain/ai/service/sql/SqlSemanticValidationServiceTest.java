@@ -65,4 +65,27 @@ class SqlSemanticValidationServiceTest {
         assertThat(result.isValid()).isFalse();
         assertThat(result.getMessage()).contains("재고");
     }
+
+    @Test
+    void validate_allowsInboundTrendWithInboundDate() {
+        AiIntentResult intentResult = AiIntentResult.dataQuestion();
+        intentResult.setDomain("inventory");
+
+        SqlSemanticValidationResult result = sqlSemanticValidationService.validate(
+                "최근 7일 입고 수량 추이를 알려줘",
+                intentResult,
+                """
+                        SELECT
+                          ir.inbound_date,
+                          SUM(ir.inbound_qty) AS total_inbound_qty
+                        FROM inbound_receipt ir
+                        WHERE ir.inbound_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+                        GROUP BY ir.inbound_date
+                        ORDER BY ir.inbound_date ASC
+                        LIMIT 100
+                        """
+        );
+
+        assertThat(result.isValid()).isTrue();
+    }
 }

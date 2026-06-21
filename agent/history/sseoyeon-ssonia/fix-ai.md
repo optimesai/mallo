@@ -32,6 +32,25 @@
 
   </details>
 
+### 입고 추이 의미 검증 회귀 수정 (Codex)
+- **User Intent**: `최근 7일 입고 수량 추이를 알려줘`처럼 이전에 정상 답변하던 질의가 최근 AI 정확도 개선 이후 실패하여 원인 확인 및 복구 요청
+- **Agent Context**: 새로 추가한 `SqlSemanticValidationService`가 추이 질의에 `DATE(`, `YEAR(`, `MONTH(`, `DATE_FORMAT(` 함수형 표현만 허용해, 정상적인 `inbound_receipt.inbound_date` 기준 집계 SQL을 오탐 차단하는 것으로 진단. 또한 분류 모델이 입고 질의를 넓은 `inventory` 도메인으로 분류할 경우 `inbound_receipt`가 도메인 검증에서 제외될 수 있어 함께 완화.
+- **Key Decisions**:
+  - 함수형 날짜 표현만 강제하지 않고 도메인 날짜 컬럼을 허용 — `inbound_date`, `created_at`, `plan_date` 등 실제 스키마의 날짜 기준 집계를 정상 경로로 인정
+  - `inventory` 도메인 검증에 `inbound_receipt`를 포함 — 자연어 분류가 `inbound` 대신 `inventory`로 넓게 잡히는 경우에도 입고 집계 SQL을 차단하지 않도록 조정
+  - 회귀 질문을 테스트로 고정 — 동일한 질문과 정상 SQL 패턴이 다시 막히지 않도록 의미 검증 단위 테스트 추가
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/sql/SqlSemanticValidationService.java` (+18/-2) — 추이 질의 날짜 기준 허용 범위와 inventory 도메인 허용 테이블 보정
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/sql/SqlSemanticValidationServiceTest.java` (+23/-0) — 최근 7일 입고 수량 추이 회귀 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI 결과 표현 추천 개선 (Codex)
 - **User Intent**: AI 챗봇이 모든 SQL 결과를 억지로 그래프화하지 않고, 라우팅/목록/상세 조회는 표로 보여주며 질의 성격에 따라 바, 라인, 도넛, 통계 표시를 적절히 추천하도록 요청
 - **Agent Context**: 기존 차트 추천은 `STAT/BAR/LINE/DONUT/NONE`만 지원하고 숫자 y축을 강제해 식별자성 숫자까지 그래프 지표로 오인할 수 있었다. API 계약을 최소 확장해 `TABLE` 타입을 추가하고, 룰 기반 사전 추천과 프론트 렌더링을 보강.

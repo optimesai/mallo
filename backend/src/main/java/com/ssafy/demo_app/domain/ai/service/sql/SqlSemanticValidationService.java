@@ -69,7 +69,7 @@ public class SqlSemanticValidationService {
         }
 
         if ((question.contains("추이") || question.contains("트렌드") || question.contains("일별") || question.contains("월별"))
-                && !(sql.contains("date(") || sql.contains("year(") || sql.contains("month(") || sql.contains("date_format("))) {
+                && !hasTimeBasis(sql)) {
             return SqlSemanticValidationResult.invalid("추이 질의에는 날짜 기준 집계 표현이 필요합니다.");
         }
 
@@ -98,7 +98,9 @@ public class SqlSemanticValidationService {
         }
 
         String domain = normalizeSql(intentResult.getDomain());
-        if ("inventory".equals(domain) && !(sql.contains("current_inventory") || sql.contains("inventory_transaction_history"))) {
+        if ("inventory".equals(domain) && !(sql.contains("current_inventory")
+                || sql.contains("inventory_transaction_history")
+                || sql.contains("inbound_receipt"))) {
             return SqlSemanticValidationResult.invalid("재고 도메인 질의에는 재고 또는 수불 테이블 사용이 필요합니다.");
         }
         if ("shipping".equals(domain) && !sql.contains("outbound_shipping")) {
@@ -124,6 +126,20 @@ public class SqlSemanticValidationService {
             }
         }
         return true;
+    }
+
+    private boolean hasTimeBasis(String sql) {
+        return sql.contains("date(")
+                || sql.contains("year(")
+                || sql.contains("month(")
+                || sql.contains("date_format(")
+                || sql.contains("created_at")
+                || sql.contains("updated_at")
+                || sql.contains("inbound_date")
+                || sql.contains("plan_date")
+                || sql.contains("estimated_delivery")
+                || sql.contains("shipped_at")
+                || sql.contains("transaction_date");
     }
 
     private String normalizeQuestion(String value) {
