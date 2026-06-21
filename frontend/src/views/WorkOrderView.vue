@@ -18,11 +18,11 @@ import {
   Trash2,
   XCircle
 } from '@lucide/vue'
-import { itemMasterService } from '@/services/itemMasterService'
-import { factoryRoutingService } from '@/services/factoryRoutingService'
-import { bomMasterService } from '@/services/bomMasterService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
 import { useAuthStore } from '@/state/authStore'
+import { useItemMasterStore } from '@/state/itemMasterStore'
+import { useFactoryRoutingStore } from '@/state/factoryRoutingStore'
+import { useBomMasterStore } from '@/state/bomMasterStore'
 import { formatDateTime } from '@/utils/dateFormat'
 import type { ItemMasterResponse, ItemType } from '@/api/itemMasterApi'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
@@ -32,6 +32,9 @@ type WorkOrderTab = 'register' | 'list'
 
 const workOrderStore = useWorkOrderStore()
 const authStore = useAuthStore()
+const itemMasterStore = useItemMasterStore()
+const factoryRoutingStore = useFactoryRoutingStore()
+const bomMasterStore = useBomMasterStore()
 const router = useRouter()
 
 const productionItems = ref<ItemMasterResponse[]>([])
@@ -189,14 +192,14 @@ function selectKeywordSuggestion(keyword: string) {
 async function loadInitialData() {
   pageError.value = null
   try {
-    const [halfItems, finishedItems, routingList] = await Promise.all([
+    const [halfItems, finishedItems] = await Promise.all([
       loadProductionItems('HALF'),
       loadProductionItems('FG'),
-      factoryRoutingService.getRoutings({ routingStatus: 'ACTIVE' }),
+      factoryRoutingStore.loadRoutings({ routingStatus: 'ACTIVE' }),
       workOrderStore.loadWorkOrders({ page: 0, size: 10 })
     ])
     productionItems.value = [...halfItems, ...finishedItems]
-    routings.value = routingList
+    routings.value = [...factoryRoutingStore.routings]
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '작업지시 데이터를 불러오지 못했습니다.'
   }
@@ -204,11 +207,11 @@ async function loadInitialData() {
 
 async function loadProductionItems(itemType: ItemType) {
   const size = 100
-  const firstPage = await itemMasterService.getItems({ itemType, itemStatus: 'ACTIVE', page: 0, size, sort: 'itemCode,asc' })
+  const firstPage = await itemMasterStore.loadItems({ itemType, itemStatus: 'ACTIVE', page: 0, size, sort: 'itemCode,asc' })
   if (firstPage.totalPages <= 1) return firstPage.content
 
   const restPages = await Promise.all(
-    Array.from({ length: firstPage.totalPages - 1 }, (_, index) => itemMasterService.getItems({
+    Array.from({ length: firstPage.totalPages - 1 }, (_, index) => itemMasterStore.loadItems({
       itemType,
       itemStatus: 'ACTIVE',
       page: index + 1,
@@ -221,7 +224,7 @@ async function loadProductionItems(itemType: ItemType) {
 
 async function loadBomVersions(itemCode: string) {
   try {
-    bomVersions.value = await bomMasterService.getParentVersions(itemCode)
+    bomVersions.value = await bomMasterStore.loadParentVersions(itemCode)
     if (bomVersions.value.length === 0) {
       form.bomVersion = ''
       return

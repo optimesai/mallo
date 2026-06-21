@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { userService } from '@/services/userService'
 import type { UserResponse } from '@/api/authApi'
+import type { UserUpdateRequest } from '@/api/authApi'
 import type { UserRole } from '@/api/userApi'
 
 export const useUserStore = defineStore('user', () => {
@@ -21,6 +22,37 @@ export const useUserStore = defineStore('user', () => {
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadMyInfo() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await userService.getMyInfo()
+      selectedUser.value = response.data
+      return selectedUser.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '내 정보를 불러오지 못했습니다.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updateMyInfo(request: UserUpdateRequest) {
+    isSaving.value = true
+    error.value = null
+    try {
+      const response = await userService.updateMyInfo(request)
+      const updated = response.data
+      selectedUser.value = updated
+      return updated
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '내 정보를 수정하지 못했습니다.'
+      throw err
+    } finally {
+      isSaving.value = false
     }
   }
 
@@ -77,6 +109,8 @@ export const useUserStore = defineStore('user', () => {
     isSaving,
     error,
     loadUsers,
+    loadMyInfo,
+    updateMyInfo,
     loadUser,
     updateUserRole,
     deleteUser

@@ -53,3 +53,33 @@
     - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/sql/SqlValidationResult.java` — SQL 검증 서비스 내부 타입으로 이동
 
   </details>
+
+### 프론트 스타일 계층 정리 (Codex)
+- **User Intent**: 프론트/백 코드 스타일 및 파일 구성 검토 후, auth 제외 프론트 작업 중 View-Service 직접 의존 제거와 Tailwind 색상/스타일 중앙화 작업을 먼저 진행 요청
+- **Agent Context**: 프론트 지식 베이스의 `View → Store → Service → API` 흐름과 Tailwind 중앙 스타일 원칙을 기준으로, 기존 Store를 확장해 View 직접 Service 호출을 제거하고 `main.css`의 공통 `.app-*` 토큰/유틸리티를 보강함
+- **Key Decisions**:
+  - 기존 Store 재사용 — 신규 계층을 만들지 않고 `userStore`, `itemMasterStore`, `factoryRoutingStore`, `bomMasterStore`, `inboundStore`에 필요한 반환값과 액션만 보강해 프론트 계층 규칙을 준수
+  - 공통 CSS 토큰 확장 — 직접 Tailwind 팔레트 색상 대신 `frontend/src/main.css`의 `--color-*` 기반 `.app-*` 클래스를 사용해 중앙 변경 가능성을 높임
+  - auth 제외 범위 유지 — `SignupView.vue`의 authService 직접 호출은 사용자가 제외한 auth 범위로 판단하여 수정하지 않음
+- **Affected Files**: <details><summary>13개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/main.css` (+36/-0) — 공통 alert, modal backdrop, disabled background, focus ring, text/background 별칭 클래스 추가
+    - `frontend/src/state/bomMasterStore.ts` (+2/-0) — BOM 버전 로딩 액션의 결과 반환 추가
+    - `frontend/src/state/factoryRoutingStore.ts` (+1/-0) — 라우팅 목록 로딩 액션의 결과 반환 추가
+    - `frontend/src/state/inboundStore.ts` (+1/-0) — 로케이션 로딩 액션의 결과 반환 추가
+    - `frontend/src/state/userStore.ts` (+34/-0) — 내 정보 조회/수정 Store 액션 추가
+    - `frontend/src/ui/AiChartPanel.vue` (+4/-4) — 직접 slate/white 색상 클래스를 공통 클래스 기반으로 교체
+    - `frontend/src/views/InboundReceiptView.vue` (+1/-1) — 등록 오류 색상 클래스를 공통 danger 스타일로 교체
+    - `frontend/src/views/InboundStackView.vue` (+2/-2) — 적재 오류 색상 클래스를 공통 danger 스타일로 교체
+    - `frontend/src/views/MyInfoView.vue` (+8/-7) — userService 직접 호출을 userStore 액션 호출로 변경
+    - `frontend/src/views/PartnerMasterDetailView.vue` (+3/-3) — disabled 입력 배경을 공통 disabled 스타일로 교체
+    - `frontend/src/views/PartnerMasterView.vue` (+13/-13) — 모달/폼/버튼의 직접 slate/white 색상 클래스를 공통 클래스 기반으로 교체
+    - `frontend/src/views/ProductionExecutionView.vue` (+9/-7) — factoryRoutingService/inboundService 직접 호출을 Store 호출로 변경
+    - `frontend/src/views/WorkOrderView.vue` (+12/-9) — item/factoryRouting/bom Service 직접 호출을 Store 호출로 변경
+  - **Deleted**:
+    - 없음
+
+  </details>

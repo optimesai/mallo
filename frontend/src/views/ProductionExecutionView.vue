@@ -11,10 +11,10 @@ import {
   Search,
   Trash2
 } from '@lucide/vue'
-import { factoryRoutingService } from '@/services/factoryRoutingService'
-import { inboundService } from '@/services/inboundService'
 import { useWorkOrderStore } from '@/state/workOrderStore'
 import { useAuthStore } from '@/state/authStore'
+import { useFactoryRoutingStore } from '@/state/factoryRoutingStore'
+import { useInboundStore } from '@/state/inboundStore'
 import { formatDateTime } from '@/utils/dateFormat'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
 import type { LocationResponse } from '@/api/inboundApi'
@@ -26,6 +26,8 @@ type ExecutionQtyFilter = 'ALL' | 'GOOD' | 'DEFECT'
 
 const workOrderStore = useWorkOrderStore()
 const authStore = useAuthStore()
+const factoryRoutingStore = useFactoryRoutingStore()
+const inboundStore = useInboundStore()
 
 const routings = ref<FactoryRoutingResponse[]>([])
 const locations = ref<LocationResponse[]>([])
@@ -226,13 +228,13 @@ function getRemainingQty(requiredQty: number, issuedQty: number) {
 async function loadInitialData() {
   pageError.value = null
   try {
-    const [, routingList, locationList] = await Promise.all([
+    await Promise.all([
       loadExecutionOrders(0),
-      factoryRoutingService.getRoutings(),
-      inboundService.getLocations()
+      factoryRoutingStore.loadRoutings(),
+      inboundStore.loadLocations()
     ])
-    routings.value = routingList
-    locations.value = locationList
+    routings.value = [...factoryRoutingStore.routings]
+    locations.value = [...inboundStore.locations]
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '생산 실적 데이터를 불러오지 못했습니다.'
   }

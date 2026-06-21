@@ -319,7 +319,7 @@ function showToast(message: string) {
             <p class="text-sm app-text-muted">전체 거래처</p>
             <p class="mt-2 text-2xl font-bold app-text-primary">{{ stats.total }} 사</p>
           </div>
-          <div class="rounded-2xl bg-slate-100 p-3 text-slate-700">
+          <div class="rounded-2xl app-bg-muted p-3 app-text-soft">
             <Building2 class="h-6 w-6" />
           </div>
         </div>
@@ -483,14 +483,14 @@ function showToast(message: string) {
       </div>
     </section>
 
-    <div v-if="isFormOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+    <div v-if="isFormOpen" class="app-modal-backdrop">
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border app-border app-bg-surface p-6 shadow-2xl">
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 class="text-2xl font-bold app-text-primary">신규 거래처 등록</h2>
             <p class="mt-1 text-sm app-text-muted">거래처 코드는 미입력 시 구분에 따라 SUP-____ 또는 CUS-____ 형식으로 자동 생성됩니다.</p>
           </div>
-          <button type="button" class="rounded-full p-2 hover:bg-slate-100" @click="closeForm">
+          <button type="button" class="rounded-full p-2 app-hover-muted" @click="closeForm">
             <X class="h-5 w-5" />
           </button>
         </div>
@@ -502,41 +502,41 @@ function showToast(message: string) {
         <form class="grid gap-4 md:grid-cols-2" @submit.prevent="submitForm">
           <div>
             <label for="partner-form-type" class="mb-2 block text-sm font-semibold app-text-primary">거래처 구분</label>
-            <select id="partner-form-type" v-model="form.partnerType" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" @change="handleFormTypeChange">
+            <select id="partner-form-type" v-model="form.partnerType" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" @change="handleFormTypeChange">
               <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
           </div>
           <div>
             <label for="partner-form-code" class="mb-2 block text-sm font-semibold app-text-primary">거래처 코드</label>
-            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="미입력 시 자동 생성">
+            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="미입력 시 자동 생성">
           </div>
           <div>
             <label for="partner-form-name" class="mb-2 block text-sm font-semibold app-text-primary">거래처명</label>
-            <input id="partner-form-name" v-model="form.partnerName" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="거래처명 입력">
+            <input id="partner-form-name" v-model="form.partnerName" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="거래처명 입력">
           </div>
           <div>
             <label for="partner-form-business" class="mb-2 block text-sm font-semibold app-text-primary">사업자등록번호</label>
-            <input id="partner-form-business" v-model="form.businessNo" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="선택 입력">
+            <input id="partner-form-business" v-model="form.businessNo" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
           </div>
           <div>
             <label for="partner-form-representative" class="mb-2 block text-sm font-semibold app-text-primary">대표자명</label>
-            <input id="partner-form-representative" v-model="form.representative" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="선택 입력">
+            <input id="partner-form-representative" v-model="form.representative" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
           </div>
           <div>
             <label for="partner-form-phone" class="mb-2 block text-sm font-semibold app-text-primary">담당자 연락처</label>
-            <input id="partner-form-phone" v-model="form.contactPhone" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="010-0000-0000">
+            <input id="partner-form-phone" v-model="form.contactPhone" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="010-0000-0000">
           </div>
           <div class="md:col-span-2">
             <label for="partner-form-email" class="mb-2 block text-sm font-semibold app-text-primary">담당자 이메일</label>
-            <input id="partner-form-email" v-model="form.contactEmail" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="partner@example.com">
+            <input id="partner-form-email" v-model="form.contactEmail" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="partner@example.com">
           </div>
           <div class="md:col-span-2">
             <label for="partner-form-note" class="mb-2 block text-sm font-semibold app-text-primary">비고</label>
-            <textarea id="partner-form-note" v-model="form.note" rows="4" class="w-full resize-none rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100" placeholder="업무 메모를 입력하세요."></textarea>
+            <textarea id="partner-form-note" v-model="form.note" rows="4" class="w-full resize-none rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="업무 메모를 입력하세요."></textarea>
           </div>
           <div class="md:col-span-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" class="rounded-2xl border app-border px-5 py-3 text-sm font-semibold app-text-primary hover:bg-slate-50" @click="closeForm">취소</button>
-            <button type="submit" class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50" :disabled="partnerMasterStore.isSaving">
+            <button type="button" class="rounded-2xl border app-border px-5 py-3 text-sm font-semibold app-text-primary app-hover-muted" @click="closeForm">취소</button>
+            <button type="submit" class="rounded-2xl app-bg-strong px-5 py-3 text-sm font-semibold app-text-inverse app-hover-muted disabled:opacity-50" :disabled="partnerMasterStore.isSaving">
               {{ partnerMasterStore.isSaving ? '저장 중...' : '저장' }}
             </button>
           </div>

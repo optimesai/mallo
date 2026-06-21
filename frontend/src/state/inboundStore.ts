@@ -71,6 +71,7 @@ export const useInboundStore = defineStore('inbound', () => {
     error.value = null
     try {
       locations.value = await inboundService.getLocations()
+      return locations.value
     } catch (err) {
       error.value = err instanceof Error ? err.message : '로케이션 목록을 불러오지 못했습니다.'
       throw err
