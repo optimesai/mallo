@@ -18,7 +18,7 @@ import { useInboundStore } from '@/state/inboundStore'
 import { formatDateTime } from '@/utils/dateFormat'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
 import type { LocationResponse } from '@/api/inboundApi'
-import type { ProductionExecutionCreateRequest, WorkOrderOperationProgressResponse, WorkOrderSearchParams, WorkOrderStatus } from '@/api/workOrderApi'
+import type { ProductionExecutionCreateRequest, WorkOrderOperationProgressResponse, WorkOrderResponse, WorkOrderSearchParams, WorkOrderStatus } from '@/api/workOrderApi'
 
 type ProductionExecutionTab = 'register' | 'lookup'
 type ExecutionSortOrder = 'latest' | 'oldest'
@@ -132,7 +132,7 @@ const keywordSuggestions = computed(() => {
       itemName: order.itemName,
       itemCode: order.itemCode,
       status: order.status,
-      routingText: `${order.factoryName} / ${order.lineName} / ${order.operationSeq}. ${order.operationName}`
+      routingText: `${order.factoryName} / ${order.lineName} / ${getOrderOperationLabel(order)}`
     }))
 })
 const executionOperationOptions = computed(() => {
@@ -228,6 +228,12 @@ function getRemainingQty(requiredQty: number, issuedQty: number) {
 
 function getRemainingOperationQty(progress: WorkOrderOperationProgressResponse) {
   return Math.max(progress.availableQty - progress.completedQty, 0)
+}
+
+function getOrderOperationLabel(order: WorkOrderResponse) {
+  const operationSeq = order.currentOperationSeq ?? order.operationSeq
+  const operationName = order.currentOperationName ?? order.operationName
+  return `${operationSeq}. ${operationName}`
 }
 
 async function loadInitialData() {
@@ -564,7 +570,7 @@ function selectKeywordSuggestion(orderNo: string) {
                   <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
                   <td>{{ order.factoryName }}</td>
                   <td>{{ order.lineName }}</td>
-                  <td><strong>{{ order.operationSeq }}. {{ order.operationName }}</strong></td>
+                  <td><strong>{{ getOrderOperationLabel(order) }}</strong></td>
                   <td class="wo-status-cell">
                     <span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span>
                   </td>

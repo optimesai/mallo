@@ -142,3 +142,24 @@
     - 없음
 
   </details>
+### 공정 목록 현재 단계 표시 (Codex)
+- **User Intent**: 공정 실적 및 원부자재 화면의 작업지시 목록에서 공정 컬럼이 대표 공정이 아니라 현재 진행 가능한 가장 앞 단계 공정을 보여주도록 수정 요청
+- **Agent Context**: 목록 응답에는 기존 대표 라우팅의 `operationSeq/operationName`만 포함되어 선택 전에는 공정별 진행 상태를 알 수 없었음. 백엔드 목록 응답에 현재 공정 필드를 추가하고 프론트 목록 표시만 해당 필드를 우선 사용하도록 변경
+- **Key Decisions**:
+  - `WorkOrderResponse`에 `currentOperationRoutingId`, `currentOperationSeq`, `currentOperationName`을 추가 — 기존 대표 라우팅 필드를 유지해 다른 화면 영향 최소화
+  - 현재 공정은 공정별 진행 상태 중 `currentOperation=true`인 항목을 우선 사용 — 이전에 구현한 공정 순서/가능 수량 계산 기준과 동일하게 유지
+  - 현재 진행 가능 공정이 없으면 앞쪽 미완료 공정, 모두 완료되면 마지막 공정을 fallback으로 사용 — READY/CLOSE 등 비등록 상태에서도 목록 컬럼이 비지 않도록 처리
+  - BOM 없는 테스트 작업지시는 표시용 현재 공정 계산에서 대표 라우팅으로 fallback — 목록 조회가 BOM 검증 예외로 실패하지 않도록 방어
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/production/dto/WorkOrderResponse.java` (+16/-0) — 현재 진행 가능 공정 응답 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/service/WorkOrderServiceImpl.java` (+29/-6) — 작업지시 목록 응답 생성 시 현재 공정 계산 및 BOM 없음 fallback 추가
+    - `frontend/src/api/workOrderApi.ts` (+3/-0) — 현재 공정 응답 타입 필드 추가
+    - `frontend/src/views/ProductionExecutionView.vue` (+9/-3) — 목록 공정 컬럼과 검색 제안 문구가 현재 공정을 우선 표시하도록 변경
+  - **Deleted**:
+    - 없음
+
+  </details>

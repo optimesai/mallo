@@ -356,7 +356,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 workOrder,
                 summarize(workOrder),
                 canCancelIssueMaterials(workOrder),
-                canDeleteExecution(workOrder)
+                canDeleteExecution(workOrder),
+                getCurrentOperationProgress(workOrder)
         );
     }
 
@@ -443,6 +444,20 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return progresses;
     }
 
+    private WorkOrderOperationProgressResponse getCurrentOperationProgress(WorkOrder workOrder) {
+        List<WorkOrderOperationProgressResponse> progresses = getOperationProgresses(workOrder);
+        if (progresses.isEmpty()) {
+            return null;
+        }
+        return progresses.stream()
+                .filter(progress -> Boolean.TRUE.equals(progress.getCurrentOperation()))
+                .findFirst()
+                .or(() -> progresses.stream()
+                        .filter(progress -> progress.getCompletedQty() < progress.getTargetQty())
+                        .findFirst())
+                .orElse(progresses.get(progresses.size() - 1));
+    }
+
     private List<FactoryRouting> getLineRoutings(WorkOrder workOrder) {
         FactoryRouting routing = workOrder.getRouting();
         return factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc(
@@ -457,11 +472,19 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     private int getIssuedProductionCapacity(WorkOrder workOrder) {
-        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
-                workOrder.getItem(),
-                workOrder.getBomVersion(),
-                workOrder.getTargetQty()
-        );
+        List<BomRequirement> requirements;
+        try {
+            requirements = bomService.calculateMaterialRequirements(
+                    workOrder.getItem(),
+                    workOrder.getBomVersion(),
+                    workOrder.getTargetQty()
+            );
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.BOM_NOT_FOUND) {
+                return 0;
+            }
+            throw exception;
+        }
         if (requirements.isEmpty()) {
             return workOrder.getTargetQty();
         }

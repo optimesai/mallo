@@ -16,6 +16,9 @@ export interface WorkOrderResponse {
   lineName: string
   operationSeq: number
   operationName: string
+  currentOperationRoutingId: number
+  currentOperationSeq: number
+  currentOperationName: string
   targetQty: number
   bomVersion: string
   status: WorkOrderStatus

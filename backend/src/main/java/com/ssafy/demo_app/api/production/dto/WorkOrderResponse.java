@@ -24,6 +24,9 @@ public class WorkOrderResponse {
     private String lineName;
     private Integer operationSeq;
     private String operationName;
+    private Integer currentOperationRoutingId;
+    private Integer currentOperationSeq;
+    private String currentOperationName;
     private Integer targetQty;
     private String bomVersion;
     private String status;
@@ -51,6 +54,16 @@ public class WorkOrderResponse {
             boolean canCancelIssue,
             boolean canDeleteExecution
     ) {
+        return from(workOrder, summary, canCancelIssue, canDeleteExecution, null);
+    }
+
+    public static WorkOrderResponse from(
+            WorkOrder workOrder,
+            WorkOrderExecutionSummary summary,
+            boolean canCancelIssue,
+            boolean canDeleteExecution,
+            WorkOrderOperationProgressResponse currentOperation
+    ) {
         int totalGoodQty = summary.totalGoodQty();
         int totalDefectQty = summary.totalDefectQty();
         int totalExecutedQty = totalGoodQty + totalDefectQty;
@@ -71,6 +84,9 @@ public class WorkOrderResponse {
                 .lineName(workOrder.getRouting().getLineName())
                 .operationSeq(workOrder.getRouting().getOperationSeq())
                 .operationName(workOrder.getRouting().getOperationName())
+                .currentOperationRoutingId(currentOperation != null ? currentOperation.getRoutingId() : workOrder.getRouting().getRoutingId())
+                .currentOperationSeq(currentOperation != null ? currentOperation.getOperationSeq() : workOrder.getRouting().getOperationSeq())
+                .currentOperationName(currentOperation != null ? currentOperation.getOperationName() : workOrder.getRouting().getOperationName())
                 .targetQty(workOrder.getTargetQty())
                 .bomVersion(workOrder.getBomVersion())
                 .status(status.name())
