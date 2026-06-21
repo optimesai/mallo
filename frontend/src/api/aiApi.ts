@@ -17,7 +17,7 @@ export type AiExecutionStatus =
   | 'SEMANTIC_VALIDATION_FAILED'
   | 'TIMEOUT'
 
-export type AiChartType = 'NONE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
+export type AiChartType = 'NONE' | 'TABLE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
 
 export interface AiChartResponse {
   enabled: boolean

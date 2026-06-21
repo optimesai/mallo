@@ -5,14 +5,24 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ChartSpecValidationService {
 
     private static final String INVALID_CHART = "차트 추천 결과가 데이터 구조와 일치하지 않습니다.";
     private static final String NO_CHART = "차트로 표현할 수 있는 데이터가 없습니다.";
+    private static final Set<String> NON_METRIC_KEYWORDS = Set.of(
+            "id",
+            "_id",
+            "seq",
+            "no",
+            "code",
+            "status"
+    );
 
     public ChartSpecValidationResult validate(AiChartResponse chart, List<Map<String, Object>> rows) {
         if (chart == null || chart.getType() == null) {
@@ -27,6 +37,9 @@ public class ChartSpecValidationService {
         if (chart.getType() == AiChartResponse.ChartType.NONE) {
             return ChartSpecValidationResult.valid(normalizeNone(chart, chart.getReason()));
         }
+        if (chart.getType() == AiChartResponse.ChartType.TABLE) {
+            return ChartSpecValidationResult.valid(normalizeTable(chart));
+        }
 
         List<String> yKeys = chart.getYKeys();
         if (yKeys == null || yKeys.isEmpty()) {
@@ -37,6 +50,7 @@ public class ChartSpecValidationService {
         }
 
         return switch (chart.getType()) {
+            case TABLE -> ChartSpecValidationResult.valid(normalizeTable(chart));
             case STAT -> validateStat(chart);
             case BAR, LINE -> validateAxisChart(chart, rows);
             case DONUT -> validateDonut(chart, rows);
@@ -80,7 +94,7 @@ public class ChartSpecValidationService {
 
     private boolean validateYKeys(List<String> yKeys, List<Map<String, Object>> rows) {
         for (String yKey : yKeys) {
-            if (!hasColumn(yKey, rows) || !isNumericColumn(yKey, rows)) {
+            if (!hasColumn(yKey, rows) || !isNumericColumn(yKey, rows) || isIdentifierLikeColumn(yKey)) {
                 return false;
             }
         }
@@ -108,6 +122,25 @@ public class ChartSpecValidationService {
         }
 
         return hasNumericValue;
+    }
+
+    private boolean isIdentifierLikeColumn(String key) {
+        String normalizedKey = key.toLowerCase(Locale.ROOT);
+        return NON_METRIC_KEYWORDS.stream().anyMatch(normalizedKey::contains);
+    }
+
+    private AiChartResponse normalizeTable(AiChartResponse chart) {
+        chart.setEnabled(true);
+        chart.setType(AiChartResponse.ChartType.TABLE);
+        chart.setXKey(null);
+        chart.setYKeys(List.of());
+        if (chart.getTitle() == null || chart.getTitle().isBlank()) {
+            chart.setTitle("표 형식 조회");
+        }
+        if (chart.getReason() == null || chart.getReason().isBlank()) {
+            chart.setReason("목록 또는 상세 데이터는 표 형식이 가장 적합합니다.");
+        }
+        return chart;
     }
 
     private AiChartResponse normalizeNone(AiChartResponse chart, String reason) {

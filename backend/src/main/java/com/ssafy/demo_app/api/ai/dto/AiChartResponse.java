@@ -28,8 +28,19 @@ public class AiChartResponse {
         return response;
     }
 
+    public static AiChartResponse table(String title, String reason) {
+        AiChartResponse response = new AiChartResponse();
+        response.setEnabled(true);
+        response.setType(ChartType.TABLE);
+        response.setYKeys(List.of());
+        response.setTitle(title);
+        response.setReason(reason);
+        return response;
+    }
+
     public enum ChartType {
         NONE,
+        TABLE,
         STAT,
         BAR,
         LINE,

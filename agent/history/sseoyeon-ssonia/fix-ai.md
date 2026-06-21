@@ -31,3 +31,30 @@
     - 없음
 
   </details>
+
+### AI 결과 표현 추천 개선 (Codex)
+- **User Intent**: AI 챗봇이 모든 SQL 결과를 억지로 그래프화하지 않고, 라우팅/목록/상세 조회는 표로 보여주며 질의 성격에 따라 바, 라인, 도넛, 통계 표시를 적절히 추천하도록 요청
+- **Agent Context**: 기존 차트 추천은 `STAT/BAR/LINE/DONUT/NONE`만 지원하고 숫자 y축을 강제해 식별자성 숫자까지 그래프 지표로 오인할 수 있었다. API 계약을 최소 확장해 `TABLE` 타입을 추가하고, 룰 기반 사전 추천과 프론트 렌더링을 보강.
+- **Key Decisions**:
+  - `AiChartResponse`에 `TABLE` 타입만 추가 — 기존 AI 응답 구조를 유지하면서 “표가 주 표현”이라는 의도를 전달하기 위한 최소 API 확장
+  - 명백한 표현 방식은 LLM 호출 전에 룰로 결정 — 라우팅/목록/상세 조회와 추이/비중/비교/KPI 질의를 안정적으로 구분해 억지 그래프 추천을 방지
+  - 숫자 컬럼 중 식별자성 컬럼은 metric에서 제외 — `routing_id`, `operation_seq`, `item_id`처럼 그래프 y축으로 부적합한 값을 차단
+  - 프론트는 기존 `AiChartPanel`을 확장 — View → Store → Service → API 계층 구조를 유지하고, 표시 컴포넌트 안에서 `TABLE` 안내와 `DONUT` 렌더링을 추가
+- **Affected Files**: <details><summary>9개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiChartResponse.java` (+11/-0) — `TABLE` 타입과 table 응답 팩토리 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/assistant/ChartRecommendationGenerator.java` (+5/-1) — 표/그래프 추천 기준과 식별자 숫자 제외 규칙 보강
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartRecommendationServiceImpl.java` (+210/-0) — 룰 기반 사전 추천, TABLE/STAT/LINE/DONUT/BAR 판단 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartSpecValidationService.java` (+34/-1) — TABLE 허용 및 식별자성 yKey 차단
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/chart/ChartRecommendationServiceImplTest.java` (+92/-5) — 라우팅 표, 추이 라인, 상태 분포 도넛, 단일 KPI 통계 테스트 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/chart/ChartSpecValidationServiceTest.java` (+24/-0) — TABLE 검증과 식별자 yKey 차단 테스트 추가
+    - `frontend/src/api/aiApi.ts` (+1/-1) — 프론트 차트 타입에 `TABLE` 추가
+    - `frontend/src/ui/AiChartPanel.vue` (+150/-1) — TABLE 안내/미리보기와 DONUT 렌더링 추가
+    - `frontend/src/views/AiDataChatbotView.vue` (+9/-1) — TABLE 추천 시 결과 표를 차트 안내보다 우선 배치
+  - **Deleted**:
+    - 없음
+
+  </details>

@@ -14,6 +14,20 @@ class ChartSpecValidationServiceTest {
     private final ChartSpecValidationService chartSpecValidationService = new ChartSpecValidationService();
 
     @Test
+    void validate_acceptsTableWithoutNumericYKey() {
+        AiChartResponse chart = chart(AiChartResponse.ChartType.TABLE, null, List.of());
+        List<Map<String, Object>> rows = List.of(
+                Map.of("factory_name", "1공장", "line_name", "A라인", "operation_name", "조립")
+        );
+
+        ChartSpecValidationResult result = chartSpecValidationService.validate(chart, rows);
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.getChart().getEnabled()).isTrue();
+        assertThat(result.getChart().getYKeys()).isEqualTo(List.of());
+    }
+
+    @Test
     void validate_acceptsBarWithExistingXKeyAndNumericYKey() {
         AiChartResponse chart = chart(AiChartResponse.ChartType.BAR, "item_name", List.of("quantity"));
         List<Map<String, Object>> rows = List.of(
@@ -88,6 +102,16 @@ class ChartSpecValidationServiceTest {
     void validate_blocksNonNumericYKey() {
         AiChartResponse chart = chart(AiChartResponse.ChartType.BAR, "item_name", List.of("quantity"));
         List<Map<String, Object>> rows = List.of(Map.of("item_name", "A품목", "quantity", "10"));
+
+        ChartSpecValidationResult result = chartSpecValidationService.validate(chart, rows);
+
+        assertThat(result.isValid()).isFalse();
+    }
+
+    @Test
+    void validate_blocksIdentifierNumericYKey() {
+        AiChartResponse chart = chart(AiChartResponse.ChartType.BAR, "line_name", List.of("routing_id"));
+        List<Map<String, Object>> rows = List.of(Map.of("line_name", "A라인", "routing_id", 1));
 
         ChartSpecValidationResult result = chartSpecValidationService.validate(chart, rows);
 
