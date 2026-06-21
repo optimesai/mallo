@@ -96,4 +96,6 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Integer> {
             @Param("operationName") String operationName,
             Pageable pageable
     );
+
+    long countByStatusIn(List<WorkOrder.OrderStatus> statuses);
 }

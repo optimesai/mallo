@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   AlertTriangle,
   Bot,
@@ -16,9 +17,11 @@ import AiResultTable from '@/ui/AiResultTable.vue'
 import AiSqlPanel from '@/ui/AiSqlPanel.vue'
 
 const aiStore = useAiStore()
+const route = useRoute()
 
 const question = ref('')
 const messageListRef = ref<HTMLElement | null>(null)
+const lastAutoQuestion = ref('')
 
 const examples = [
   '안전재고 미만 품목을 보여줘',
@@ -45,6 +48,29 @@ async function submitQuestion() {
 async function useExample(example: string) {
   question.value = example
   await submitQuestion()
+}
+
+onMounted(() => {
+  submitRouteQuestion()
+})
+
+watch(() => route.query.question, () => {
+  submitRouteQuestion()
+})
+
+async function submitRouteQuestion() {
+  const routeQuestion = getRouteQuestion()
+  if (!routeQuestion || routeQuestion === lastAutoQuestion.value) return
+
+  lastAutoQuestion.value = routeQuestion
+  question.value = routeQuestion
+  await submitQuestion()
+}
+
+function getRouteQuestion() {
+  const value = route.query.question
+  if (Array.isArray(value)) return value[0]?.trim() ?? ''
+  return value?.trim() ?? ''
 }
 
 async function scrollToBottom() {

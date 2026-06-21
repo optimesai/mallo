@@ -207,17 +207,31 @@ function selectKeywordSuggestion(keyword: string) {
 
 async function loadInitialData() {
   pageError.value = null
-  try {
-    const [halfItems, finishedItems] = await Promise.all([
-      loadProductionItems('HALF'),
-      loadProductionItems('FG'),
-      factoryRoutingStore.loadRoutings({ routingStatus: 'ACTIVE' }),
-      workOrderStore.loadWorkOrders({ page: 0, size: 10 })
-    ])
-    productionItems.value = [...halfItems, ...finishedItems]
+  const results = await Promise.allSettled([
+    loadProductionItems('HALF'),
+    loadProductionItems('FG'),
+    factoryRoutingStore.loadRoutings({ routingStatus: 'ACTIVE' }),
+    workOrderStore.loadWorkOrders({ page: 0, size: 10 })
+  ])
+
+  const labels = ['반제품 품목', '완제품 품목', '공장/생산 라우팅', '작업지시 목록']
+  const failedMessages = results
+    .map((result, index) => {
+      if (result.status === 'fulfilled') return ''
+      const message = result.reason instanceof Error ? result.reason.message : '서버 오류가 발생했습니다.'
+      return `${labels[index]} 조회 실패: ${message}`
+    })
+    .filter(Boolean)
+
+  if (results[0].status === 'fulfilled' && results[1].status === 'fulfilled') {
+    productionItems.value = [...results[0].value, ...results[1].value]
+  }
+  if (results[2].status === 'fulfilled') {
     routings.value = [...factoryRoutingStore.routings]
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '작업지시 데이터를 불러오지 못했습니다.'
+  }
+
+  if (failedMessages.length > 0) {
+    pageError.value = failedMessages.join('\n')
   }
 }
 

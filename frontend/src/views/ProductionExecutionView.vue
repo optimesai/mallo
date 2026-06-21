@@ -238,16 +238,30 @@ function getOrderOperationLabel(order: WorkOrderResponse) {
 
 async function loadInitialData() {
   pageError.value = null
-  try {
-    await Promise.all([
-      loadExecutionOrders(0),
-      factoryRoutingStore.loadRoutings(),
-      inboundStore.loadLocations()
-    ])
+  const results = await Promise.allSettled([
+    loadExecutionOrders(0),
+    factoryRoutingStore.loadRoutings(),
+    inboundStore.loadLocations()
+  ])
+
+  if (results[1].status === 'fulfilled') {
     routings.value = [...factoryRoutingStore.routings]
+  }
+  if (results[2].status === 'fulfilled') {
     locations.value = [...inboundStore.locations]
-  } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '생산 실적 데이터를 불러오지 못했습니다.'
+  }
+
+  const labels = ['작업지시 목록', '공장/생산 라우팅', '입고 위치']
+  const failedMessages = results
+    .map((result, index) => {
+      if (result.status === 'fulfilled') return ''
+      const message = result.reason instanceof Error ? result.reason.message : '서버 오류가 발생했습니다.'
+      return `${labels[index]} 조회 실패: ${message}`
+    })
+    .filter(Boolean)
+
+  if (failedMessages.length > 0) {
+    pageError.value = failedMessages.join('\n')
   }
 }
 
