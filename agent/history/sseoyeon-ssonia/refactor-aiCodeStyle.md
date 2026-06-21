@@ -126,3 +126,19 @@
     - 없음
 
   </details>
+### 자재 출고 안내 문구 제거 (Codex)
+- **User Intent**: BOM 기반 생산 자재 출고 화면 상단에 표시되는 실제 작업지시 기반 자재 불출 안내 카드가 불필요하여 삭제 요청
+- **Agent Context**: 첨부 이미지와 `MaterialIssueView` 템플릿을 확인해 안내 카드 블록과 해당 카드에서만 사용하던 아이콘 import가 제거 대상임을 확인
+- **Key Decisions**:
+  - 기능 로직과 API 호출 흐름은 수정하지 않고 안내 카드 UI만 제거 — 사용자가 요청한 표시 문구 삭제 범위 준수
+  - `ShieldAlert` import도 함께 제거 — Vue 타입체크에서 미사용 import 문제가 없도록 정리
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/MaterialIssueView.vue` (+0/-16) — BOM 기반 생산 자재 출고 화면 안내 카드 삭제 및 미사용 아이콘 import 제거
+  - **Deleted**:
+    - 없음
+
+  </details>
