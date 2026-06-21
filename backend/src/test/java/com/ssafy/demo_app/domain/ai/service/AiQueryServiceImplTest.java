@@ -140,6 +140,36 @@ class AiQueryServiceImplTest {
         verify(sqlExecutionService).execute(any());
     }
 
+    @Test
+    void ask_returnsClarificationGuideWhenSemanticValidationStillFailsAfterRetry() {
+        givenDefaultUser();
+        given(aiQueryHistoryRepository.save(any(AiQueryHistory.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(databaseSchemaService.getSchemaDescription()).willReturn("schema");
+        given(businessRulePromptService.getBusinessRules()).willReturn("business rules");
+        given(intentClassificationService.classify(any(), any(), any(), any())).willReturn(AiIntentResult.dataQuestion());
+        given(dataQuestionCandidateService.isCandidate("재고 문제 보여줘")).willReturn(true);
+        given(fewShotPromptService.getFewShotExamples()).willReturn("few shot");
+        given(clarificationService.evaluate(any(), any(), any())).willReturn(ClarificationResult.notRequired());
+        given(sqlAssistant.generateSql(any(), any(), any(), any(), any(), any(), any()))
+                .willReturn("SELECT item_id FROM item_master", "SELECT item_id FROM item_master");
+        given(sqlSanitizer.sanitize(any())).willAnswer(invocation -> invocation.getArgument(0));
+        given(sqlValidationService.validate(any()))
+                .willReturn(SqlValidationResult.valid("SELECT item_id FROM item_master"))
+                .willReturn(SqlValidationResult.valid("SELECT item_id FROM item_master"));
+        given(sqlSemanticValidationService.validate(any(), any(), any()))
+                .willReturn(SqlSemanticValidationResult.invalid("재고 도메인 질의에는 재고 또는 수불 테이블 사용이 필요합니다."))
+                .willReturn(SqlSemanticValidationResult.invalid("재고 도메인 질의에는 재고 또는 수불 테이블 사용이 필요합니다."));
+
+        AiQueryResponse response = aiQueryService.ask(1, "재고 문제 보여줘");
+
+        assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SEMANTIC_VALIDATION_FAILED);
+        assertThat(response.getAnswer()).contains("질문을 조금 더 구체화해주세요");
+        assertThat(response.getAnswer()).contains("조회 기간");
+        assertThat(response.getAnswer()).contains("집계 기준");
+        verify(sqlExecutionService, never()).execute(any());
+    }
+
     private void givenDefaultUser() {
         User user = new User();
         user.setUserId(1);

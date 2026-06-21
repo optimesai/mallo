@@ -32,6 +32,25 @@
 
   </details>
 
+### 의미 검증 실패 안내 개선 (Codex)
+- **User Intent**: `질문 의도와 일치하는 SQL을 생성하지 못했습니다.`라는 안내가 무책임하게 느껴지므로, 사용자가 일자/범위/집계 기준 등을 구체화해 다시 질문할 수 있도록 안내 문구 개선 요청
+- **Agent Context**: 의미 검증 실패 사유는 히스토리 `errorLog`에 남기되, 사용자에게는 실패 선언이 아니라 다음 액션을 제시하는 답변을 내려야 하는 문제로 진단. `SEMANTIC_VALIDATION_FAILED` 사용자-facing 답변 상수를 구체화 요청 문구로 교체.
+- **Key Decisions**:
+  - 상태 enum과 실패 추적은 유지 — 기존 `SEMANTIC_VALIDATION_FAILED` 상태와 내부 실패 사유 저장 흐름은 그대로 두어 운영 진단 가능성 보존
+  - 사용자 답변만 행동 가능 문구로 변경 — 조회 기간, 집계 기준, 상태값, 대상 품목/거래처를 예시로 제시해 재질문 방향을 명확히 안내
+  - 서비스 테스트에 실패 안내 문구를 고정 — 재생성 후에도 의미 검증 실패 시 구체화 안내가 반환되는지 회귀 검증
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` (+1/-1) — 의미 검증 실패 사용자 안내 문구 개선
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImplTest.java` (+30/-0) — 의미 검증 최종 실패 시 구체화 안내 반환 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### 입고 추이 의미 검증 회귀 수정 (Codex)
 - **User Intent**: `최근 7일 입고 수량 추이를 알려줘`처럼 이전에 정상 답변하던 질의가 최근 AI 정확도 개선 이후 실패하여 원인 확인 및 복구 요청
 - **Agent Context**: 새로 추가한 `SqlSemanticValidationService`가 추이 질의에 `DATE(`, `YEAR(`, `MONTH(`, `DATE_FORMAT(` 함수형 표현만 허용해, 정상적인 `inbound_receipt.inbound_date` 기준 집계 SQL을 오탐 차단하는 것으로 진단. 또한 분류 모델이 입고 질의를 넓은 `inventory` 도메인으로 분류할 경우 `inbound_receipt`가 도메인 검증에서 제외될 수 있어 함께 완화.

@@ -48,7 +48,7 @@ public class AiQueryServiceImpl implements AiQueryService {
     private static final String CLARIFICATION_REQUIRED_ANSWER = "질문을 조금 더 구체화해주세요.";
     private static final String SQL_GENERATION_FAILED_ANSWER = "SQL 생성 중 오류가 발생했습니다.";
     private static final String BLOCKED_SQL_ANSWER = "보안 정책상 실행할 수 없는 요청입니다.";
-    private static final String SEMANTIC_VALIDATION_FAILED_ANSWER = "질문 의도와 일치하는 SQL을 생성하지 못했습니다.";
+    private static final String SEMANTIC_VALIDATION_FAILED_ANSWER = "질문을 조금 더 구체화해주세요. 예: 조회 기간, 집계 기준(품목별/거래처별/라인별), 상태값, 대상 품목 또는 거래처를 함께 입력하면 더 정확하게 조회할 수 있습니다.";
     private static final String SQL_EXECUTION_FAILED_ANSWER = "쿼리 실행 중 오류가 발생했습니다.";
     private static final String ANSWER_GENERATION_FAILED_ANSWER = "답변 생성 중 오류가 발생했습니다.";
 
