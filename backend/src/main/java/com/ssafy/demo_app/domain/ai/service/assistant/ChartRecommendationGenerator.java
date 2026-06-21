@@ -25,6 +25,8 @@ public interface ChartRecommendationGenerator {
             Rules:
             - Use only keys that exist in rowsJson.
             - yKeys must be numeric columns.
+            - Do not invent, translate, or rename row keys.
+            - Do not recommend a chart for explanatory text-only answers.
             - If rowsJson is empty, return type NONE.
             - If there is one row and one numeric value, return STAT.
             - If the question asks trend/time/추이/변화, prefer LINE.

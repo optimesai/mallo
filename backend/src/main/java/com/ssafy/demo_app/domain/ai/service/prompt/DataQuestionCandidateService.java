@@ -35,7 +35,12 @@ public class DataQuestionCandidateService {
             "로케이션",
             "거래처",
             "고객사",
-            "공급처"
+            "공급처",
+            "운영",
+            "이슈",
+            "위험",
+            "지연",
+            "대기"
     );
 
     public boolean isCandidate(String question) {

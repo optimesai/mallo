@@ -86,3 +86,98 @@ examples:
       ORDER BY child.item_code ASC
       LIMIT 100
     notes: "BOM 소요량은 bom_structure.quantity에 생산 목표 수량을 곱한다."
+
+  - id: shipping-waiting-by-partner
+    category: shipping
+    question: "거래처별 출하 대기 물량을 집계해줘."
+    sql: |
+      SELECT
+        pm.partner_code,
+        pm.partner_name,
+        SUM(os.request_qty - COALESCE(os.shipped_qty, 0)) AS waiting_qty,
+        COUNT(*) AS waiting_order_count
+      FROM outbound_shipping os
+      JOIN partner_master pm ON os.partner_id = pm.partner_id
+      WHERE os.status IN ('READY', 'PICKING', 'PACKING', 'INSPECTING', 'PARTIALLY_SHIPPED')
+      GROUP BY pm.partner_id, pm.partner_code, pm.partner_name
+      ORDER BY waiting_qty DESC
+      LIMIT 100
+    notes: "출하 대기는 완료(SHIPPED)와 취소(CANCELED)를 제외하고 request_qty - shipped_qty 기준으로 계산한다."
+
+  - id: inbound-daily-trend
+    category: inbound
+    question: "최근 7일 입고 수량 일별 추이를 알려줘."
+    sql: |
+      SELECT
+        ir.inbound_date,
+        SUM(ir.inbound_qty) AS total_inbound_qty
+      FROM inbound_receipt ir
+      WHERE ir.inbound_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY ir.inbound_date
+      ORDER BY ir.inbound_date ASC
+      LIMIT 100
+    notes: "입고 추이는 inbound_receipt.inbound_date와 inbound_qty를 기준으로 집계한다."
+
+  - id: work-order-status-count
+    category: production
+    question: "작업지시 상태별 건수를 보여줘."
+    sql: |
+      SELECT
+        wo.status,
+        COUNT(*) AS order_count,
+        SUM(wo.target_qty) AS total_target_qty
+      FROM work_order wo
+      GROUP BY wo.status
+      ORDER BY order_count DESC
+      LIMIT 100
+    notes: "작업지시 상태는 work_order.status의 READY, RUN, HOLD, CLOSE 값을 기준으로 집계한다."
+
+  - id: inventory-current-stock-by-warehouse
+    category: inventory
+    question: "창고별 현재고 합계를 비교해줘."
+    sql: |
+      SELECT
+        wl.warehouse_name,
+        SUM(ci.current_qty) AS current_qty
+      FROM current_inventory ci
+      JOIN warehouse_location wl ON ci.location_id = wl.location_id
+      GROUP BY wl.warehouse_name
+      ORDER BY current_qty DESC
+      LIMIT 100
+    notes: "창고별 현재고는 current_inventory.current_qty를 warehouse_location.warehouse_name 기준으로 합산한다."
+
+  - id: inventory-transaction-history-by-item
+    category: inventory
+    question: "품목 RM-100의 최근 수불 이력을 보여줘."
+    sql: |
+      SELECT
+        ith.created_at,
+        im.item_code,
+        im.item_name,
+        ith.transaction_type,
+        ith.quantity,
+        ith.reason_desc
+      FROM inventory_transaction_history ith
+      JOIN item_master im ON ith.item_id = im.item_id
+      WHERE im.item_code = 'RM-100'
+      ORDER BY ith.created_at DESC
+      LIMIT 100
+    notes: "수불 이력은 inventory_transaction_history를 기준으로 조회하고 품목 코드는 item_master.item_code로 필터링한다."
+
+  - id: operation-risk-summary
+    category: operation
+    question: "운영 이슈가 될 만한 항목을 요약해줘."
+    sql: |
+      SELECT
+        'SAFETY_STOCK_SHORTAGE' AS issue_type,
+        im.item_code AS target_code,
+        im.item_name AS target_name,
+        im.safety_stock AS threshold_qty,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      GROUP BY im.item_id, im.item_code, im.item_name, im.safety_stock
+      HAVING COALESCE(SUM(ci.current_qty), 0) < im.safety_stock
+      ORDER BY current_qty ASC
+      LIMIT 100
+    notes: "운영 이슈 요약은 먼저 안전재고 미달처럼 명확한 위험 기준을 우선 조회한다."
