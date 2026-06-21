@@ -5,9 +5,19 @@ export interface AiQueryRequest {
   question: string
 }
 
-export type AiExecutionStatus = 'SUCCESS' | 'FAILED' | 'CLARIFICATION_REQUIRED'
+export type AiExecutionStatus =
+  | 'SUCCESS'
+  | 'NOT_DATA_QUESTION'
+  | 'SQL_GENERATION_FAILED'
+  | 'BLOCKED_UNSAFE_SQL'
+  | 'SQL_EXECUTION_FAILED'
+  | 'ANSWER_GENERATION_FAILED'
+  | 'SCHEMA_LOAD_FAILED'
+  | 'CLARIFICATION_REQUIRED'
+  | 'SEMANTIC_VALIDATION_FAILED'
+  | 'TIMEOUT'
 
-export type AiChartType = 'NONE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
+export type AiChartType = 'NONE' | 'TABLE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
 
 export interface AiChartResponse {
   enabled: boolean

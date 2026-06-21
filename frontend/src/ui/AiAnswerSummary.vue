@@ -11,7 +11,7 @@ const statusClass = computed(() => {
   if (!props.response) return 'app-status-neutral'
   if (props.response.clarificationRequired) return 'app-status-warning'
   if (props.response.executionStatus === 'SUCCESS') return 'app-status-success'
-  if (props.response.executionStatus === 'FAILED') return 'app-status-danger'
+  if (props.response.executionStatus !== 'NOT_DATA_QUESTION') return 'app-status-danger'
   return 'app-status-neutral'
 })
 

@@ -31,6 +31,7 @@ const examples = [
 ]
 
 const canSubmit = computed(() => question.value.trim().length > 0 && !aiStore.isLoading)
+const isTablePresentation = computed(() => aiStore.currentResponse?.chart?.type === 'TABLE')
 
 async function submitQuestion() {
   if (!canSubmit.value) return
@@ -229,11 +230,18 @@ function formatTime(value: string) {
       </section>
 
       <section class="space-y-6">
+        <AiResultTable
+          v-if="isTablePresentation"
+          :rows="aiStore.currentResponse?.rows ?? []"
+        />
         <AiChartPanel
           :chart="aiStore.currentResponse?.chart"
           :rows="aiStore.currentResponse?.rows ?? []"
         />
-        <AiResultTable :rows="aiStore.currentResponse?.rows ?? []" />
+        <AiResultTable
+          v-if="!isTablePresentation"
+          :rows="aiStore.currentResponse?.rows ?? []"
+        />
         <AiSqlPanel :sql="aiStore.currentResponse?.generatedSql" />
       </section>
     </div>
