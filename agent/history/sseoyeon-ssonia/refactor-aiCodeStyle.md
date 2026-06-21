@@ -83,3 +83,21 @@
     - 없음
 
   </details>
+
+### 입고 API v2 연결 전환 (Codex)
+- **User Intent**: 입고 관리 화면이 재고 관리 구현이 아닌 inbound 구현을 타도록 연결하고, 창고 적재 중복 처리 문제를 방지하도록 요청
+- **Agent Context**: 프론트 `inboundApi.ts`가 `/api/inbounds`를 호출해 백엔드 `InventoryServiceImpl`로 연결되고 있었음. 중복 적재 방지 상태 변경이 구현된 `InboundServiceImpl`을 사용하도록 `/api/v2/inbounds`로 엔드포인트를 전환함
+- **Key Decisions**:
+  - 프론트 URL만 변경 — 백엔드에는 이미 `InboundApi`/`InboundController`/`InboundServiceImpl` 경로가 존재하고, `stackInventory()`에서 `STACKED` 상태 변경을 수행하므로 최소 변경으로 의도한 도메인 경계를 맞춤
+  - 품목/거래처/로케이션 조회는 유지 — 입고 보조 조회 API는 각각 `/api/items`, `/api/partners`, `/api/locations`를 계속 사용해야 하므로 입고 오더 CRUD/상태 변경 URL만 `/api/v2/inbounds`로 변경
+  - 검증 분리 수행 — 병렬 `npm run build`가 출력 없이 지연되어 동일 검증을 `npm run type-check`와 `npm run build-only`로 나눠 통과 확인
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/api/inboundApi.ts` (+6/-6) — 입고 관리 CRUD/검수/적재 API 호출 URL을 `/api/inbounds`에서 `/api/v2/inbounds`로 변경
+  - **Deleted**:
+    - 없음
+
+  </details>
