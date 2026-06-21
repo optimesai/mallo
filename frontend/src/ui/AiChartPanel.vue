@@ -13,9 +13,23 @@ interface ChartPoint {
   value: number
 }
 
+interface LinePoint extends ChartPoint {
+  x: number
+  y: number
+  shortLabel: string
+}
+
 const primaryYKey = computed(() => props.chart?.yKeys?.[0])
 const isModalOpen = ref(false)
 const donutColors = ['#2563eb', '#16a34a', '#f97316', '#dc2626', '#7c3aed', '#0891b2', '#64748b', '#ca8a04']
+const lineChart = {
+  width: 620,
+  height: 280,
+  left: 68,
+  right: 28,
+  top: 34,
+  bottom: 64
+}
 
 const columns = computed(() => {
   const keys = new Set<string>()
@@ -44,6 +58,11 @@ const points = computed<ChartPoint[]>(() => {
 
 const maxValue = computed(() => Math.max(...points.value.map(point => point.value), 0))
 const donutTotal = computed(() => points.value.reduce((sum, point) => sum + Math.max(point.value, 0), 0))
+const lineMinValue = computed(() => Math.min(0, ...points.value.map(point => point.value)))
+const lineMaxValue = computed(() => Math.max(0, ...points.value.map(point => point.value)))
+const lineValueRange = computed(() => Math.max(lineMaxValue.value - lineMinValue.value, 1))
+const lineInnerWidth = lineChart.width - lineChart.left - lineChart.right
+const lineInnerHeight = lineChart.height - lineChart.top - lineChart.bottom
 
 const donutSegments = computed(() => {
   let offset = 25
@@ -64,17 +83,36 @@ const donutSegments = computed(() => {
 })
 
 const linePath = computed(() => {
-  if (points.value.length === 0 || maxValue.value <= 0) return ''
-  const width = 520
-  const height = 180
-  const gap = points.value.length === 1 ? 0 : width / (points.value.length - 1)
-  return points.value
-    .map((point, index) => {
-      const x = points.value.length === 1 ? width / 2 : gap * index
-      const y = height - (point.value / maxValue.value) * height
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-    })
+  if (linePoints.value.length === 0) return ''
+  return linePoints.value
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
     .join(' ')
+})
+
+const linePoints = computed<LinePoint[]>(() => {
+  if (points.value.length === 0) return []
+  const gap = points.value.length === 1 ? 0 : lineInnerWidth / (points.value.length - 1)
+
+  return points.value.map((point, index) => {
+    const x = points.value.length === 1 ? lineChart.left + lineInnerWidth / 2 : lineChart.left + gap * index
+    const y = lineChart.top + ((lineMaxValue.value - point.value) / lineValueRange.value) * lineInnerHeight
+    return {
+      ...point,
+      x,
+      y,
+      shortLabel: formatAxisLabel(point.label)
+    }
+  })
+})
+
+const lineYTicks = computed(() => {
+  const max = lineMaxValue.value
+  const min = lineMinValue.value
+  const middle = min + (max - min) / 2
+  return [max, middle, min].map(value => ({
+    value,
+    y: lineChart.top + ((max - value) / lineValueRange.value) * lineInnerHeight
+  }))
 })
 
 const statValue = computed(() => {
@@ -98,6 +136,16 @@ function toNumber(value: unknown) {
 function formatLabel(value: unknown) {
   if (value === null || value === undefined) return '-'
   return String(value)
+}
+
+function formatAxisLabel(value: unknown) {
+  const label = formatLabel(value)
+  const normalized = label.includes('T') ? label.split('T')[0] : label
+  return normalized.length > 12 ? `${normalized.slice(0, 12)}...` : normalized
+}
+
+function formatChartValue(value: number) {
+  return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 })
 }
 
 function formatCell(value: unknown) {
@@ -215,7 +263,53 @@ function formatCell(value: unknown) {
       </div>
 
       <div v-else-if="chart.type === 'LINE'" class="space-y-4">
-        <svg viewBox="0 0 520 180" class="h-52 w-full overflow-visible">
+        <svg :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`" class="h-64 w-full overflow-visible">
+          <g class="app-table-muted" font-size="11">
+            <line
+              :x1="lineChart.left"
+              :y1="lineChart.top"
+              :x2="lineChart.left"
+              :y2="lineChart.top + lineInnerHeight"
+              stroke="var(--color-border)"
+            />
+            <line
+              :x1="lineChart.left"
+              :y1="lineChart.top + lineInnerHeight"
+              :x2="lineChart.left + lineInnerWidth"
+              :y2="lineChart.top + lineInnerHeight"
+              stroke="var(--color-border)"
+            />
+            <g v-for="(tick, tickIndex) in lineYTicks" :key="tickIndex">
+              <line
+                :x1="lineChart.left"
+                :y1="tick.y"
+                :x2="lineChart.left + lineInnerWidth"
+                :y2="tick.y"
+                stroke="var(--color-border-muted)"
+                stroke-dasharray="4 4"
+              />
+              <text :x="lineChart.left - 10" :y="tick.y + 4" text-anchor="end" fill="currentColor">
+                {{ formatChartValue(tick.value) }}
+              </text>
+            </g>
+            <text
+              :x="lineChart.left + lineInnerWidth / 2"
+              :y="lineChart.height - 12"
+              text-anchor="middle"
+              fill="currentColor"
+            >
+              {{ chart.xKey || 'x축' }}
+            </text>
+            <text
+              :x="18"
+              :y="lineChart.top + lineInnerHeight / 2"
+              text-anchor="middle"
+              fill="currentColor"
+              transform="rotate(-90 18 125)"
+            >
+              {{ primaryYKey || 'y축' }}
+            </text>
+          </g>
           <path
             :d="linePath"
             fill="none"
@@ -224,10 +318,16 @@ function formatCell(value: unknown) {
             stroke-linecap="round"
             stroke-linejoin="round"
           />
+          <g v-for="point in linePoints" :key="point.label">
+            <circle :cx="point.x" :cy="point.y" r="4" fill="var(--color-primary)" stroke="var(--color-surface)" stroke-width="2" />
+            <text :x="point.x" :y="point.y - 10" text-anchor="middle" class="app-table-number" font-size="11" font-weight="700">
+              {{ formatChartValue(point.value) }}
+            </text>
+            <text :x="point.x" :y="lineChart.top + lineInnerHeight + 20" text-anchor="middle" class="app-table-muted" font-size="10">
+              {{ point.shortLabel }}
+            </text>
+          </g>
         </svg>
-        <div class="flex justify-between gap-2 text-[10px] app-table-muted">
-          <span v-for="point in points" :key="point.label" class="max-w-20 truncate">{{ point.label }}</span>
-        </div>
       </div>
 
       <div v-else class="app-empty py-10">
@@ -342,7 +442,53 @@ function formatCell(value: unknown) {
             </div>
 
             <div v-else-if="chart.type === 'LINE'" class="space-y-5">
-              <svg viewBox="0 0 520 180" class="h-96 w-full overflow-visible">
+              <svg :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`" class="h-96 w-full overflow-visible">
+                <g class="app-table-muted" font-size="11">
+                  <line
+                    :x1="lineChart.left"
+                    :y1="lineChart.top"
+                    :x2="lineChart.left"
+                    :y2="lineChart.top + lineInnerHeight"
+                    stroke="var(--color-border)"
+                  />
+                  <line
+                    :x1="lineChart.left"
+                    :y1="lineChart.top + lineInnerHeight"
+                    :x2="lineChart.left + lineInnerWidth"
+                    :y2="lineChart.top + lineInnerHeight"
+                    stroke="var(--color-border)"
+                  />
+                  <g v-for="(tick, tickIndex) in lineYTicks" :key="tickIndex">
+                    <line
+                      :x1="lineChart.left"
+                      :y1="tick.y"
+                      :x2="lineChart.left + lineInnerWidth"
+                      :y2="tick.y"
+                      stroke="var(--color-border-muted)"
+                      stroke-dasharray="4 4"
+                    />
+                    <text :x="lineChart.left - 10" :y="tick.y + 4" text-anchor="end" fill="currentColor">
+                      {{ formatChartValue(tick.value) }}
+                    </text>
+                  </g>
+                  <text
+                    :x="lineChart.left + lineInnerWidth / 2"
+                    :y="lineChart.height - 12"
+                    text-anchor="middle"
+                    fill="currentColor"
+                  >
+                    {{ chart.xKey || 'x축' }}
+                  </text>
+                  <text
+                    :x="18"
+                    :y="lineChart.top + lineInnerHeight / 2"
+                    text-anchor="middle"
+                    fill="currentColor"
+                    transform="rotate(-90 18 125)"
+                  >
+                    {{ primaryYKey || 'y축' }}
+                  </text>
+                </g>
                 <path
                   :d="linePath"
                   fill="none"
@@ -351,10 +497,16 @@ function formatCell(value: unknown) {
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
+                <g v-for="point in linePoints" :key="point.label">
+                  <circle :cx="point.x" :cy="point.y" r="4" fill="var(--color-primary)" stroke="var(--color-surface)" stroke-width="2" />
+                  <text :x="point.x" :y="point.y - 10" text-anchor="middle" class="app-table-number" font-size="11" font-weight="700">
+                    {{ formatChartValue(point.value) }}
+                  </text>
+                  <text :x="point.x" :y="lineChart.top + lineInnerHeight + 20" text-anchor="middle" class="app-table-muted" font-size="10">
+                    {{ point.shortLabel }}
+                  </text>
+                </g>
               </svg>
-              <div class="flex justify-between gap-2 text-xs app-table-muted">
-                <span v-for="point in points" :key="point.label" class="max-w-28 truncate">{{ point.label }}</span>
-              </div>
             </div>
 
             <div v-else class="app-empty py-16">
