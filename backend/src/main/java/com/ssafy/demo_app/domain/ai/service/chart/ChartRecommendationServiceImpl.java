@@ -64,6 +64,57 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
             "code",
             "status"
     );
+    private static final Set<String> RISK_QUESTION_KEYWORDS = Set.of(
+            "위험",
+            "이슈",
+            "문제",
+            "부족",
+            "지연",
+            "대기",
+            "병목",
+            "초과",
+            "미달",
+            "보류",
+            "누락",
+            "미처리",
+            "미완료",
+            "장기재고",
+            "과재고",
+            "품절",
+            "결품",
+            "부하",
+            "정체"
+    );
+    private static final Set<String> KPI_QUESTION_KEYWORDS = Set.of(
+            "달성률",
+            "진행률",
+            "가동률",
+            "불량률",
+            "처리율",
+            "완료율",
+            "출하율",
+            "입고율",
+            "소진율",
+            "회전율",
+            "비율",
+            "율",
+            "kpi",
+            "KPI"
+    );
+
+    private static final Set<String> SCATTER_QUESTION_KEYWORDS = Set.of(
+            "대비",
+            "관계",
+            "상관",
+            "영향",
+            "분포",
+            "이상치",
+            "튀는",
+            "특이",
+            "연관",
+            "비례",
+            "반비례"
+    );
 
     private final ChartRecommendationGenerator chartRecommendationGenerator;
     private final ChartSpecValidationService chartSpecValidationService;
@@ -161,6 +212,37 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
             ), rows));
         }
 
+        if (containsAny(normalizedQuestion, RISK_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
+            return Optional.of(validateOrNone(axis(
+                    AiChartResponse.ChartType.BAR,
+                    labelColumn.get(),
+                    List.of(numericColumns.get(0)),
+                    "운영 위험 항목",
+                    "위험, 부족, 지연, 대기, 병목 항목은 우선순위 비교가 가능한 BAR 차트가 적합합니다."
+            ), rows));
+        }
+
+        if (containsAny(normalizedQuestion, SCATTER_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
+            return Optional.of(validateOrNone(axis(
+                    AiChartResponse.ChartType.BAR,
+                    labelColumn.get(),
+                    numericColumns.stream().limit(2).toList(),
+                    "지표 대비 비교",
+                    "두 지표 간 관계를 BAR 차트로 항목별 비교합니다."
+            ), rows));
+        }
+
+        if (containsAny(normalizedQuestion, KPI_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
+            return Optional.of(validateOrNone(axis(
+                    AiChartResponse.ChartType.DONUT,
+                    labelColumn.get(),
+                    List.of(numericColumns.get(0)),
+                    "KPI 비율",
+                    "진행률, 달성률, 처리율 등 KPI 성격의 값은 DONUT 차트로 요약합니다."
+            ), rows));
+        }
+
+
         return Optional.empty();
     }
 
@@ -240,7 +322,10 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
     private boolean isAnalyticalQuestion(String question) {
         return containsAny(question, TREND_QUESTION_KEYWORDS)
                 || containsAny(question, RATIO_QUESTION_KEYWORDS)
-                || containsAny(question, COMPARISON_QUESTION_KEYWORDS);
+                || containsAny(question, COMPARISON_QUESTION_KEYWORDS)
+                || containsAny(question, RISK_QUESTION_KEYWORDS)
+                || containsAny(question, KPI_QUESTION_KEYWORDS)
+                || containsAny(question, SCATTER_QUESTION_KEYWORDS);
     }
 
     private boolean containsAny(String text, Set<String> keywords) {

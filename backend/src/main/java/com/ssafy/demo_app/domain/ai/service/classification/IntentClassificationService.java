@@ -7,13 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 @Service
 @RequiredArgsConstructor
 public class IntentClassificationService {
 
     private final IntentClassifier intentClassifier;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     public AiIntentResult classify(String question, String schema, String businessRules, String currentTime) {
         String rawResult = intentClassifier.classify(question, schema, businessRules, currentTime);
@@ -58,9 +60,18 @@ public class IntentClassificationService {
     }
 
     private String cleanJson(String rawResult) {
-        return rawResult
+        String cleaned = rawResult
                 .replace("```json", "")
                 .replace("```", "")
                 .trim();
+
+        int start = cleaned.indexOf("{");
+        int end = cleaned.lastIndexOf("}");
+
+        if (start >= 0 && end > start) {
+            return cleaned.substring(start, end + 1);
+        }
+
+        return cleaned;
     }
 }

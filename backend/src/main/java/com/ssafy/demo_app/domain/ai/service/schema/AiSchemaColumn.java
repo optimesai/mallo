@@ -10,6 +10,7 @@ public class AiSchemaColumn {
     private String columnName;
     private String columnComment;
     private String dataType;
+    private String columnType;
     private String columnKey;
     private boolean nullable;
 }

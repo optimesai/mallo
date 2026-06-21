@@ -51,14 +51,17 @@ public class ChartSpecValidationService {
 
         return switch (chart.getType()) {
             case TABLE -> ChartSpecValidationResult.valid(normalizeTable(chart));
-            case STAT -> validateStat(chart);
+            case STAT -> validateStat(chart,rows);
             case BAR, LINE -> validateAxisChart(chart, rows);
             case DONUT -> validateDonut(chart, rows);
             case NONE -> ChartSpecValidationResult.valid(normalizeNone(chart, chart.getReason()));
         };
     }
 
-    private ChartSpecValidationResult validateStat(AiChartResponse chart) {
+    private ChartSpecValidationResult validateStat(AiChartResponse chart, List<Map<String, Object>> rows) {
+        if (rows.size() != 1) {
+            return ChartSpecValidationResult.invalid("STAT 차트는 단일 행 결과에만 사용할 수 있습니다.");
+        }
         if (chart.getYKeys().size() != 1) {
             return ChartSpecValidationResult.invalid("STAT 차트는 하나의 숫자형 컬럼만 사용할 수 있습니다.");
         }

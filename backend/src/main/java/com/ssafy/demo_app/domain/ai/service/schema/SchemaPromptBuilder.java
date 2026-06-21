@@ -37,13 +37,19 @@ public class SchemaPromptBuilder {
                 .append(": ")
                 .append(resolveDescription(table.getTableComment()))
                 .append("\n")
+                .append("  Role: ")
+                .append(resolveTableRole(table.getTableName()))
+                .append("\n")
+                .append("  Preferred date column: ")
+                .append(resolvePreferredDateColumn(table.getTableName()))
+                .append("\n")
                 .append("  Columns:\n");
 
         table.getColumns().forEach(column -> builder
                 .append("  - ")
                 .append(column.getColumnName())
                 .append(" ")
-                .append(column.getDataType().toUpperCase())
+                .append(resolveColumnType(column))
                 .append(resolveColumnKey(column))
                 .append(column.isNullable() ? " NULL" : " NOT NULL")
                 .append(": ")
@@ -64,4 +70,45 @@ public class SchemaPromptBuilder {
         }
         return description;
     }
+
+    private String resolveColumnType(AiSchemaColumn column) {
+        if (column.getColumnType() != null && !column.getColumnType().isBlank()) {
+            return column.getColumnType().toUpperCase();
+        }
+        return column.getDataType().toUpperCase();
+    }
+
+    private String resolveTableRole(String tableName) {
+        return switch (tableName) {
+            case "inventory_transaction_history",
+                 "production_execution",
+                 "inbound_receipt",
+                 "outbound_shipping" -> "FACT_TABLE";
+
+            case "item_master",
+                 "partner_master",
+                 "warehouse_location",
+                 "factory_routing",
+                 "bom_structure" -> "MASTER_TABLE";
+
+            case "work_order" -> "ORDER_TABLE";
+
+            case "ai_query_history" -> "HISTORY_TABLE";
+
+            default -> "UNKNOWN";
+        };
+    }
+
+    private String resolvePreferredDateColumn(String tableName) {
+        return switch (tableName) {
+            case "inbound_receipt" -> "inbound_date";
+            case "outbound_shipping" -> "shipped_at or created_at";
+            case "inventory_transaction_history" -> "created_at";
+            case "production_execution" -> "created_at";
+            case "work_order" -> "created_at";
+            case "ai_query_history" -> "created_at";
+            default -> "created_at if exists";
+        };
+    }
+
 }
