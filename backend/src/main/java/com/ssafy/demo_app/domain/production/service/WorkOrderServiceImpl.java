@@ -117,7 +117,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         normalizedOperationName,
                         pageable
                 )
-                .map(this::toResponse);
+                .map(this::toListResponse);
         return PageResponse.from(page);
     }
 
@@ -358,6 +358,15 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 canCancelIssueMaterials(workOrder),
                 canDeleteExecution(workOrder),
                 getCurrentOperationProgress(workOrder)
+        );
+    }
+
+    private WorkOrderResponse toListResponse(WorkOrder workOrder) {
+        return WorkOrderResponse.from(
+                workOrder,
+                summarize(workOrder),
+                false,
+                canDeleteExecution(workOrder)
         );
     }
 
