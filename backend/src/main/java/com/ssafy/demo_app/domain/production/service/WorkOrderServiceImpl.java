@@ -7,6 +7,7 @@ import com.ssafy.demo_app.api.production.dto.WorkOrderCreateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderDetailResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderExecutionSummary;
 import com.ssafy.demo_app.api.production.dto.WorkOrderMaterialRequirementResponse;
+import com.ssafy.demo_app.api.production.dto.WorkOrderOperationProgressResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderResponse;
 import com.ssafy.demo_app.api.production.dto.WorkOrderStatusUpdateRequest;
 import com.ssafy.demo_app.api.production.dto.WorkOrderUpdateRequest;
@@ -129,6 +130,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return new WorkOrderDetailResponse(
                 toResponse(workOrder),
                 getMaterialRequirements(workOrder),
+                getOperationProgresses(workOrder),
                 executions,
                 getIssueHistories(workOrder)
         );
@@ -379,10 +381,94 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
     private WorkOrderExecutionSummary summarize(WorkOrder workOrder) {
         List<ProductionExecution> executions = productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder);
-        int goodQty = executions.stream().mapToInt(ProductionExecution::getGoodQty).sum();
-        int defectQty = executions.stream().mapToInt(ProductionExecution::getDefectQty).sum();
+        FactoryRouting lastRouting = getLineRoutings(workOrder).stream()
+                .reduce((first, second) -> second)
+                .orElse(workOrder.getRouting());
+        int goodQty = executions.stream()
+                .filter(execution -> hasRouting(execution, lastRouting))
+                .mapToInt(ProductionExecution::getGoodQty)
+                .sum();
+        int defectQty = executions.stream()
+                .filter(execution -> hasRouting(execution, lastRouting))
+                .mapToInt(ProductionExecution::getDefectQty)
+                .sum();
         int manHours = executions.stream().mapToInt(ProductionExecution::getManHoursMinutes).sum();
         return new WorkOrderExecutionSummary(goodQty, defectQty, manHours);
+    }
+
+    private List<WorkOrderOperationProgressResponse> getOperationProgresses(WorkOrder workOrder) {
+        List<ProductionExecution> executions = productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder);
+        List<FactoryRouting> lineRoutings = getLineRoutings(workOrder);
+        if (lineRoutings.isEmpty()) {
+            return List.of();
+        }
+
+        boolean currentOperationAssigned = false;
+        int previousGoodQty = 0;
+        List<WorkOrderOperationProgressResponse> progresses = new java.util.ArrayList<>();
+        for (int index = 0; index < lineRoutings.size(); index++) {
+            FactoryRouting routing = lineRoutings.get(index);
+            int availableQty = index == 0
+                    ? getIssuedProductionCapacity(workOrder)
+                    : previousGoodQty;
+            int goodQty = executions.stream()
+                    .filter(execution -> hasRouting(execution, routing))
+                    .mapToInt(ProductionExecution::getGoodQty)
+                    .sum();
+            int defectQty = executions.stream()
+                    .filter(execution -> hasRouting(execution, routing))
+                    .mapToInt(ProductionExecution::getDefectQty)
+                    .sum();
+            boolean currentOperation = !currentOperationAssigned
+                    && workOrder.getStatus() == WorkOrder.OrderStatus.RUN
+                    && availableQty > goodQty + defectQty;
+            if (currentOperation) {
+                currentOperationAssigned = true;
+            }
+
+            progresses.add(new WorkOrderOperationProgressResponse(
+                    routing.getRoutingId(),
+                    routing.getFactoryName(),
+                    routing.getLineName(),
+                    routing.getOperationSeq(),
+                    routing.getOperationName(),
+                    workOrder.getTargetQty(),
+                    availableQty,
+                    goodQty,
+                    defectQty,
+                    currentOperation
+            ));
+            previousGoodQty = goodQty;
+        }
+        return progresses;
+    }
+
+    private List<FactoryRouting> getLineRoutings(WorkOrder workOrder) {
+        FactoryRouting routing = workOrder.getRouting();
+        return factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc(
+                routing.getFactoryName(),
+                routing.getLineName()
+        );
+    }
+
+    private boolean hasRouting(ProductionExecution execution, FactoryRouting routing) {
+        return execution.getRouting() != null
+                && execution.getRouting().getRoutingId().equals(routing.getRoutingId());
+    }
+
+    private int getIssuedProductionCapacity(WorkOrder workOrder) {
+        List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
+                workOrder.getItem(),
+                workOrder.getBomVersion(),
+                workOrder.getTargetQty()
+        );
+        if (requirements.isEmpty()) {
+            return workOrder.getTargetQty();
+        }
+        return requirements.stream()
+                .mapToInt(requirement -> getIssuedQty(workOrder, requirement.item()) / requirement.bomQuantity())
+                .min()
+                .orElse(0);
     }
 
     private List<WorkOrderMaterialRequirementResponse> getMaterialRequirements(WorkOrder workOrder) {

@@ -101,3 +101,28 @@
     - 없음
 
   </details>
+### 공정 실적 수량 흐름 정리 (Codex)
+- **User Intent**: 작업 지시 자재 출고 후 공정 실적을 순서대로 등록할 때 각 공정마다 자재가 중복 차감되고 제품 재고/진행률이 공정 수만큼 과대 반영되는 문제를 수정 요청
+- **Agent Context**: 기존 `ProductionExecutionServiceImpl`이 실적 등록마다 BOM 자재 차감과 제품 입고를 수행하는 구조였기 때문에, 자재 출고는 작업지시 단위 1회로 고정하고 마지막 공정 완료 수량만 제품 입고/진행률에 반영하도록 변경
+- **Key Decisions**:
+  - 작업지시 등록 화면은 공장/라인만 받되 기존 스키마의 `routingId`는 해당 라인의 첫 공정 대표값으로 유지 — DB 마이그레이션 없이 프론트 요구사항을 우선 반영
+  - 공정 실적 등록은 첫 공정은 출고 수량, 이후 공정은 직전 공정 양품 수량을 초과할 수 없도록 제한 — 공정 불량품이 다음 공정 투입 가능 수량에 포함되지 않도록 처리
+  - 진행률과 작업지시 누적 실적은 라인의 마지막 공정 실적만 기준으로 산정 — 공정 단계 수만큼 생산량과 진행률이 중복 누적되는 문제 방지
+  - 프론트 공정 실적 화면은 백엔드가 내려주는 공정별 진행 상태를 기준으로 선택 가능한 공정만 노출 — View가 API/Service를 우회하지 않는 기존 계층 규칙 유지
+- **Affected Files**: <details><summary>9개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/production/dto/WorkOrderOperationProgressResponse.java` (+46/-0) — 작업지시 상세의 공정별 처리 가능/완료/잔여 수량 응답 DTO 추가
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/production/dto/WorkOrderDetailResponse.java` (+1/-0) — 작업지시 상세 응답에 공정별 진행 정보 목록 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/service/ProductionExecutionServiceImpl.java` (+52/-69) — 실적별 자재 추가 차감 제거, 공정 순서/가능 수량 검증, 마지막 공정만 제품 입고 처리
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/service/WorkOrderServiceImpl.java` (+88/-2) — 마지막 공정 기준 실적 요약 및 공정별 진행 상태 계산 추가
+    - `backend/src/main/java/com/ssafy/demo_app/global/exception/ErrorCode.java` (+2/-0) — 출고 수량 초과와 이전 공정 부족 오류 코드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/production/service/WorkOrderServiceTest.java` (+46/-14) — 새 자재 출고→공정 실적→마지막 공정 입고 흐름에 맞춰 생산 테스트 갱신
+    - `frontend/src/api/workOrderApi.ts` (+16/-0) — 공정별 진행 응답 타입 추가
+    - `frontend/src/views/ProductionExecutionView.vue` (+49/-14) — 공정별 진행 현황 표시 및 등록 가능 공정 선택 제한
+    - `frontend/src/views/WorkOrderView.vue` (+21/-13) — 작업지시 등록에서 공정 선택 제거, 공장/라인 선택 시 대표 라우팅 자동 지정
+  - **Deleted**:
+    - 없음
+
+  </details>

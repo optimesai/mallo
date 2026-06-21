@@ -91,7 +91,12 @@ const formOperations = computed(() => routings.value.filter((routing) => {
   if (formFactoryName.value && routing.factoryName !== formFactoryName.value) return false
   if (formLineName.value && routing.lineName !== formLineName.value) return false
   return true
-}))
+}).sort((a, b) => a.operationSeq - b.operationSeq))
+const selectedLineOperationText = computed(() => {
+  if (!formFactoryName.value || !formLineName.value) return '공장/라인 미선택'
+  if (formOperations.value.length === 0) return '등록된 공정 없음'
+  return formOperations.value.map((routing) => `${routing.operationSeq}. ${routing.operationName}`).join(' → ')
+})
 
 const searchFactories = computed(() => [...new Set(routings.value.map((routing) => routing.factoryName))])
 const searchLines = computed(() => [...new Set(routings.value
@@ -136,10 +141,12 @@ watch(() => filters.factoryName, () => {
 watch(formFactoryName, () => {
   if (formLineName.value && !formLines.value.includes(formLineName.value)) formLineName.value = ''
   if (form.routingId && !formOperations.value.some((routing) => routing.routingId === form.routingId)) form.routingId = 0
+  syncRepresentativeRouting()
 })
 
 watch(formLineName, () => {
   if (form.routingId && !formOperations.value.some((routing) => routing.routingId === form.routingId)) form.routingId = 0
+  syncRepresentativeRouting()
 })
 
 function showToast(message: string) {
@@ -173,6 +180,15 @@ function syncRoutingFields(routingId: number) {
   formFactoryName.value = routing.factoryName
   formLineName.value = routing.lineName
   form.routingId = routing.routingId
+}
+
+function syncRepresentativeRouting() {
+  if (!formFactoryName.value || !formLineName.value) {
+    form.routingId = 0
+    return
+  }
+  const representativeRouting = formOperations.value[0]
+  form.routingId = representativeRouting?.routingId ?? 0
 }
 
 async function selectProductionItem(item: ItemMasterResponse) {
@@ -296,7 +312,7 @@ async function fillEditForm(order: WorkOrderResponse) {
 
 async function submitWorkOrder() {
   if (!form.itemCode || !form.routingId || !form.bomVersion || !form.planDate || !form.targetQty || form.targetQty < 1) {
-    pageError.value = '생산 품목, BOM 버전, 공장/라인/공정, 목표 수량, 계획일을 모두 올바르게 입력해주세요.'
+    pageError.value = '생산 품목, BOM 버전, 공장/라인, 목표 수량, 계획일을 모두 올바르게 입력해주세요.'
     return
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.planDate)) {
@@ -475,15 +491,6 @@ async function closeOrder(order: WorkOrderResponse) {
             </select>
           </label>
           <label class="wo-field">
-            <span class="wo-label">공정</span>
-            <select v-model.number="form.routingId" class="wo-control" :disabled="!formFactoryName || !formLineName">
-              <option :value="0">공정 선택</option>
-              <option v-for="routing in formOperations" :key="routing.routingId" :value="routing.routingId">
-                {{ routing.operationSeq }}. {{ routing.operationName }}
-              </option>
-            </select>
-          </label>
-          <label class="wo-field">
             <span class="wo-label">목표 수량</span>
             <input v-model.number="form.targetQty" class="wo-control" type="number" min="1" placeholder="예) 100" />
           </label>
@@ -504,8 +511,9 @@ async function closeOrder(order: WorkOrderResponse) {
             <strong>{{ form.bomVersion || '버전 미선택' }}</strong>
           </div>
           <div>
-            <span class="wo-preview-label">선택 라우팅</span>
-            <strong>{{ selectedRouting ? `${selectedRouting.factoryName} / ${selectedRouting.lineName} / ${selectedRouting.operationName}` : '공장/라인/공정 미선택' }}</strong>
+            <span class="wo-preview-label">선택 라인 공정</span>
+            <strong>{{ selectedRouting ? `${selectedRouting.factoryName} / ${selectedRouting.lineName}` : '공장/라인 미선택' }}</strong>
+            <span>{{ selectedLineOperationText }}</span>
           </div>
         </div>
 

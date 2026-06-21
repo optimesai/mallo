@@ -18,7 +18,7 @@ import { useInboundStore } from '@/state/inboundStore'
 import { formatDateTime } from '@/utils/dateFormat'
 import type { FactoryRoutingResponse } from '@/api/factoryRoutingApi'
 import type { LocationResponse } from '@/api/inboundApi'
-import type { ProductionExecutionCreateRequest, WorkOrderSearchParams, WorkOrderStatus } from '@/api/workOrderApi'
+import type { ProductionExecutionCreateRequest, WorkOrderOperationProgressResponse, WorkOrderSearchParams, WorkOrderStatus } from '@/api/workOrderApi'
 
 type ProductionExecutionTab = 'register' | 'lookup'
 type ExecutionSortOrder = 'latest' | 'oldest'
@@ -68,6 +68,7 @@ const selectedDetail = computed(() => workOrderStore.selectedDetail)
 const selectedOrder = computed(() => selectedDetail.value?.workOrder ?? null)
 const executions = computed(() => selectedDetail.value?.executions ?? [])
 const materialRequirements = computed(() => selectedDetail.value?.materialRequirements ?? [])
+const operationProgresses = computed(() => selectedDetail.value?.operationProgresses ?? [])
 const canSubmitExecution = computed(() => Boolean(selectedOrder.value?.canRegisterExecution))
 const hasStockShortage = computed(() => materialRequirements.value.some((item) => item.availableQty < getRemainingQty(item.requiredQty, item.issuedQty)))
 const executionValidationMessages = computed(() => {
@@ -77,6 +78,7 @@ const executionValidationMessages = computed(() => {
   else if (!canSubmitExecution.value) messages.push('진행(RUN) 상태의 작업 지시에만 실적을 등록할 수 있습니다.')
 
   if (!form.routingId) messages.push('실제 수행 공정을 선택해주세요.')
+  if (selectedOrder.value && executionRoutingOptions.value.length === 0) messages.push('현재 등록 가능한 공정이 없습니다.')
   if (form.goodQty + form.defectQty <= 0) messages.push('양품과 불량 수량의 합계는 1 이상이어야 합니다.')
   if (form.defectQty > 0 && !form.defectReason?.trim()) messages.push('불량 수량이 있으면 불량 사유를 입력해주세요.')
   if (form.manHoursMinutes <= 0) messages.push('총 소요 시간은 1분 이상이어야 합니다.')
@@ -104,11 +106,12 @@ const operationOptions = computed(() => routings.value.filter((routing) => {
   return true
 }))
 const executionRoutingOptions = computed(() => {
-  if (!selectedOrder.value) return []
-  return routings.value.filter((routing) => (
-    routing.factoryName === selectedOrder.value?.factoryName
-    && routing.lineName === selectedOrder.value?.lineName
-  ))
+  return operationProgresses.value.filter((progress) => getRemainingOperationQty(progress) > 0)
+})
+const currentOperationProgress = computed(() => {
+  return operationProgresses.value.find((progress) => progress.currentOperation)
+    ?? executionRoutingOptions.value[0]
+    ?? null
 })
 const keywordSuggestions = computed(() => {
   const query = keywordInput.value.trim().toLowerCase()
@@ -171,9 +174,7 @@ const filteredExecutions = computed(() => {
 })
 
 watch(selectedOrder, (order) => {
-  form.routingId = order && executionRoutingOptions.value.some((routing) => routing.routingId === order.routingId)
-    ? order.routingId
-    : 0
+  form.routingId = order ? currentOperationProgress.value?.routingId ?? 0 : 0
   form.goodQty = 0
   form.defectQty = 0
   form.defectType = ''
@@ -223,6 +224,10 @@ function formatNumber(value: number | null | undefined) {
 
 function getRemainingQty(requiredQty: number, issuedQty: number) {
   return Math.max(requiredQty - issuedQty, 0)
+}
+
+function getRemainingOperationQty(progress: WorkOrderOperationProgressResponse) {
+  return Math.max(progress.availableQty - progress.completedQty, 0)
 }
 
 async function loadInitialData() {
@@ -289,6 +294,7 @@ function validateExecutionForm() {
   if (!selectedOrder.value) return '작업 지시를 먼저 선택해주세요.'
   if (!canSubmitExecution.value) return '진행(RUN) 상태의 작업 지시에만 실적을 등록할 수 있습니다.'
   if (!form.routingId) return '실제 수행 공정을 선택해주세요.'
+  if (!executionRoutingOptions.value.some((progress) => progress.routingId === form.routingId)) return '현재 등록 가능한 공정을 선택해주세요.'
   if (form.goodQty < 0 || form.defectQty < 0) return '양품/불량 수량은 0 이상이어야 합니다.'
   if (form.goodQty + form.defectQty <= 0) return '양품과 불량 수량의 합계는 1 이상이어야 합니다.'
   if (form.defectQty > 0 && !form.defectReason?.trim()) return '불량 수량이 있으면 불량 사유를 입력해주세요.'
@@ -630,7 +636,7 @@ function selectKeywordSuggestion(orderNo: string) {
           </div>
           <div class="wo-info-list">
             <div><span>생산 품목</span><strong>{{ selectedOrder.itemCode }} · {{ selectedOrder.itemName }}</strong></div>
-            <div><span>수행 라우팅</span><strong>{{ selectedOrder.factoryName }} / {{ selectedOrder.lineName }} / {{ selectedOrder.operationName }}</strong></div>
+            <div><span>생산 라인</span><strong>{{ selectedOrder.factoryName }} / {{ selectedOrder.lineName }}</strong></div>
             <div><span>계획일</span><strong>{{ selectedOrder.planDate }}</strong></div>
             <div><span>진행률</span><strong>{{ selectedOrder.progressRate }}% · 총 실적 {{ formatNumber(selectedOrder.totalExecutedQty) }}</strong></div>
           </div>
@@ -651,16 +657,45 @@ function selectKeywordSuggestion(orderNo: string) {
               </div>
               <span v-if="!canSubmitExecution" class="wo-badge-danger">RUN 상태 필요</span>
             </div>
+            <div class="wo-table-wrap">
+              <table class="wo-table wo-table-compact">
+                <thead>
+                  <tr>
+                    <th>공정</th>
+                    <th>처리 가능</th>
+                    <th>완료</th>
+                    <th>잔여</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="progress in operationProgresses" :key="progress.routingId" :class="{ 'wo-row-selected': progress.currentOperation }">
+                    <td><strong>{{ progress.operationSeq }}. {{ progress.operationName }}</strong></td>
+                    <td class="wo-number">{{ formatNumber(progress.availableQty) }}</td>
+                    <td class="wo-number">{{ formatNumber(progress.completedGoodQty) }} / 불량 {{ formatNumber(progress.completedDefectQty) }}</td>
+                    <td class="wo-number">{{ formatNumber(getRemainingOperationQty(progress)) }}</td>
+                    <td>
+                      <span v-if="progress.currentOperation" class="wo-status" data-status="RUN">진행 가능</span>
+                      <span v-else-if="progress.completed" class="wo-status" data-status="CLOSE">완료</span>
+                      <span v-else class="wo-status" data-status="READY">대기</span>
+                    </td>
+                  </tr>
+                  <tr v-if="operationProgresses.length === 0">
+                    <td colspan="5" class="wo-empty">등록된 라인 공정 정보가 없습니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div class="wo-form-grid wo-form-grid-execution">
               <label class="wo-field">
                 <span class="wo-label">실제 수행 공정</span>
                 <select v-model.number="form.routingId" class="wo-control" :disabled="!canSubmitExecution">
                   <option :value="0">공정 선택</option>
-                  <option v-for="routing in executionRoutingOptions" :key="routing.routingId" :value="routing.routingId">
-                    {{ routing.factoryName }} / {{ routing.lineName }} / {{ routing.operationSeq }}. {{ routing.operationName }}
+                  <option v-for="progress in executionRoutingOptions" :key="progress.routingId" :value="progress.routingId">
+                    {{ progress.operationSeq }}. {{ progress.operationName }} · 잔여 {{ formatNumber(getRemainingOperationQty(progress)) }}
                   </option>
                 </select>
-                <span class="wo-field-help">선택한 작업 지시의 공장/라인에 등록된 공정만 표시됩니다.</span>
+                <span class="wo-field-help">이전 공정 양품 수량 안에서 현재 등록 가능한 공정만 표시됩니다.</span>
               </label>
               <label class="wo-field">
                 <span class="wo-label">양품 수량</span>
@@ -706,7 +741,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </div>
               <div>
                 <span class="wo-preview-label">투입량 처리</span>
-                <strong>BOM 기준 추가 필요량 자동 차감</strong>
+                <strong>자재 출고 처리된 수량 안에서 공정 실적 등록</strong>
               </div>
             </div>
             <div class="pe-validation-box" :class="{ 'is-clear': !hasExecutionValidationError }">

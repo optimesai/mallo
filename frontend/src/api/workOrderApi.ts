@@ -91,9 +91,25 @@ export interface ProductionIssueHistoryResponse {
   createdAt: string
 }
 
+export interface WorkOrderOperationProgressResponse {
+  routingId: number
+  factoryName: string
+  lineName: string
+  operationSeq: number
+  operationName: string
+  targetQty: number
+  availableQty: number
+  completedGoodQty: number
+  completedDefectQty: number
+  completedQty: number
+  currentOperation: boolean
+  completed: boolean
+}
+
 export interface WorkOrderDetailResponse {
   workOrder: WorkOrderResponse
   materialRequirements: WorkOrderMaterialRequirementResponse[]
+  operationProgresses: WorkOrderOperationProgressResponse[]
   executions: ProductionExecutionResponse[]
   issueHistories: ProductionIssueHistoryResponse[]
 }
