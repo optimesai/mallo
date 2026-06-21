@@ -198,10 +198,12 @@ export const useBomMasterStore = defineStore('bomMaster', () => {
 
   async function loadParentVersions(keyword: string) {
     parentVersions.value = await bomMasterService.getParentVersions(keyword)
+    return parentVersions.value
   }
 
   async function loadChildVersions(keyword: string) {
     childVersions.value = await bomMasterService.getChildVersions(keyword)
+    return childVersions.value
   }
 
   async function loadParentTree(keyword: string, bomVersion?: string) {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { userService } from '@/services/userService'
 import { useAuthStore } from '@/state/authStore'
+import { useUserStore } from '@/state/userStore'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const userStore = useUserStore()
 
 const userName = ref('')
 const department = ref('')
@@ -24,10 +25,10 @@ onMounted(async () => {
   errorMessage.value = ''
 
   try {
-    const response = await userService.getMyInfo()
-    authStore.setUser(response.data)
-    userName.value = response.data.userName
-    department.value = response.data.department
+    const user = await userStore.loadMyInfo()
+    authStore.setUser(user)
+    userName.value = user.userName
+    department.value = user.department
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '내 정보를 불러오지 못했습니다.'
   } finally {
@@ -53,7 +54,7 @@ async function handleSubmit() {
 
   try {
     const isPasswordChanged = Boolean(password.value)
-    const response = await userService.updateMyInfo({
+    const user = await userStore.updateMyInfo({
       userName: userName.value.trim(),
       department: department.value.trim(),
       ...(password.value ? { password: password.value } : {})
@@ -65,7 +66,7 @@ async function handleSubmit() {
       return
     }
 
-    authStore.setUser(response.data)
+    authStore.setUser(user)
     password.value = ''
     passwordConfirm.value = ''
     successMessage.value = '내 정보가 수정되었습니다.'

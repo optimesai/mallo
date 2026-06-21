@@ -50,6 +50,8 @@ public enum ErrorCode {
     WORK_ORDER_CLOSE_UNDER_TARGET(HttpStatus.BAD_REQUEST, "목표 수량 미달 작업 지시는 허용 값이 있어야 마감할 수 있습니다."),
     PRODUCTION_EXECUTION_NOT_FOUND(HttpStatus.NOT_FOUND, "생산 실적을 찾을 수 없습니다."),
     PRODUCTION_EXECUTION_INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "생산 실적 수량이 올바르지 않습니다."),
+    PRODUCTION_EXECUTION_EXCEEDS_ISSUED_QTY(HttpStatus.BAD_REQUEST, "자재 불출 수량을 초과하여 공정 실적을 등록할 수 없습니다."),
+    PRODUCTION_EXECUTION_PREVIOUS_OPERATION_REQUIRED(HttpStatus.BAD_REQUEST, "이전 공정 완료 수량이 부족하여 해당 공정 실적을 등록할 수 없습니다."),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "자재 창고의 재고가 부족합니다."),
     BOM_NOT_FOUND(HttpStatus.NOT_FOUND, "BOM 구성 정보가 존재하지 않습니다."),
     BOM_DUPLICATE(HttpStatus.CONFLICT, "동일한 부모 품목, 자식 품목, 버전의 BOM이 이미 존재합니다."),

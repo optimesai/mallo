@@ -11,7 +11,6 @@ import {
   Package,
   Layers,
   ArrowRight,
-  ShieldAlert,
   Loader2,
   ChevronDown
 } from '@lucide/vue'
@@ -183,21 +182,6 @@ async function selectRow(order: WorkOrderResponse) {
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
-      </div>
-    </div>
-
-    <!-- 안내 카드 -->
-    <div class="app-bg-primary-soft/50 border app-border-muted rounded-xl p-5 shadow-sm flex gap-4">
-      <div class="p-3 app-accent-bg app-text-inverse rounded-lg shrink-0 h-fit">
-        <ShieldAlert class="w-5 h-5" />
-      </div>
-      <div class="space-y-1">
-        <h4 class="app-panel-title app-accent">실제 작업지시 기반 자재 불출 안내</h4>
-        <p class="text-xs app-accent/90 leading-relaxed">
-          - **작업지시 조회**: 실제 백엔드 `GET /api/work-orders` 목록을 사용합니다.<br />
-          - **자재 소요량**: 선택한 작업지시 상세의 BOM 기준 필요 수량, 불출 수량, 가용 재고를 표시합니다.<br />
-          - **출고 실행**: "자재 불출 실행" 버튼 클릭 시 `POST /api/work-orders/{orderNo}/issue-materials`를 호출합니다.
-        </p>
       </div>
     </div>
 

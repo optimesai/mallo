@@ -619,7 +619,7 @@ function formatDateTime(dateTimeStr: string) {
           </div>
 
           <form @submit.prevent="handleStack" class="p-6 space-y-4.5 text-xs">
-            <div v-if="stackError" class="p-3 bg-red-50 border app-border text-red-600 rounded-lg text-xs app-font-label">
+            <div v-if="stackError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg text-xs app-font-label">
               {{ stackError }}
             </div>
 
@@ -694,7 +694,7 @@ function formatDateTime(dateTimeStr: string) {
           </div>
 
           <form @submit.prevent="handleBatchStack" class="p-6 space-y-4.5 text-xs">
-            <div v-if="batchStackError" class="p-3 bg-red-50 border app-border text-red-650 rounded-lg app-font-strong">
+            <div v-if="batchStackError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg app-font-strong">
               {{ batchStackError }}
             </div>
 

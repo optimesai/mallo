@@ -26,6 +26,7 @@ export const useFactoryRoutingStore = defineStore('factoryRouting', () => {
     error.value = null
     try {
       routings.value = await factoryRoutingService.getRoutings(params)
+      return routings.value
     } catch (err) {
       error.value = err instanceof Error ? err.message : '라우팅 목록을 불러오지 못했습니다.'
       throw err

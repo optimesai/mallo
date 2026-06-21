@@ -61,7 +61,7 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
         FactoryRouting routing = factoryRoutingRepository.findById(request.getRoutingId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROUTING_NOT_FOUND));
         validateRoutingMatchesWorkOrder(workOrder, routing);
-        validatePreviousOperations(workOrder, routing, request.getGoodQty() + request.getDefectQty());
+        validateOperationCapacity(workOrder, routing, request.getGoodQty() + request.getDefectQty());
 
         ProductionExecution execution = new ProductionExecution();
         execution.setOrder(workOrder);
@@ -75,8 +75,9 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
         execution.setManHoursMinutes(request.getManHoursMinutes());
 
         ProductionExecution saved = productionExecutionRepository.save(execution);
-        issueMaterialsForExecution(workOrder, worker, saved, request.getGoodQty() + request.getDefectQty());
-        receiveProduction(workOrder, worker, saved, request.getGoodQty(), request.getReceiptLocationCode());
+        if (isLastOperation(workOrder, routing)) {
+            receiveProduction(workOrder, worker, saved, request.getGoodQty(), request.getReceiptLocationCode());
+        }
         return ProductionExecutionResponse.from(saved);
     }
 
@@ -161,7 +162,7 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
         }
     }
 
-    private void validatePreviousOperations(WorkOrder workOrder, FactoryRouting routing, int newExecutedQty) {
+    private void validateOperationCapacity(WorkOrder workOrder, FactoryRouting routing, int newExecutedQty) {
         int currentRoutingExecutedQty = productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder).stream()
                 .filter(execution -> execution.getRouting() != null)
                 .filter(execution -> execution.getRouting().getRoutingId().equals(routing.getRoutingId()))
@@ -169,78 +170,57 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
                 .sum();
         int nextRoutingExecutedQty = currentRoutingExecutedQty + newExecutedQty;
 
-        List<FactoryRouting> previousRoutings = factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc(
-                        routing.getFactoryName(),
-                        routing.getLineName()
-                )
-                .stream()
-                .filter(candidate -> candidate.getOperationSeq() < routing.getOperationSeq())
-                .toList();
-
-        for (FactoryRouting previousRouting : previousRoutings) {
-            int previousExecutedQty = productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder).stream()
-                    .filter(execution -> execution.getRouting() != null)
-                    .filter(execution -> execution.getRouting().getRoutingId().equals(previousRouting.getRoutingId()))
-                    .mapToInt(execution -> execution.getGoodQty() + execution.getDefectQty())
-                    .sum();
-            if (previousExecutedQty < nextRoutingExecutedQty) {
-                throw new BusinessException(ErrorCode.PRODUCTION_EXECUTION_ROUTING_MISMATCH);
+        List<FactoryRouting> lineRoutings = getLineRoutings(workOrder);
+        int routingIndex = -1;
+        for (int index = 0; index < lineRoutings.size(); index++) {
+            if (lineRoutings.get(index).getRoutingId().equals(routing.getRoutingId())) {
+                routingIndex = index;
+                break;
             }
+        }
+        if (routingIndex < 0) {
+            throw new BusinessException(ErrorCode.PRODUCTION_EXECUTION_ROUTING_MISMATCH);
+        }
+
+        int availableQty = routingIndex == 0
+                ? getIssuedProductionCapacity(workOrder)
+                : getGoodQty(workOrder, lineRoutings.get(routingIndex - 1));
+        if (nextRoutingExecutedQty > availableQty) {
+            throw new BusinessException(routingIndex == 0
+                    ? ErrorCode.PRODUCTION_EXECUTION_EXCEEDS_ISSUED_QTY
+                    : ErrorCode.PRODUCTION_EXECUTION_PREVIOUS_OPERATION_REQUIRED);
         }
     }
 
-    private void issueMaterialsForExecution(WorkOrder workOrder, User worker, ProductionExecution execution, int newExecutedQty) {
-        int cumulativeExecutedQty = getCurrentExecutedQty(workOrder);
+    private List<FactoryRouting> getLineRoutings(WorkOrder workOrder) {
+        FactoryRouting routing = workOrder.getRouting();
+        return factoryRoutingRepository.findByFactoryNameAndLineNameOrderByOperationSeqAsc(
+                routing.getFactoryName(),
+                routing.getLineName()
+        );
+    }
+
+    private int getGoodQty(WorkOrder workOrder, FactoryRouting routing) {
+        return productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder).stream()
+                .filter(execution -> execution.getRouting() != null)
+                .filter(execution -> execution.getRouting().getRoutingId().equals(routing.getRoutingId()))
+                .mapToInt(ProductionExecution::getGoodQty)
+                .sum();
+    }
+
+    private int getIssuedProductionCapacity(WorkOrder workOrder) {
         List<BomRequirement> requirements = bomService.calculateMaterialRequirements(
                 workOrder.getItem(),
                 workOrder.getBomVersion(),
-                cumulativeExecutedQty
+                workOrder.getTargetQty()
         );
-
-        for (BomRequirement requirement : requirements) {
-            int requiredDeltaQty = requirement.requiredQty() - getIssuedQty(workOrder, requirement.item());
-            if (requiredDeltaQty <= 0) {
-                continue;
-            }
-            int totalAvailableQty = currentInventoryRepository.findByItem(requirement.item()).stream()
-                    .mapToInt(CurrentInventory::getCurrentQty)
-                    .sum();
-            if (totalAvailableQty < requiredDeltaQty) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
+        if (requirements.isEmpty()) {
+            return workOrder.getTargetQty();
         }
-
-        for (BomRequirement requirement : requirements) {
-            ItemMaster childItem = requirement.item();
-            int remainingQty = requirement.requiredQty() - getIssuedQty(workOrder, childItem);
-            if (remainingQty <= 0) {
-                continue;
-            }
-
-            List<CurrentInventory> inventories = currentInventoryRepository.findByItemForUpdate(childItem);
-            for (CurrentInventory inventory : inventories) {
-                if (remainingQty <= 0) break;
-                if (inventory.getCurrentQty() > 0) {
-                    int deductQty = Math.min(inventory.getCurrentQty(), remainingQty);
-                    inventory.setCurrentQty(inventory.getCurrentQty() - deductQty);
-                    currentInventoryRepository.save(inventory);
-
-                    remainingQty -= deductQty;
-
-                    saveHistory(childItem, inventory.getLocation(), TransactionType.PRODUCTION_ISSUE, deductQty, issueReason(workOrder), worker, workOrder, execution);
-                }
-            }
-
-            if (remainingQty > 0) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
-        }
-    }
-
-    private int getCurrentExecutedQty(WorkOrder workOrder) {
-        return productionExecutionRepository.findByOrderOrderByExecutionIdAsc(workOrder).stream()
-                .mapToInt(execution -> execution.getGoodQty() + execution.getDefectQty())
-                .sum();
+        return requirements.stream()
+                .mapToInt(requirement -> getIssuedQty(workOrder, requirement.item()) / requirement.bomQuantity())
+                .min()
+                .orElse(0);
     }
 
     private int getIssuedQty(WorkOrder workOrder, ItemMaster item) {
@@ -258,8 +238,11 @@ public class ProductionExecutionServiceImpl implements ProductionExecutionServic
                 .sum();
     }
 
-    private String issueReason(WorkOrder workOrder) {
-        return "Production issue for WorkOrder: " + workOrder.getOrderNo();
+    private boolean isLastOperation(WorkOrder workOrder, FactoryRouting routing) {
+        return getLineRoutings(workOrder).stream()
+                .reduce((first, second) -> second)
+                .map(lastRouting -> lastRouting.getRoutingId().equals(routing.getRoutingId()))
+                .orElse(false);
     }
 
     private void receiveProduction(

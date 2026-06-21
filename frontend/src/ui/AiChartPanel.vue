@@ -109,7 +109,7 @@ function formatLabel(value: unknown) {
       <div v-else-if="chart.type === 'BAR'" class="space-y-3">
         <div v-for="point in points" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
           <span class="truncate app-table-strong">{{ point.label }}</span>
-          <div class="h-6 rounded bg-slate-100">
+          <div class="h-6 rounded app-bg-muted">
             <div
               class="h-6 rounded"
               style="background-color: var(--color-primary);"
@@ -144,7 +144,7 @@ function formatLabel(value: unknown) {
     <Teleport to="body">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-6"
+        class="app-modal-backdrop app-modal-backdrop-loose"
         @click.self="isModalOpen = false"
       >
         <div class="app-modal-shell w-full max-w-5xl">
@@ -155,7 +155,7 @@ function formatLabel(value: unknown) {
             </h3>
             <button
               type="button"
-              class="app-icon-button hover:bg-white/10"
+              class="app-icon-button app-hover-inverse-muted"
               style="color: var(--color-text-inverse);"
               @click="isModalOpen = false"
             >
@@ -181,7 +181,7 @@ function formatLabel(value: unknown) {
             <div v-else-if="chart.type === 'BAR'" class="space-y-4">
               <div v-for="point in points" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
                 <span class="truncate app-table-strong">{{ point.label }}</span>
-                <div class="h-9 rounded bg-slate-100">
+                <div class="h-9 rounded app-bg-muted">
                   <div
                     class="h-9 rounded"
                     style="background-color: var(--color-primary);"

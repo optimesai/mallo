@@ -73,7 +73,7 @@ export interface LocationResponse {
 
 export const inboundApi = {
   async getInbounds(params: InboundListParams = {}) {
-    const response = await apiClient.get<ApiResponse<PageResponse<InboundReceiptResponse>>>('/api/inbounds', {
+    const response = await apiClient.get<ApiResponse<PageResponse<InboundReceiptResponse>>>('/api/v2/inbounds', {
       params: {
         page: params.page ?? 0,
         size: params.size ?? 20,
@@ -88,27 +88,27 @@ export const inboundApi = {
   },
 
   async getInbound(id: number) {
-    const response = await apiClient.get<ApiResponse<InboundReceiptResponse>>(`/api/inbounds/${id}`)
+    const response = await apiClient.get<ApiResponse<InboundReceiptResponse>>(`/api/v2/inbounds/${id}`)
     return response.data
   },
 
   async registerInbound(request: InboundCreateRequest) {
-    const response = await apiClient.post<ApiResponse<InboundReceiptResponse>>('/api/inbounds', request)
+    const response = await apiClient.post<ApiResponse<InboundReceiptResponse>>('/api/v2/inbounds', request)
     return response.data
   },
 
   async completeInbound(id: number) {
-    const response = await apiClient.put<ApiResponse<InboundReceiptResponse>>(`/api/inbounds/${id}/complete`, null)
+    const response = await apiClient.put<ApiResponse<InboundReceiptResponse>>(`/api/v2/inbounds/${id}/complete`, null)
     return response.data
   },
 
   async stackInventory(id: number, request: InventoryStackRequest) {
-    const response = await apiClient.post<ApiResponse<void>>(`/api/inbounds/${id}/stack`, request)
+    const response = await apiClient.post<ApiResponse<void>>(`/api/v2/inbounds/${id}/stack`, request)
     return response.data
   },
 
   async deleteInbound(id: number) {
-    const response = await apiClient.delete<ApiResponse<void>>(`/api/inbounds/${id}`)
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/v2/inbounds/${id}`)
     return response.data
   },
 

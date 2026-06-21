@@ -723,6 +723,12 @@
     color: var(--color-danger);
   }
 
+  .app-alert-success {
+    background-color: var(--color-success-soft);
+    border-color: var(--color-success-border);
+    color: var(--color-success);
+  }
+
   .app-alert-title {
     @apply text-sm;
     font-weight: var(--font-weight-strong);
@@ -744,6 +750,15 @@
     @apply flex items-center justify-between px-5 py-4;
     background-color: var(--color-surface-strong);
     color: var(--color-text-inverse);
+  }
+
+  .app-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background-color: rgb(15 23 42 / 0.5);
+  }
+
+  .app-modal-backdrop-loose {
+    @apply p-6;
   }
 
   .app-detail-head {
@@ -779,6 +794,10 @@
   }
 
   .app-text {
+    color: var(--color-text);
+  }
+
+  .app-text-primary {
     color: var(--color-text);
   }
 
@@ -818,7 +837,15 @@
     background-color: var(--color-surface);
   }
 
+  .app-bg-card {
+    background-color: var(--color-surface);
+  }
+
   .app-bg-muted {
+    background-color: var(--color-surface-muted);
+  }
+
+  .app-bg-disabled {
     background-color: var(--color-surface-muted);
   }
 
@@ -883,6 +910,11 @@
     --tw-ring-color: var(--color-warning-border);
   }
 
+  .app-focus-ring:focus {
+    border-color: var(--color-border-strong);
+    --tw-ring-color: var(--color-border-muted);
+  }
+
   .app-border {
     border-color: var(--color-border);
   }
@@ -909,6 +941,10 @@
 
   .app-hover-muted:hover {
     background-color: var(--color-surface-muted);
+  }
+
+  .app-hover-inverse-muted:hover {
+    background-color: rgb(255 255 255 / 0.1);
   }
 
   .app-accent-bg {
