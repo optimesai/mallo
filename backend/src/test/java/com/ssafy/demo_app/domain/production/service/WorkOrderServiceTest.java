@@ -85,6 +85,29 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    @DisplayName("재고 목록 조회 API 검증 - 현재고 행이 없는 품목도 0개 재고로 조회된다")
+    void getInventories_includesItemWithoutInventory() {
+        // Given
+        ItemMaster item = createItem("TEST-INV-ZERO", "재고없는품목", ItemMaster.ItemType.RAW);
+
+        em.flush();
+        em.clear();
+
+        // When
+        PageResponse<CurrentInventoryResponse> inventories = inventoryService.getInventories(Pageable.unpaged(), null);
+
+        // Then
+        CurrentInventoryResponse target = inventories.getContent().stream()
+                .filter(i -> i.getItemCode().equals(item.getItemCode()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(target.getInventoryId()).isNull();
+        assertThat(target.getCurrentQty()).isZero();
+        assertThat(target.getLocationCode()).isNull();
+        assertThat(target.getWarehouseName()).isNull();
+    }
+
+    @Test
     @DisplayName("수불 이력 조회 API 검증 - 변동 이력(수량, 작업 유형 등) 데이터가 올바르게 반환되는지 확인")
     void getTransactionHistories_success() {
         // Given

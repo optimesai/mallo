@@ -21,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ssafy.demo_app.global.response.PageResponse;
 
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -66,7 +67,11 @@ class OutboundShippingServiceTest {
         assertThat(response.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.READY.name());
 
         // 목록 조회 확인
-        PageResponse<ShippingResponse> shippings = outboundShippingService.getShippings(Pageable.unpaged(), null, null);
+        PageResponse<ShippingResponse> shippings = outboundShippingService.getShippings(
+                PageRequest.of(0, 20, Sort.by(Sort.Order.desc("createdAt"))),
+                null,
+                null
+        );
         assertThat(shippings.getContent()).isNotEmpty();
         assertThat(shippings.getContent().stream().anyMatch(s -> s.getShippingNo().equals("SH-2026-TEST-999"))).isTrue();
 
@@ -153,6 +158,60 @@ class OutboundShippingServiceTest {
         OutboundShipping updated = em.find(OutboundShipping.class, shipping.getShippingId());
         assertThat(updated.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.SHIPPED);
         assertThat(updated.getShippedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("피킹 배정 후 출하 완료 성공 - 완료 시 출하 수량 확정 및 추가 재고 차감 없음")
+    void completeShipping_afterAssignPickingConfirmsFullShipment() {
+        User worker = em.createQuery("select u from User u", User.class).getResultList().get(0);
+        PartnerMaster partner = em.createQuery("select p from PartnerMaster p", PartnerMaster.class).getResultList().get(0);
+        WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
+        ItemMaster item = createItem("SH-ITEM-PICK-COMPLETE", "피킹완료 완제품", ItemMaster.ItemType.FG);
+
+        CurrentInventory inventory = new CurrentInventory();
+        inventory.setItem(item);
+        inventory.setLocation(location);
+        inventory.setCurrentQty(100);
+        em.persist(inventory);
+
+        OutboundShipping shipping = new OutboundShipping();
+        shipping.setShippingNo("SH-2026-PICK-COMPLETE");
+        shipping.setPartner(partner);
+        shipping.setItem(item);
+        shipping.setRequestQty(40);
+        shipping.setStatus(OutboundShipping.ShippingStatus.READY);
+        em.persist(shipping);
+
+        em.flush();
+        em.clear();
+
+        outboundShippingService.assignPicking(
+                shipping.getShippingId(),
+                new com.ssafy.demo_app.api.shipping.dto.PickingAssignRequest("서울 88 가 9999")
+        );
+
+        CurrentInventory pickedInventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode",
+                        CurrentInventory.class
+                )
+                .setParameter("itemCode", "SH-ITEM-PICK-COMPLETE")
+                .getSingleResult();
+        assertThat(pickedInventory.getCurrentQty()).isEqualTo(60);
+
+        outboundShippingService.completeShipping(shipping.getShippingId(), worker.getUserId());
+
+        OutboundShipping completedShipping = em.find(OutboundShipping.class, shipping.getShippingId());
+        CurrentInventory completedInventory = em.createQuery(
+                        "select ci from CurrentInventory ci where ci.item.itemCode = :itemCode",
+                        CurrentInventory.class
+                )
+                .setParameter("itemCode", "SH-ITEM-PICK-COMPLETE")
+                .getSingleResult();
+
+        assertThat(completedShipping.getStatus()).isEqualTo(OutboundShipping.ShippingStatus.SHIPPED);
+        assertThat(completedShipping.getShippedQty()).isEqualTo(40);
+        assertThat(completedShipping.getShippedAt()).isNotNull();
+        assertThat(completedInventory.getCurrentQty()).isEqualTo(60);
     }
 
     @Test

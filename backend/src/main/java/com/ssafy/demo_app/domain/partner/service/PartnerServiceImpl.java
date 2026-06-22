@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -52,11 +53,12 @@ public class PartnerServiceImpl implements PartnerService {
     public PageResponse<PartnerResponse> getPartners(Pageable pageable, PartnerMaster.PartnerType partnerType,
                                                       PartnerMaster.PartnerStatus partnerStatus, Boolean hasBusinessNo,
                                                       String keyword) {
+        Pageable sanitizedPageable = sanitizePartnerPageable(pageable);
         Specification<PartnerMaster> spec = buildPartnerSpec(partnerType, partnerStatus, hasBusinessNo, keyword);
-        if (isAggregateSort(pageable)) {
-            return PageResponse.from(buildAggregateSortPage(spec, pageable));
+        if (isAggregateSort(sanitizedPageable)) {
+            return PageResponse.from(buildAggregateSortPage(spec, sanitizedPageable));
         }
-        Page<PartnerMaster> page = partnerMasterRepository.findAll(spec, pageable);
+        Page<PartnerMaster> page = partnerMasterRepository.findAll(spec, sanitizedPageable);
         return PageResponse.from(page.map(this::toResponse));
     }
 
@@ -364,15 +366,44 @@ public class PartnerServiceImpl implements PartnerService {
                         .ifPresent(partnerId -> keywordPredicates.add(cb.equal(root.get("partnerId"), partnerId)));
                 keywordPredicates.add(cb.like(cb.lower(root.get("partnerCode")), pattern));
                 keywordPredicates.add(cb.like(cb.lower(root.get("partnerName")), pattern));
-                keywordPredicates.add(cb.like(cb.lower(root.get("businessNo")), pattern));
-                keywordPredicates.add(cb.like(cb.lower(root.get("representative")), pattern));
-                keywordPredicates.add(cb.like(cb.lower(root.get("contactPhone")), pattern));
-                keywordPredicates.add(cb.like(cb.lower(root.get("contactEmail")), pattern));
-                keywordPredicates.add(cb.like(cb.lower(root.get("note")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("businessNo"), "")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("representative"), "")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("contactPhone"), "")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("contactEmail"), "")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("note"), "")), pattern));
                 predicates.add(cb.or(keywordPredicates.toArray(new Predicate[0])));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private Pageable sanitizePartnerPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return pageable;
+        }
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+
+        Set<String> allowedSortProperties = Set.of(
+                "partnerId",
+                "partnerCode",
+                "partnerName",
+                "partnerType",
+                "partnerStatus",
+                "businessNo",
+                "createdAt",
+                "usageCount",
+                "lastUsedAt"
+        );
+        List<Sort.Order> orders = pageable.getSort()
+                .stream()
+                .filter(order -> allowedSortProperties.contains(order.getProperty()))
+                .toList();
+        Sort sort = orders.isEmpty()
+                ? Sort.by(Sort.Order.desc("createdAt"))
+                : Sort.by(orders);
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     private boolean isAggregateSort(Pageable pageable) {
@@ -413,8 +444,7 @@ public class PartnerServiceImpl implements PartnerService {
         LocalDateTime lastInboundAt = inboundReceiptRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
                 .map(InboundReceipt::getCreatedAt)
                 .orElse(null);
-        LocalDateTime lastShippingAt = outboundShippingRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
-                .map(this::getShippingReferenceAt)
+        LocalDateTime lastShippingAt = outboundShippingRepository.findLastShippingAtByPartnerId(partner.getPartnerId())
                 .orElse(null);
         response.setLastUsedAt(maxDateTime(lastInboundAt, lastShippingAt));
         return response;
@@ -426,8 +456,7 @@ public class PartnerServiceImpl implements PartnerService {
         LocalDateTime lastInboundAt = inboundReceiptRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
                 .map(InboundReceipt::getCreatedAt)
                 .orElse(null);
-        LocalDateTime lastShippingAt = outboundShippingRepository.findTopByPartnerOrderByCreatedAtDesc(partner)
-                .map(this::getShippingReferenceAt)
+        LocalDateTime lastShippingAt = outboundShippingRepository.findLastShippingAtByPartnerId(partner.getPartnerId())
                 .orElse(null);
 
         PartnerUsageResponse response = new PartnerUsageResponse();

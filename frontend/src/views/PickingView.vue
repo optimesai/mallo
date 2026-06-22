@@ -17,6 +17,7 @@ import {
   ArrowRight
 } from '@lucide/vue'
 import { useShippingStore } from '@/state/shippingStore'
+import type { ShippingStatus } from '@/api/shippingApi'
 
 const shippingStore = useShippingStore()
 
@@ -33,7 +34,7 @@ const vehicleInput = ref('')
 // Filter states
 const filterShippingNo = ref('')
 const filterItemName = ref('')
-const filterStatus = ref<'WORK' | 'READY' | 'PICKING'>('WORK')
+const filterStatus = ref<'WORK' | Extract<ShippingStatus, 'READY' | 'PICKING'>>('WORK')
 
 onMounted(async () => {
   await fetchPageData()
@@ -86,7 +87,7 @@ const filteredShippings = computed(() => {
   return shippingStore.shippings.filter((s) => {
     // 상태 필터
     if (filterStatus.value === 'WORK') {
-      if (s.status === 'SHIPPED') return false
+      if (s.status !== 'READY' && s.status !== 'PICKING') return false
     } else {
       if (s.status !== filterStatus.value) return false
     }
@@ -604,7 +605,7 @@ function formatDate(dateStr: string | null) {
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
-              상차 완료 및 출하 확정 (재고 차감)
+              상차 완료 및 출하 확정
             </button>
           </div>
         </div>

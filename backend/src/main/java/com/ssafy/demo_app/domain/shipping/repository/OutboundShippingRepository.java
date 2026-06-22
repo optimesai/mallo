@@ -25,6 +25,70 @@ public interface OutboundShippingRepository extends JpaRepository<OutboundShippi
     List<OutboundShipping> findByPartnerOrderByCreatedAtDescShippingIdDesc(PartnerMaster partner);
     void deleteByItem(ItemMaster item);
 
+    @Query(value = """
+            select os.shipping_id as shippingId,
+                   os.shipping_no as shippingNo,
+                   p.partner_code as partnerCode,
+                   p.partner_name as partnerName,
+                   i.item_code as itemCode,
+                   i.item_name as itemName,
+                   os.request_qty as requestQty,
+                   os.shipped_qty as shippedQty,
+                   os.shipping_type as shippingType,
+                   wl.location_code as pickingLocationCode,
+                   os.vehicle_no as vehicleNo,
+                   os.carrier as carrier,
+                   os.tracking_no as trackingNo,
+                   os.estimated_delivery as estimatedDelivery,
+                   os.cancel_reason as cancelReason,
+                   os.status as status,
+                   u.user_name as workerName,
+                   os.shipped_at as shippedAt
+            from outbound_shipping os
+            left join partner_master p on os.partner_id = p.partner_id
+            left join item_master i on os.item_id = i.item_id
+            left join warehouse_location wl on os.picking_location_id = wl.location_id
+            left join users u on os.worker_id = u.user_id
+            where (:status is null or os.status = :status)
+              and (
+                :keyword is null
+                or lower(coalesce(os.shipping_no, '')) like concat('%', lower(:keyword), '%')
+                or lower(coalesce(i.item_code, '')) like concat('%', lower(:keyword), '%')
+                or lower(coalesce(i.item_name, '')) like concat('%', lower(:keyword), '%')
+                or lower(coalesce(p.partner_code, '')) like concat('%', lower(:keyword), '%')
+                or lower(coalesce(p.partner_name, '')) like concat('%', lower(:keyword), '%')
+              )
+            order by os.created_at desc, os.shipping_id desc
+            """,
+            countQuery = """
+                    select count(*)
+                    from outbound_shipping os
+                    left join partner_master p on os.partner_id = p.partner_id
+                    left join item_master i on os.item_id = i.item_id
+                    where (:status is null or os.status = :status)
+                      and (
+                        :keyword is null
+                        or lower(coalesce(os.shipping_no, '')) like concat('%', lower(:keyword), '%')
+                        or lower(coalesce(i.item_code, '')) like concat('%', lower(:keyword), '%')
+                        or lower(coalesce(i.item_name, '')) like concat('%', lower(:keyword), '%')
+                        or lower(coalesce(p.partner_code, '')) like concat('%', lower(:keyword), '%')
+                        or lower(coalesce(p.partner_name, '')) like concat('%', lower(:keyword), '%')
+                      )
+                    """,
+            nativeQuery = true)
+    org.springframework.data.domain.Page<ShippingListProjection> findShippingList(
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query(value = """
+            select max(coalesce(os.shipped_at, os.created_at))
+            from outbound_shipping os
+            where os.partner_id = :partnerId
+            """, nativeQuery = true)
+    Optional<LocalDateTime> findLastShippingAtByPartnerId(@Param("partnerId") Integer partnerId);
+
     @Query("""
             select p.partnerName,
                    coalesce(sum(coalesce(os.requestQty, 0) - coalesce(os.shippedQty, 0)), 0),
