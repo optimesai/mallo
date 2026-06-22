@@ -283,7 +283,7 @@ function formatDateTime(dateTimeStr: string) {
     </div>
 
     <!-- 에러 배너 -->
-    <div v-if="pageError" class="app-alert app-alert-danger items-center justify-between text-xs">
+    <div v-if="pageError" class="app-alert app-alert-danger items-center justify-between app-type-xs">
       <span>{{ pageError }}</span>
       <button @click="pageError = null" class="app-icon-button">×</button>
     </div>
@@ -291,7 +291,7 @@ function formatDateTime(dateTimeStr: string) {
     <!-- 접이식 검색 조건 패널 -->
     <div class="app-panel">
       <div class="app-panel-head py-3.5">
-        <span class="app-panel-title text-xs">
+        <span class="app-panel-title app-type-xs">
           <Search class="app-panel-icon" />
           적재 대상 검색 조건
         </span>
@@ -307,7 +307,7 @@ function formatDateTime(dateTimeStr: string) {
       </div>
 
       <!-- 확장 시 필터 폼 -->
-      <div v-show="isSearchExpanded" class="app-filter-body grid grid-cols-1 gap-5 text-xs sm:grid-cols-3">
+      <div v-show="isSearchExpanded" class="app-filter-body grid grid-cols-1 gap-5 app-type-xs sm:grid-cols-3">
         <div class="app-field">
           <label class="app-label">원자재 품목</label>
           <input
@@ -363,7 +363,7 @@ function formatDateTime(dateTimeStr: string) {
             <Boxes class="w-4 h-4" />
             선택 일괄 적재
           </button>
-          <span class="text-xs app-text-muted ml-2 app-font-strong app-bg-muted px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
+          <span class="app-type-xs app-text-muted ml-2 app-font-strong app-bg-muted px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
             선택: <span class="app-accent">{{ selectedIds.length }}</span>개
           </span>
         </div>
@@ -388,7 +388,7 @@ function formatDateTime(dateTimeStr: string) {
 
       <!-- 그리드 테이블 -->
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1200px] text-left text-xs app-text-soft border-collapse">
+        <table class="w-full min-w-[1200px] text-left app-type-xs app-text-soft border-collapse">
           <thead class="app-bg-muted app-text-soft app-font-strong uppercase border-b app-border">
             <tr class="whitespace-nowrap">
               <th class="px-4 py-3 text-center w-12 border-r app-border app-bg-muted">
@@ -447,17 +447,17 @@ function formatDateTime(dateTimeStr: string) {
               <td class="px-4 py-3 app-text-soft border-r app-border-muted app-font-label">{{ item.itemName }}</td>
               <td class="px-4 py-3 app-text-soft border-r app-border-muted app-font-label">{{ item.partnerName }}</td>
               <td class="px-4 py-3 text-center border-r app-border-muted">
-                <span class="font-mono text-[11px] px-2.5 py-0.5 app-bg-muted rounded app-text-muted border app-border">
+                <span class="font-mono app-type-11 px-2.5 py-0.5 app-bg-muted rounded app-text-muted border app-border">
                   {{ item.locationCode }}
                 </span>
               </td>
               <td class="px-4 py-3 text-right border-r app-border-muted app-font-emphasis app-text-strong">{{ item.inboundQty.toLocaleString() }}</td>
-              <td class="px-4 py-3 text-center border-r app-border-muted app-text-muted font-mono text-[11px]">{{ formatDateTime(item.createdAt) }}</td>
+              <td class="px-4 py-3 text-center border-r app-border-muted app-text-muted font-mono app-type-11">{{ formatDateTime(item.createdAt) }}</td>
               <td class="px-4 py-3 text-center border-r app-border-muted app-font-label app-text-soft">{{ item.workerName || '-' }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <button
                   @click="openStackModal(item)"
-                  class="app-button app-button-primary h-8 text-[10px]"
+                  class="app-button app-button-primary h-8 app-type-2xs"
                 >
                   <Boxes class="w-3.5 h-3.5" />
                   렉 적재
@@ -473,7 +473,7 @@ function formatDateTime(dateTimeStr: string) {
               <td colspan="5" class="px-4 py-3 border-r app-border-muted text-left app-text-muted font-normal">
                 현재 적재 대기 목록: 총 <span class="app-font-strong app-text-strong">{{ completedInbounds.length }}</span>건의 자재
               </td>
-              <td class="px-4 py-3 text-right border-r app-border-muted app-accent app-font-emphasis text-sm">
+              <td class="px-4 py-3 text-right border-r app-border-muted app-accent app-font-emphasis app-type-sm">
                 {{ totalStackQty.toLocaleString() }}
               </td>
               <td colspan="3" class="px-4 py-3"></td>
@@ -508,7 +508,7 @@ function formatDateTime(dateTimeStr: string) {
     <div class="app-panel">
       <!-- 탭 헤더 -->
       <div class="px-5 py-3 app-bg-muted border-b app-border flex items-center justify-between">
-        <div class="flex items-center gap-4 text-xs app-font-strong app-text-soft">
+        <div class="flex items-center gap-4 app-type-xs app-font-strong app-text-soft">
           <span class="flex items-center gap-1.5 app-accent uppercase tracking-wider">
             <Boxes class="w-4.5 h-4.5" />
             적재 자재 정보 상세
@@ -530,13 +530,13 @@ function formatDateTime(dateTimeStr: string) {
             </button>
           </div>
         </div>
-        <div class="text-[11px] font-mono app-text-muted" v-if="selectedInbound">
+        <div class="app-type-11 font-mono app-text-muted" v-if="selectedInbound">
           오더 ID: <span class="app-font-strong app-accent">{{ selectedInbound.inboundId }}</span>
         </div>
       </div>
 
       <!-- 탭 바디 (자연스럽게 늘어남) -->
-      <div class="p-6 text-xs app-bg-surface min-h-[140px]">
+      <div class="p-6 app-type-xs app-bg-surface min-h-[140px]">
         <div v-if="!selectedInbound" class="py-8 flex items-center justify-center app-text-muted app-font-label">
           <div class="text-center">
             <Inbox class="w-8 h-8 app-text-subtle mx-auto mb-2" />
@@ -547,7 +547,7 @@ function formatDateTime(dateTimeStr: string) {
         <!-- 자재 마스터 정보 -->
         <div v-else-if="activeTab === 'item-partner'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="app-section-mark"></span>
               자재 규격 상세
             </h4>
@@ -564,7 +564,7 @@ function formatDateTime(dateTimeStr: string) {
           </div>
 
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="app-section-mark"></span>
               납품사(공급원) 정보
             </h4>
@@ -585,7 +585,7 @@ function formatDateTime(dateTimeStr: string) {
         <!-- 대기 위치 상세 정보 -->
         <div v-else-if="activeTab === 'location'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="space-y-3.5 col-span-2">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="app-section-mark"></span>
               현재 대기(하역) 구역 상세
             </h4>
@@ -611,15 +611,15 @@ function formatDateTime(dateTimeStr: string) {
       <div class="flex min-h-screen items-center justify-center p-4">
         <div class="relative w-full max-w-md app-bg-surface rounded-2xl shadow-xl border app-border overflow-hidden transform transition-all duration-300 scale-100">
           <div class="px-6 py-4.5 app-bg-muted border-b app-border-muted flex items-center justify-between">
-            <h3 class="text-sm app-font-strong app-text-strong flex items-center gap-2">
+            <h3 class="app-type-sm app-font-strong app-text-strong flex items-center gap-2">
               <span class="w-1.5 h-4.5 app-accent-bg rounded-sm"></span>
               WMS 창고 렉 로케이션 적재
             </h3>
-            <button @click="closeStackModal" class="app-text-muted app-font-strong text-lg">×</button>
+            <button @click="closeStackModal" class="app-text-muted app-font-strong app-type-lg">×</button>
           </div>
 
-          <form @submit.prevent="handleStack" class="p-6 space-y-4.5 text-xs">
-            <div v-if="stackError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg text-xs app-font-label">
+          <form @submit.prevent="handleStack" class="p-6 space-y-4.5 app-type-xs">
+            <div v-if="stackError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg app-type-xs app-font-label">
               {{ stackError }}
             </div>
 
@@ -628,12 +628,12 @@ function formatDateTime(dateTimeStr: string) {
                 <span class="app-text-muted app-font-label">적재 자재명</span>
                 <span class="app-font-strong app-text-strong text-right">
                   {{ selectedInbound?.itemName }}
-                  <span class="block text-[10px] app-text-muted font-mono font-normal tracking-wide">{{ selectedInbound?.itemCode }}</span>
+                  <span class="block app-type-2xs app-text-muted font-mono font-normal tracking-wide">{{ selectedInbound?.itemCode }}</span>
                 </span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="app-text-muted app-font-label">적재 수량</span>
-                <span class="app-font-emphasis app-accent text-sm">{{ selectedInbound?.inboundQty.toLocaleString() }} EA</span>
+                <span class="app-font-emphasis app-accent app-type-sm">{{ selectedInbound?.inboundQty.toLocaleString() }} EA</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="app-text-muted app-font-label">현재 하역 로케이션</span>
@@ -654,7 +654,7 @@ function formatDateTime(dateTimeStr: string) {
                   [{{ loc.locationCode }}] {{ loc.warehouseName }} - {{ loc.rackRow }}{{ loc.rackColumn }}
                 </option>
               </select>
-              <p class="text-[10px] app-text-muted leading-normal mt-1">※ 지정한 렉 로케이션의 가용 수량이 실시간으로 증가하며 수불 이력에 로그가 적재됩니다.</p>
+              <p class="app-type-2xs app-text-muted leading-normal mt-1">※ 지정한 렉 로케이션의 가용 수량이 실시간으로 증가하며 수불 이력에 로그가 적재됩니다.</p>
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t app-border-muted">
@@ -686,23 +686,23 @@ function formatDateTime(dateTimeStr: string) {
       <div class="flex min-h-screen items-center justify-center p-4">
         <div class="relative w-full max-w-md app-bg-surface rounded-2xl shadow-xl border app-border overflow-hidden transform transition-all duration-300 scale-100">
           <div class="px-6 py-4.5 app-bg-muted border-b app-border-muted flex items-center justify-between">
-            <h3 class="text-sm app-font-strong app-text-strong flex items-center gap-2">
+            <h3 class="app-type-sm app-font-strong app-text-strong flex items-center gap-2">
               <span class="w-1.5 h-4.5 app-accent-bg rounded-sm"></span>
               WMS 일괄 창고 적재
             </h3>
-            <button @click="closeBatchStackModal" class="app-text-muted app-font-strong text-lg">×</button>
+            <button @click="closeBatchStackModal" class="app-text-muted app-font-strong app-type-lg">×</button>
           </div>
 
-          <form @submit.prevent="handleBatchStack" class="p-6 space-y-4.5 text-xs">
+          <form @submit.prevent="handleBatchStack" class="p-6 space-y-4.5 app-type-xs">
             <div v-if="batchStackError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg app-font-strong">
               {{ batchStackError }}
             </div>
 
             <div class="p-4 app-bg-primary-soft/50 border app-border-muted rounded-xl">
-              <div class="text-xs app-font-label app-text-soft">
-                일괄 적재 대상 품목 건수: <span class="app-font-emphasis app-accent text-sm">{{ selectedIds.length }}</span>건
+              <div class="app-type-xs app-font-label app-text-soft">
+                일괄 적재 대상 품목 건수: <span class="app-font-emphasis app-accent app-type-sm">{{ selectedIds.length }}</span>건
               </div>
-              <p class="text-[10px] app-text-muted mt-1 leading-normal">
+              <p class="app-type-2xs app-text-muted mt-1 leading-normal">
                 선택하신 여러 오더의 원자재들을 하나의 대상 렉 로케이션에 동시에 일괄 적재 및 바인딩 처리를 수행합니다.
               </p>
             </div>
@@ -720,7 +720,7 @@ function formatDateTime(dateTimeStr: string) {
                   [{{ loc.locationCode }}] {{ loc.warehouseName }} - {{ loc.rackRow }}{{ loc.rackColumn }}
                 </option>
               </select>
-              <p class="text-[10px] app-text-muted leading-normal mt-1">※ 선택된 모든 자재들이 해당 렉으로 바인딩 처리되며, 각각의 재고가 일괄 합산됩니다.</p>
+              <p class="app-type-2xs app-text-muted leading-normal mt-1">※ 선택된 모든 자재들이 해당 렉으로 바인딩 처리되며, 각각의 재고가 일괄 합산됩니다.</p>
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t app-border-muted">

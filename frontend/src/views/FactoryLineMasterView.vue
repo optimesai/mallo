@@ -638,7 +638,9 @@ function showToast(message: string) {
 }
 
 .factory-master-title {
-  @apply flex items-center gap-2 text-2xl tracking-tight;
+    @apply flex items-center gap-2 tracking-tight;
+  font-size: var(--app-font-size-2xl);
+  line-height: var(--app-line-height-2xl);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-title);
 }
@@ -649,13 +651,17 @@ function showToast(message: string) {
 }
 
 .factory-master-subtitle {
-  @apply mt-1.5 text-xs;
+    @apply mt-1.5;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-body);
 }
 
 .factory-master-toast {
-  @apply flex items-center gap-2 rounded-lg border px-4 py-2 text-xs shadow-sm;
+    @apply flex items-center gap-2 rounded-lg border px-4 py-2 shadow-sm;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   background-color: var(--factory-color-success-soft);
   border-color: var(--factory-color-success-border);
   color: var(--factory-color-success);
@@ -670,7 +676,9 @@ function showToast(message: string) {
 
 .factory-master-error,
 .factory-master-form-error {
-  @apply flex items-center justify-between rounded-lg border px-4 py-3 text-xs;
+    @apply flex items-center justify-between rounded-lg border px-4 py-3;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   background-color: var(--factory-color-danger-soft);
   border-color: var(--factory-color-danger-border);
   color: var(--factory-color-danger);
@@ -708,13 +716,17 @@ function showToast(message: string) {
 }
 
 .factory-master-stat-label {
-  @apply text-[10px] uppercase tracking-wider;
+    @apply uppercase tracking-wider;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-label);
 }
 
 .factory-master-stat-value {
-  @apply mt-1 text-xl;
+    @apply mt-1;
+  font-size: var(--app-font-size-xl);
+  line-height: var(--app-line-height-xl);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-strong);
 }
@@ -735,7 +747,9 @@ function showToast(message: string) {
 
 .factory-master-panel-title,
 .factory-master-detail-title {
-  @apply flex items-center gap-2 text-xs;
+    @apply flex items-center gap-2;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-label);
 }
@@ -751,7 +765,9 @@ function showToast(message: string) {
 }
 
 .factory-master-search-grid {
-  @apply grid grid-cols-1 gap-5 border-t p-5 text-xs sm:grid-cols-2 lg:grid-cols-4;
+    @apply grid grid-cols-1 gap-5 border-t p-5 sm:grid-cols-2 lg:grid-cols-4;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   border-color: var(--factory-color-border);
 }
 
@@ -766,7 +782,9 @@ function showToast(message: string) {
 }
 
 .factory-master-input {
-  @apply h-9 w-full rounded-lg border px-3 text-xs outline-none transition disabled:cursor-not-allowed disabled:opacity-60;
+    @apply h-9 w-full rounded-lg border px-3 outline-none transition disabled:cursor-not-allowed disabled:opacity-60;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   background-color: var(--factory-color-surface);
   border-color: var(--factory-color-border-strong);
   color: var(--factory-color-text-primary);
@@ -783,7 +801,9 @@ function showToast(message: string) {
 
 .factory-master-primary-button,
 .factory-master-secondary-button {
-  @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs transition disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 transition disabled:cursor-not-allowed disabled:opacity-60;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   font-weight: var(--factory-font-weight-label);
 }
 
@@ -810,7 +830,9 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-body {
-  @apply flex gap-5 overflow-x-auto overflow-y-hidden p-5 text-xs;
+    @apply flex gap-5 overflow-x-auto overflow-y-hidden p-5;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   scroll-snap-type: x proximity;
 }
 
@@ -839,7 +861,9 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-line-name {
-  @apply mb-2 text-[11px];
+    @apply mb-2;
+  font-size: var(--app-font-size-11);
+  line-height: var(--app-line-height-11);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-label);
 }
@@ -858,7 +882,9 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-operation span {
-  @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px];
+    @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
   background-color: var(--factory-color-primary);
   color: var(--factory-color-surface);
   font-weight: var(--factory-font-weight-strong);
@@ -875,7 +901,9 @@ function showToast(message: string) {
 }
 
 .factory-master-toolbar-copy {
-  @apply flex flex-col gap-1 text-xs;
+    @apply flex flex-col gap-1;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-muted);
 }
@@ -891,7 +919,9 @@ function showToast(message: string) {
 }
 
 .factory-master-table {
-  @apply w-full min-w-[980px] border-collapse text-left text-xs;
+    @apply w-full min-w-[980px] border-collapse text-left;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   color: var(--factory-color-text-secondary);
 }
 
@@ -946,7 +976,9 @@ function showToast(message: string) {
 }
 
 .factory-master-seq-badge {
-  @apply inline-flex rounded border px-2.5 py-0.5 text-[10px];
+    @apply inline-flex rounded border px-2.5 py-0.5;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
   background-color: var(--factory-color-warning-soft);
   border-color: var(--factory-color-warning-border);
   color: var(--factory-color-warning);
@@ -955,7 +987,9 @@ function showToast(message: string) {
 
 .factory-master-table-button,
 .factory-master-table-danger-button {
-  @apply inline-flex items-center gap-1 rounded border px-3 py-1.5 text-[10px] transition-colors;
+    @apply inline-flex items-center gap-1 rounded border px-3 py-1.5 transition-colors;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
   font-weight: var(--factory-font-weight-label);
 }
 
@@ -991,13 +1025,17 @@ function showToast(message: string) {
 }
 
 .factory-master-detail-code {
-  @apply font-mono text-[11px];
+    @apply font-mono;
+  font-size: var(--app-font-size-11);
+  line-height: var(--app-line-height-11);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-label);
 }
 
 .factory-master-detail-body {
-  @apply min-h-[160px] p-6 text-xs;
+    @apply min-h-[160px] p-6;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
 }
 
 .factory-master-empty-detail {
@@ -1016,7 +1054,9 @@ function showToast(message: string) {
 }
 
 .factory-master-tab-button {
-  @apply rounded-md px-3 py-1.5 text-xs transition-colors;
+    @apply rounded-md px-3 py-1.5 transition-colors;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-label);
 }
@@ -1040,7 +1080,9 @@ function showToast(message: string) {
 }
 
 .factory-master-detail-section h3 {
-  @apply border-b pb-2 text-xs;
+    @apply border-b pb-2;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   border-color: var(--factory-color-border);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-label);
@@ -1097,26 +1139,33 @@ function showToast(message: string) {
 }
 
 .factory-master-flow-seq {
-  @apply flex h-7 w-7 items-center justify-center rounded-full text-xs;
+    @apply flex h-7 w-7 items-center justify-center rounded-full;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   background-color: var(--factory-color-primary);
   color: var(--factory-color-surface);
   font-weight: var(--factory-font-weight-strong);
 }
 
 .factory-master-flow-name {
-  @apply mt-3 text-sm leading-5;
+    @apply mt-3 leading-5;
+  font-size: var(--app-font-size-sm);
+  line-height: var(--app-line-height-sm);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-label);
 }
 
 .factory-master-flow-code {
-  @apply mt-3 font-mono text-[10px];
+    @apply mt-3 font-mono;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-muted);
 }
 
 .factory-master-flow-arrow {
-  @apply text-xl;
+  font-size: var(--app-font-size-xl);
+  line-height: var(--app-line-height-xl);
   color: var(--factory-color-primary);
   font-weight: var(--factory-font-weight-strong);
 }
@@ -1130,11 +1179,15 @@ function showToast(message: string) {
 }
 
 .factory-master-sortable-header span {
-  @apply ml-1 text-[10px];
+    @apply ml-1;
+  font-size: var(--app-font-size-2xs);
+  line-height: var(--app-line-height-2xs);
 }
 
 .factory-master-pagination {
-  @apply flex flex-col gap-3 border-t px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between;
+    @apply flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between;
+  font-size: var(--app-font-size-sm);
+  line-height: var(--app-line-height-sm);
   border-color: var(--factory-color-border);
   color: var(--factory-color-text-muted);
   font-weight: var(--factory-font-weight-muted);
@@ -1170,13 +1223,16 @@ function showToast(message: string) {
 }
 
 .factory-master-modal-heading h2 {
-  @apply text-sm;
+  font-size: var(--app-font-size-sm);
+  line-height: var(--app-line-height-sm);
   color: var(--factory-color-text-primary);
   font-weight: var(--factory-font-weight-label);
 }
 
 .factory-master-form {
-  @apply space-y-4 p-6 text-xs;
+    @apply space-y-4 p-6;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
 }
 
 .factory-master-form-grid {
@@ -1184,7 +1240,9 @@ function showToast(message: string) {
 }
 
 .factory-master-form-notice {
-  @apply rounded-lg border px-4 py-3 text-xs;
+    @apply rounded-lg border px-4 py-3;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   background-color: var(--factory-color-primary-soft);
   border-color: var(--factory-color-primary-border);
   color: var(--factory-color-primary);

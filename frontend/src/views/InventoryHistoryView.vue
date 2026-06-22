@@ -130,7 +130,7 @@ const stats = computed(() => {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -142,7 +142,7 @@ const stats = computed(() => {
       <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
       <div>
         <h4 class="app-alert-title">오류가 발생했습니다</h4>
-        <p class="text-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
+        <p class="app-type-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
       </div>
     </div>
 
@@ -155,7 +155,7 @@ const stats = computed(() => {
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -170,8 +170,8 @@ const stats = computed(() => {
           <Clock class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">총 변동 이력 수</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalCount }} 건</span>
+          <span class="app-type-xs app-font-label app-text-muted block">총 변동 이력 수</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalCount }} 건</span>
         </div>
       </div>
 
@@ -181,8 +181,8 @@ const stats = computed(() => {
           <ArrowDownLeft class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">검수완료 입고량 (INBOUND)</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
+          <span class="app-type-xs app-font-label app-text-muted block">검수완료 입고량 (INBOUND)</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
         </div>
       </div>
 
@@ -192,8 +192,8 @@ const stats = computed(() => {
           <ArrowUpRight class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">생산 자재 불출량 (ISSUE)</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
+          <span class="app-type-xs app-font-label app-text-muted block">생산 자재 불출량 (ISSUE)</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
         </div>
       </div>
     </div>
@@ -300,7 +300,7 @@ const stats = computed(() => {
             <col class="w-[180px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">번호</th>
               <th class="px-5 py-3">품목 코드</th>
               <th class="px-5 py-3">품목명</th>
@@ -312,14 +312,14 @@ const stats = computed(() => {
               <th class="px-5 py-3">발생 일시</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
               v-for="item in filteredHistories"
               :key="item.transactionId"
               class="app-hover-muted transition select-none"
             >
               <!-- 번호 -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ item.transactionId }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">#{{ item.transactionId }}</td>
               <!-- 품목 코드 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
@@ -329,7 +329,7 @@ const stats = computed(() => {
               <!-- 수불 유형 -->
               <td class="px-5 py-4">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="{
                     'app-bg-success-soft app-border app-text-success': item.transactionType === 'INBOUND',
                     'app-bg-danger-soft app-border app-text-danger': item.transactionType === 'PRODUCTION_ISSUE'
@@ -346,13 +346,13 @@ const stats = computed(() => {
                 </span>
               </td>
               <!-- 적재 위치 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ item.locationCode }}</td>
               <!-- 변동 수량 -->
               <td class="px-5 py-4 text-right app-font-emphasis" :class="item.transactionType === 'INBOUND' ? 'app-text-success' : 'app-text-danger'">
                 {{ item.transactionType === 'INBOUND' ? '+' : '-' }}{{ item.quantity.toLocaleString() }}
               </td>
               <!-- 변동 사유 -->
-              <td class="px-5 py-4 text-xs app-muted truncate" :title="item.reasonDesc">
+              <td class="px-5 py-4 app-type-xs app-muted truncate" :title="item.reasonDesc">
                 {{ item.reasonDesc }}
               </td>
               <!-- 작업자 -->
@@ -363,7 +363,7 @@ const stats = computed(() => {
                 </span>
               </td>
               <!-- 발생 일시 -->
-              <td class="px-5 py-4 text-xs app-text-muted font-mono">
+              <td class="px-5 py-4 app-type-xs app-text-muted font-mono">
                 {{ item.createdAt ? item.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
               </td>
             </tr>

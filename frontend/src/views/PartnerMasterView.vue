@@ -296,16 +296,16 @@ function showToast(message: string) {
   <div class="space-y-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <h1 class="text-3xl font-bold app-text-primary">거래처 마스터 관리</h1>
+        <h1 class="app-type-3xl font-bold app-text-primary">거래처 마스터 관리</h1>
         <p class="mt-2 app-text-muted">거래처를 등록하고 상태, 사용 현황, 입고·출하 이력을 관리합니다.</p>
       </div>
-      <div v-if="successToast" class="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+      <div v-if="successToast" class="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 app-type-sm font-semibold text-emerald-700">
         <CheckCircle2 class="h-4 w-4" />
         {{ successToast }}
       </div>
     </div>
 
-    <div v-if="pageError" class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+    <div v-if="pageError" class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 app-type-sm font-semibold text-rose-700">
       <span>{{ pageError }}</span>
       <button type="button" class="rounded-full p-1 hover:bg-rose-100" @click="pageError = null">
         <X class="h-4 w-4" />
@@ -316,8 +316,8 @@ function showToast(message: string) {
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm app-text-muted">전체 거래처</p>
-            <p class="mt-2 text-2xl font-bold app-text-primary">{{ stats.total }} 사</p>
+            <p class="app-type-sm app-text-muted">전체 거래처</p>
+            <p class="mt-2 app-type-2xl font-bold app-text-primary">{{ stats.total }} 사</p>
           </div>
           <div class="rounded-2xl app-bg-muted p-3 app-text-soft">
             <Building2 class="h-6 w-6" />
@@ -327,8 +327,8 @@ function showToast(message: string) {
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm app-text-muted">활성 거래처</p>
-            <p class="mt-2 text-2xl font-bold text-emerald-700">{{ stats.active }} 사</p>
+            <p class="app-type-sm app-text-muted">활성 거래처</p>
+            <p class="mt-2 app-type-2xl font-bold text-emerald-700">{{ stats.active }} 사</p>
           </div>
           <div class="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
             <Users class="h-6 w-6" />
@@ -338,8 +338,8 @@ function showToast(message: string) {
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm app-text-muted">비활성 거래처</p>
-            <p class="mt-2 text-2xl font-bold text-amber-700">{{ stats.inactive }} 사</p>
+            <p class="app-type-sm app-text-muted">비활성 거래처</p>
+            <p class="mt-2 app-type-2xl font-bold text-amber-700">{{ stats.inactive }} 사</p>
           </div>
           <div class="rounded-2xl bg-amber-50 p-3 text-amber-700">
             <RefreshCw class="h-6 w-6" />
@@ -355,7 +355,7 @@ function showToast(message: string) {
           <input
             id="partner-keyword"
             v-model="filterKeyword"
-            class="h-11 w-full rounded-xl border app-border app-bg-surface pl-11 pr-4 text-sm app-font-label outline-none transition focus:ring-2"
+            class="h-11 w-full rounded-xl border app-border app-bg-surface pl-11 pr-4 app-type-sm app-font-label outline-none transition focus:ring-2"
             placeholder="거래처 ID, 거래처코드, 거래처명, 사업자번호 검색"
             @input="handleKeywordInput"
             @focus="openSuggestions"
@@ -369,41 +369,41 @@ function showToast(message: string) {
               class="block w-full px-4 py-2.5 text-left transition app-hover-muted"
               @mousedown.prevent="selectSuggestion(suggestion)"
             >
-              <span class="block text-sm app-font-emphasis leading-5 app-text-strong">{{ suggestion.partnerCode }} · {{ suggestion.partnerName }}</span>
-              <span class="mt-0.5 block text-xs app-font-strong app-text-muted">{{ getSuggestionMeta(suggestion) }}</span>
+              <span class="block app-type-sm app-font-emphasis leading-5 app-text-strong">{{ suggestion.partnerCode }} · {{ suggestion.partnerName }}</span>
+              <span class="mt-0.5 block app-type-xs app-font-strong app-text-muted">{{ getSuggestionMeta(suggestion) }}</span>
             </button>
           </div>
         </div>
 
-        <select id="partner-type-filter" v-model="filterPartnerType" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+        <select id="partner-type-filter" v-model="filterPartnerType" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
           <option value="ALL">전체 구분</option>
           <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
 
-        <select id="partner-status-filter" v-model="filterPartnerStatus" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+        <select id="partner-status-filter" v-model="filterPartnerStatus" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
           <option value="ALL">전체 상태</option>
           <option value="ACTIVE">활성</option>
           <option value="INACTIVE">비활성</option>
         </select>
 
-        <select id="partner-business-filter" v-model="filterHasBusinessNo" class="h-11 rounded-2xl border app-border px-4 text-sm app-font-label outline-none">
+        <select id="partner-business-filter" v-model="filterHasBusinessNo" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
           <option value="ALL">사업자번호 전체</option>
           <option value="YES">사업자번호 등록</option>
           <option value="NO">사업자번호 미등록</option>
         </select>
 
         <div class="flex gap-2">
-          <button class="h-11 rounded-2xl app-bg-strong px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="handleSearch">조회</button>
-          <button class="h-11 rounded-2xl app-bg-muted px-5 text-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
-          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 text-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
+          <button class="h-11 rounded-2xl app-bg-strong px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="handleSearch">조회</button>
+          <button class="h-11 rounded-2xl app-bg-muted px-5 app-type-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
+          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
         </div>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1120px] text-left text-sm">
-          <thead class="app-bg-muted text-xs uppercase tracking-widest app-text-muted">
+        <table class="w-full min-w-[1120px] text-left app-type-sm">
+          <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
             <tr>
               <th class="px-4 py-3">No</th>
               <th class="cursor-pointer px-4 py-3" @click="changeSort('partnerCode')">
@@ -449,36 +449,36 @@ function showToast(message: string) {
               class="cursor-pointer border-t app-border-muted transition app-hover-muted"
               @click="goToDetail(partner)"
             >
-              <td class="px-4 py-3 font-mono text-xs app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
+              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
               <td class="px-4 py-3 font-mono app-font-emphasis app-text-strong">{{ partner.partnerCode }}</td>
               <td class="px-4 py-3 app-font-strong app-text-strong">{{ partner.partnerName }}</td>
               <td class="px-4 py-3">
                 {{ getPartnerTypeLabel(partner.partnerType) }}
               </td>
               <td class="px-4 py-3">
-                <span class="rounded-full px-2.5 py-1 text-xs app-font-emphasis" :class="partner.partnerStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
+                <span class="rounded-full px-2.5 py-1 app-type-xs app-font-emphasis" :class="partner.partnerStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
                   {{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}
                 </span>
               </td>
-              <td class="px-4 py-3 font-mono text-xs app-text-muted">{{ partner.businessNo || '미등록' }}</td>
+              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ partner.businessNo || '미등록' }}</td>
               <td class="px-4 py-3 app-text-muted">{{ partner.representative || '-' }}</td>
               <td class="px-4 py-3 text-right app-font-strong app-text-strong">{{ partner.usageCount }}건</td>
-              <td class="px-4 py-3 text-xs app-text-muted">{{ formatDateTime(partner.lastUsedAt) }}</td>
-              <td class="px-4 py-3 text-xs app-text-muted">{{ formatDateTime(partner.createdAt) }}</td>
+              <td class="px-4 py-3 app-type-xs app-text-muted">{{ formatDateTime(partner.lastUsedAt) }}</td>
+              <td class="px-4 py-3 app-type-xs app-text-muted">{{ formatDateTime(partner.createdAt) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-sm app-font-strong app-text-muted">
+        <p class="app-type-sm app-font-strong app-text-muted">
           총 {{ partnerMasterStore.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ partnerMasterStore.size }}건씩 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지
         </p>
         <div class="flex gap-2">
-          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
+          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
         </div>
       </div>
     </section>
@@ -487,56 +487,56 @@ function showToast(message: string) {
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border app-border app-bg-surface p-6 shadow-2xl">
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-bold app-text-primary">신규 거래처 등록</h2>
-            <p class="mt-1 text-sm app-text-muted">거래처 코드는 미입력 시 구분에 따라 SUP-____ 또는 CUS-____ 형식으로 자동 생성됩니다.</p>
+            <h2 class="app-type-2xl font-bold app-text-primary">신규 거래처 등록</h2>
+            <p class="mt-1 app-type-sm app-text-muted">거래처 코드는 미입력 시 구분에 따라 SUP-____ 또는 CUS-____ 형식으로 자동 생성됩니다.</p>
           </div>
           <button type="button" class="rounded-full p-2 app-hover-muted" @click="closeForm">
             <X class="h-5 w-5" />
           </button>
         </div>
 
-        <div v-if="formError" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+        <div v-if="formError" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 app-type-sm font-semibold text-rose-700">
           {{ formError }}
         </div>
 
         <form class="grid gap-4 md:grid-cols-2" @submit.prevent="submitForm">
           <div>
-            <label for="partner-form-type" class="mb-2 block text-sm font-semibold app-text-primary">거래처 구분</label>
-            <select id="partner-form-type" v-model="form.partnerType" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" @change="handleFormTypeChange">
+            <label for="partner-form-type" class="mb-2 block app-type-sm font-semibold app-text-primary">거래처 구분</label>
+            <select id="partner-form-type" v-model="form.partnerType" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" @change="handleFormTypeChange">
               <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
           </div>
           <div>
-            <label for="partner-form-code" class="mb-2 block text-sm font-semibold app-text-primary">거래처 코드</label>
-            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="미입력 시 자동 생성">
+            <label for="partner-form-code" class="mb-2 block app-type-sm font-semibold app-text-primary">거래처 코드</label>
+            <input id="partner-form-code" v-model="form.partnerCode" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="미입력 시 자동 생성">
           </div>
           <div>
-            <label for="partner-form-name" class="mb-2 block text-sm font-semibold app-text-primary">거래처명</label>
-            <input id="partner-form-name" v-model="form.partnerName" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="거래처명 입력">
+            <label for="partner-form-name" class="mb-2 block app-type-sm font-semibold app-text-primary">거래처명</label>
+            <input id="partner-form-name" v-model="form.partnerName" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="거래처명 입력">
           </div>
           <div>
-            <label for="partner-form-business" class="mb-2 block text-sm font-semibold app-text-primary">사업자등록번호</label>
-            <input id="partner-form-business" v-model="form.businessNo" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
+            <label for="partner-form-business" class="mb-2 block app-type-sm font-semibold app-text-primary">사업자등록번호</label>
+            <input id="partner-form-business" v-model="form.businessNo" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
           </div>
           <div>
-            <label for="partner-form-representative" class="mb-2 block text-sm font-semibold app-text-primary">대표자명</label>
-            <input id="partner-form-representative" v-model="form.representative" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
+            <label for="partner-form-representative" class="mb-2 block app-type-sm font-semibold app-text-primary">대표자명</label>
+            <input id="partner-form-representative" v-model="form.representative" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="선택 입력">
           </div>
           <div>
-            <label for="partner-form-phone" class="mb-2 block text-sm font-semibold app-text-primary">담당자 연락처</label>
-            <input id="partner-form-phone" v-model="form.contactPhone" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="010-0000-0000">
+            <label for="partner-form-phone" class="mb-2 block app-type-sm font-semibold app-text-primary">담당자 연락처</label>
+            <input id="partner-form-phone" v-model="form.contactPhone" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="010-0000-0000">
           </div>
           <div class="md:col-span-2">
-            <label for="partner-form-email" class="mb-2 block text-sm font-semibold app-text-primary">담당자 이메일</label>
-            <input id="partner-form-email" v-model="form.contactEmail" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="partner@example.com">
+            <label for="partner-form-email" class="mb-2 block app-type-sm font-semibold app-text-primary">담당자 이메일</label>
+            <input id="partner-form-email" v-model="form.contactEmail" class="w-full rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="partner@example.com">
           </div>
           <div class="md:col-span-2">
-            <label for="partner-form-note" class="mb-2 block text-sm font-semibold app-text-primary">비고</label>
-            <textarea id="partner-form-note" v-model="form.note" rows="4" class="w-full resize-none rounded-2xl border app-border app-bg-card px-4 py-3 text-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="업무 메모를 입력하세요."></textarea>
+            <label for="partner-form-note" class="mb-2 block app-type-sm font-semibold app-text-primary">비고</label>
+            <textarea id="partner-form-note" v-model="form.note" rows="4" class="w-full resize-none rounded-2xl border app-border app-bg-card px-4 py-3 app-type-sm app-text-primary outline-none focus:ring-4 app-focus-ring" placeholder="업무 메모를 입력하세요."></textarea>
           </div>
           <div class="md:col-span-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" class="rounded-2xl border app-border px-5 py-3 text-sm font-semibold app-text-primary app-hover-muted" @click="closeForm">취소</button>
-            <button type="submit" class="rounded-2xl app-bg-strong px-5 py-3 text-sm font-semibold app-text-inverse app-hover-muted disabled:opacity-50" :disabled="partnerMasterStore.isSaving">
+            <button type="button" class="rounded-2xl border app-border px-5 py-3 app-type-sm font-semibold app-text-primary app-hover-muted" @click="closeForm">취소</button>
+            <button type="submit" class="rounded-2xl app-bg-strong px-5 py-3 app-type-sm font-semibold app-text-inverse app-hover-muted disabled:opacity-50" :disabled="partnerMasterStore.isSaving">
               {{ partnerMasterStore.isSaving ? '저장 중...' : '저장' }}
             </button>
           </div>

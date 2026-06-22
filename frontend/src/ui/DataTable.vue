@@ -54,7 +54,7 @@ import { computed } from 'vue'
       <h3 class="app-panel-title">{{ title }}</h3>
       <span
         v-if="moreText"
-        class="app-accent cursor-pointer text-xs hover:underline"
+        class="app-accent cursor-pointer app-type-xs hover:underline"
         @click="emit('clickMore')"
       >
         {{ moreText }}
@@ -75,7 +75,7 @@ import { computed } from 'vue'
           </td>
         </tr>
         <tr v-if="data.length === 0">
-          <td :colspan="columns.length" class="app-empty py-8 text-xs">
+          <td :colspan="columns.length" class="app-empty py-8 app-type-xs">
             데이터가 없습니다.
           </td>
         </tr>

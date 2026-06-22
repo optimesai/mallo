@@ -40,7 +40,8 @@ export const useAiStore = defineStore('ai', () => {
       })
       currentResponse.value = response
       conversationId.value = response.conversationId ?? conversationId.value
-      pendingClarificationQueryId.value = response.clarificationRequired ? response.queryId : null
+      pendingClarificationQueryId.value = response.pendingClarificationQueryId
+        ?? (response.clarificationRequired ? response.queryId : null)
 
       const assistantMessage = createMessage(
         'assistant',

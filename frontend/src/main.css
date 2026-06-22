@@ -55,6 +55,28 @@
   --font-weight-strong: 700;
   --font-weight-emphasis: 800;
   --font-weight-button: 700;
+  --app-font-size-2xs: 0.625rem;
+  --app-line-height-2xs: 0.875rem;
+  --app-font-size-11: 0.6875rem;
+  --app-line-height-11: 1rem;
+  --app-font-size-xs: 0.75rem;
+  --app-line-height-xs: 1rem;
+  --app-font-size-sm: 0.875rem;
+  --app-line-height-sm: 1.25rem;
+  --app-font-size-base: 1rem;
+  --app-line-height-base: 1.5rem;
+  --app-font-size-lg: 1.125rem;
+  --app-line-height-lg: 1.75rem;
+  --app-font-size-xl: 1.25rem;
+  --app-line-height-xl: 1.75rem;
+  --app-font-size-2xl: 1.5rem;
+  --app-line-height-2xl: 2rem;
+  --app-font-size-3xl: 1.875rem;
+  --app-line-height-3xl: 2.25rem;
+  --app-font-size-4xl: 2.25rem;
+  --app-line-height-4xl: 2.5rem;
+  --app-font-size-5xl: 3rem;
+  --app-line-height-5xl: 1;
   --auth-color-page: var(--color-page);
   --auth-color-page-accent: var(--color-primary-muted);
   --auth-color-surface: var(--color-surface);
@@ -105,6 +127,63 @@
   --profile-font-weight-button: var(--font-weight-title);
 }
 
+@layer utilities {
+  .app-type-2xs {
+    font-size: var(--app-font-size-2xs);
+    line-height: var(--app-line-height-2xs);
+  }
+
+  .app-type-11 {
+    font-size: var(--app-font-size-11);
+    line-height: var(--app-line-height-11);
+  }
+
+  .app-type-xs {
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+  }
+
+  .app-type-sm {
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
+  }
+
+  .app-type-base {
+    font-size: var(--app-font-size-base);
+    line-height: var(--app-line-height-base);
+  }
+
+  .app-type-lg {
+    font-size: var(--app-font-size-lg);
+    line-height: var(--app-line-height-lg);
+  }
+
+  .app-type-xl {
+    font-size: var(--app-font-size-xl);
+    line-height: var(--app-line-height-xl);
+  }
+
+  .app-type-2xl {
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
+  }
+
+  .app-type-3xl {
+    font-size: var(--app-font-size-3xl);
+    line-height: var(--app-line-height-3xl);
+  }
+
+  .app-type-4xl {
+    font-size: var(--app-font-size-4xl);
+    line-height: var(--app-line-height-4xl);
+  }
+
+  .app-type-5xl {
+    font-size: var(--app-font-size-5xl);
+    line-height: var(--app-line-height-5xl);
+  }
+}
+
 @layer components {
   .app-layout {
     @apply flex min-h-screen;
@@ -128,7 +207,9 @@
   }
 
   .app-header-menu-item {
-    @apply block px-4 py-2 text-sm transition;
+    @apply block px-4 py-2 transition;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-soft);
   }
 
@@ -154,7 +235,9 @@
   }
 
   .app-sidebar-brand-text {
-    @apply text-sm tracking-wider;
+    @apply tracking-wider;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-inverse);
     font-weight: var(--font-weight-strong);
   }
@@ -177,7 +260,9 @@
   }
 
   .app-sidebar-category-text {
-    @apply text-xs uppercase tracking-wider;
+    @apply uppercase tracking-wider;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     font-weight: var(--font-weight-strong);
   }
 
@@ -186,7 +271,9 @@
   }
 
   .app-sidebar-link {
-    @apply flex items-center rounded-md px-3 py-1.5 text-xs transition-colors;
+    @apply flex items-center rounded-md px-3 py-1.5 transition-colors;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
   }
 
   .app-sidebar-link:hover {
@@ -195,7 +282,9 @@
   }
 
   .app-sidebar-footer {
-    @apply shrink-0 p-4 text-xs;
+    @apply shrink-0 p-4;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     border-top: 1px solid var(--color-surface-inverse-muted);
     color: var(--color-text-muted);
   }
@@ -215,7 +304,9 @@
   }
 
   .app-page-title {
-    @apply flex items-center gap-2 text-2xl tracking-tight;
+    @apply flex items-center gap-2 tracking-tight;
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
     color: var(--color-text-strong);
     font-weight: var(--font-weight-title);
   }
@@ -226,7 +317,9 @@
   }
 
   .app-page-subtitle {
-    @apply mt-1 text-sm;
+    @apply mt-1;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-muted);
   }
 
@@ -254,13 +347,17 @@
   }
 
   .app-panel-title {
-    @apply flex items-center gap-2 text-sm;
+    @apply flex items-center gap-2;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-soft);
     font-weight: var(--font-weight-strong);
   }
 
   .app-section-kicker {
-    @apply flex items-center gap-1 text-xs uppercase tracking-wider;
+    @apply flex items-center gap-1 uppercase tracking-wider;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-strong);
   }
@@ -271,13 +368,16 @@
   }
 
   .app-metric-value {
-    @apply mt-0.5 text-3xl;
+    @apply mt-0.5;
+    font-size: var(--app-font-size-3xl);
+    line-height: var(--app-line-height-3xl);
     color: var(--color-text-strong);
     font-weight: var(--font-weight-emphasis);
   }
 
   .app-metric-unit {
-    @apply text-base;
+    font-size: var(--app-font-size-base);
+    line-height: var(--app-line-height-base);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-label);
   }
@@ -301,13 +401,17 @@
   }
 
   .app-label {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-soft);
     font-weight: var(--font-weight-label);
   }
 
   .app-control {
-    @apply h-10 w-full px-3 text-sm outline-none transition;
+    @apply h-10 w-full px-3 outline-none transition;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-control);
@@ -362,7 +466,9 @@
   }
 
   .app-button {
-    @apply h-10 px-4 text-xs;
+    @apply h-10 px-4;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
   }
 
   .app-button:disabled,
@@ -411,7 +517,9 @@
   }
 
   .app-back-button {
-    @apply mb-5 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition;
+    @apply mb-5 inline-flex items-center gap-2 rounded-xl border px-4 py-2 transition;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     border-color: var(--color-border);
     color: var(--color-text-soft);
     font-weight: var(--font-weight-button);
@@ -432,7 +540,9 @@
   }
 
   .app-tab {
-    @apply rounded-md px-3 py-1.5 text-xs transition;
+    @apply rounded-md px-3 py-1.5 transition;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-button);
   }
@@ -453,12 +563,16 @@
   }
 
   .app-table {
-    @apply w-full border-collapse text-left text-sm;
+    @apply w-full border-collapse text-left;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-soft);
   }
 
   .app-table th {
-    @apply whitespace-nowrap px-5 py-3 text-xs uppercase tracking-wider;
+    @apply whitespace-nowrap px-5 py-3 uppercase tracking-wider;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--color-surface-muted);
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text-muted);
@@ -483,7 +597,9 @@
   }
 
   .app-table-id {
-    @apply font-mono text-xs;
+    @apply font-mono;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-muted);
   }
 
@@ -508,13 +624,17 @@
   }
 
   .app-empty {
-    @apply px-5 py-16 text-center text-sm;
+    @apply px-5 py-16 text-center;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-label);
   }
 
   .app-pagination {
-    @apply flex items-center justify-between px-5 py-3 text-xs;
+    @apply flex items-center justify-between px-5 py-3;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--color-surface-muted);
     border-top: 1px solid var(--color-border);
     color: var(--color-text-muted);
@@ -544,7 +664,9 @@
   }
 
   .app-page-number {
-    @apply h-7 w-7 rounded text-xs transition;
+    @apply h-7 w-7 rounded transition;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-soft);
     font-weight: var(--font-weight-strong);
   }
@@ -597,25 +719,33 @@
   }
 
   .app-stat-label {
-    @apply text-xs uppercase tracking-wider;
+    @apply uppercase tracking-wider;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-label);
   }
 
   .app-stat-label-compact {
-    @apply text-[10px] uppercase tracking-wider;
+    @apply uppercase tracking-wider;
+    font-size: var(--app-font-size-2xs);
+    line-height: var(--app-line-height-2xs);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-strong);
   }
 
   .app-stat-value {
-    @apply mt-2 text-2xl;
+    @apply mt-2;
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
     color: var(--color-text);
     font-weight: var(--font-weight-title);
   }
 
   .app-stat-value-compact {
-    @apply mt-1 text-xl;
+    @apply mt-1;
+    font-size: var(--app-font-size-xl);
+    line-height: var(--app-line-height-xl);
     color: var(--color-text);
     font-weight: var(--font-weight-emphasis);
   }
@@ -629,7 +759,9 @@
   }
 
   .app-status {
-    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs;
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     font-weight: var(--font-weight-strong);
   }
 
@@ -694,7 +826,9 @@
   }
 
   .app-toast {
-    @apply fixed z-50 flex items-center gap-3 px-5 py-3 text-sm;
+    @apply fixed z-50 flex items-center gap-3 px-5 py-3;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: rgb(15 23 42 / 0.9);
     border: 1px solid rgb(51 65 85 / 0.5);
     border-radius: var(--radius-panel);
@@ -730,12 +864,15 @@
   }
 
   .app-alert-title {
-    @apply text-sm;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     font-weight: var(--font-weight-strong);
   }
 
   .app-alert-text {
-    @apply mt-0.5 whitespace-pre-line text-xs;
+    @apply mt-0.5 whitespace-pre-line;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
   }
 
   .app-modal-shell {
@@ -774,7 +911,9 @@
   }
 
   .app-detail-label {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--color-text-muted);
     font-weight: var(--font-weight-strong);
   }
@@ -989,7 +1128,9 @@
   }
 
   .auth-logo-box {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center text-xs;
+    @apply flex h-11 w-11 shrink-0 items-center justify-center;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--auth-color-primary-soft);
     border-radius: var(--auth-radius-brand);
     color: var(--auth-color-primary);
@@ -1003,13 +1144,17 @@
   }
 
   .auth-title {
-    @apply text-2xl tracking-tight;
+    @apply tracking-tight;
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
     color: var(--auth-color-text-primary);
     font-weight: var(--auth-font-weight-title);
   }
 
   .auth-subtitle {
-    @apply mt-1.5 text-sm leading-5;
+    @apply mt-1.5 leading-5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--auth-color-text-muted);
     font-weight: var(--auth-font-weight-subtitle);
   }
@@ -1028,13 +1173,17 @@
   }
 
   .auth-label {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--auth-color-text-primary);
     font-weight: var(--auth-font-weight-label);
   }
 
   .auth-input {
-    @apply h-11 w-full px-3 text-sm outline-none;
+    @apply h-11 w-full px-3 outline-none;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--auth-color-surface);
     border: 1px solid var(--auth-color-border-strong);
     border-radius: var(--auth-radius-control);
@@ -1052,18 +1201,23 @@
   }
 
   .auth-error {
-    @apply min-h-5 px-1 text-xs;
+    @apply min-h-5 px-1;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-danger);
   }
 
   .auth-help {
-    @apply text-xs;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--auth-color-text-muted);
   }
 
   .auth-submit {
-    @apply mt-1 h-11 w-full text-sm;
+    @apply mt-1 h-11 w-full;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--auth-color-primary);
     color: var(--auth-color-surface);
     border-radius: var(--auth-radius-control);
@@ -1080,7 +1234,9 @@
   }
 
   .auth-link {
-    @apply mt-3 flex h-11 items-center justify-center border text-center text-sm;
+    @apply mt-3 flex h-11 items-center justify-center border text-center;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     border-color: var(--auth-color-border);
     border-radius: var(--auth-radius-control);
     color: var(--auth-color-text-secondary);
@@ -1098,7 +1254,9 @@
   }
 
   .auth-info-box {
-    @apply mt-5 p-4 text-xs leading-5;
+    @apply mt-5 p-4 leading-5;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--auth-color-surface-muted);
     border: 1px solid var(--auth-color-border);
     border-radius: var(--auth-radius-control);
@@ -1118,7 +1276,9 @@
   }
 
   .profile-title {
-    @apply flex items-center gap-2 text-2xl tracking-tight;
+    @apply flex items-center gap-2 tracking-tight;
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
     color: var(--profile-color-text-primary);
     font-weight: var(--profile-font-weight-title);
   }
@@ -1130,7 +1290,9 @@
   }
 
   .profile-subtitle {
-    @apply mt-1.5 text-xs;
+    @apply mt-1.5;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--profile-color-text-muted);
   }
 
@@ -1143,7 +1305,8 @@
   }
 
   .profile-state {
-    @apply text-sm;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--profile-color-text-secondary);
   }
 
@@ -1160,13 +1323,17 @@
   }
 
   .profile-label {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--profile-color-text-primary);
     font-weight: var(--profile-font-weight-label);
   }
 
   .profile-input {
-    @apply h-11 w-full px-3 text-sm outline-none;
+    @apply h-11 w-full px-3 outline-none;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     border: 1px solid var(--profile-color-border-strong);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-text-primary);
@@ -1185,18 +1352,23 @@
   }
 
   .profile-help {
-    @apply text-xs;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--profile-color-text-secondary);
   }
 
   .profile-error {
-    @apply min-h-5 text-sm;
+    @apply min-h-5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-danger);
   }
 
   .profile-success {
-    @apply min-h-5 text-sm;
+    @apply min-h-5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     border-radius: var(--profile-radius-control);
     color: var(--profile-color-success);
   }
@@ -1206,7 +1378,9 @@
   }
 
   .profile-submit {
-    @apply h-11 min-w-28 px-5 text-sm;
+    @apply h-11 min-w-28 px-5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--profile-color-primary);
     color: var(--profile-color-surface);
     border-radius: var(--profile-radius-control);
@@ -1304,7 +1478,9 @@
   }
 
   .wo-title {
-    @apply flex items-center gap-2 text-2xl tracking-tight;
+    @apply flex items-center gap-2 tracking-tight;
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
     color: var(--wo-color-text);
     font-weight: var(--wo-font-weight-title);
   }
@@ -1315,7 +1491,9 @@
   }
 
   .wo-subtitle {
-    @apply mt-1.5 text-sm;
+    @apply mt-1.5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--wo-color-text-muted);
   }
 
@@ -1356,13 +1534,17 @@
   }
 
   .wo-kicker {
-    @apply text-[0.65rem] tracking-[0.18em];
+    @apply tracking-[0.18em];
+    font-size: var(--app-font-size-2xs);
+    line-height: var(--app-line-height-2xs);
     color: var(--wo-color-primary);
     font-weight: var(--wo-font-weight-label);
   }
 
   .wo-section-title {
-    @apply text-sm tracking-tight;
+    @apply tracking-tight;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--wo-color-text);
     font-weight: var(--wo-font-weight-section);
   }
@@ -1385,13 +1567,17 @@
   }
 
   .wo-label {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-soft);
     font-weight: var(--wo-font-weight-label);
   }
 
   .wo-control {
-    @apply h-10 w-full px-3 text-sm outline-none;
+    @apply h-10 w-full px-3 outline-none;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--wo-color-surface);
     border: 1px solid var(--wo-color-border-strong);
     border-radius: var(--wo-radius-control);
@@ -1423,7 +1609,9 @@
   }
 
   .wo-preview {
-    @apply mt-5 grid grid-cols-1 gap-3 p-4 text-xs md:grid-cols-2;
+    @apply mt-5 grid grid-cols-1 gap-3 p-4 md:grid-cols-2;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--wo-color-primary-soft);
     border: 1px solid var(--wo-color-border);
     border-radius: var(--wo-radius-control);
@@ -1457,7 +1645,9 @@
 
   .wo-button,
   .wo-icon-button {
-    @apply inline-flex h-10 items-center justify-center gap-2 px-4 text-xs transition;
+    @apply inline-flex h-10 items-center justify-center gap-2 px-4 transition;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     border-radius: var(--wo-radius-control);
     font-weight: var(--wo-font-weight-button);
   }
@@ -1517,7 +1707,9 @@
   }
 
   .wo-table {
-    @apply w-full min-w-[1200px] border-collapse text-left text-xs;
+    @apply w-full min-w-[1200px] border-collapse text-left;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
   }
 
   .wo-table-compact {
@@ -1565,7 +1757,8 @@
   }
 
   .wo-count {
-    @apply text-xs;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-muted);
     font-weight: var(--wo-font-weight-label);
   }
@@ -1586,12 +1779,16 @@
   }
 
   .wo-progress-label {
-    @apply mt-1 text-[0.7rem];
+    @apply mt-1;
+    font-size: var(--app-font-size-11);
+    line-height: var(--app-line-height-11);
     color: var(--wo-color-text-muted);
   }
 
   .wo-status {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs;
+    @apply inline-flex items-center rounded-full px-2.5 py-1;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     border: 1px solid var(--wo-color-border);
     font-weight: var(--wo-font-weight-label);
   }
@@ -1645,18 +1842,24 @@
   }
 
   .wo-metric span {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-muted);
   }
 
   .wo-metric strong {
-    @apply mt-1 block text-lg;
+    @apply mt-1 block;
+    font-size: var(--app-font-size-lg);
+    line-height: var(--app-line-height-lg);
     color: var(--wo-color-text);
     font-weight: var(--wo-font-weight-strong);
   }
 
   .wo-info-list {
-    @apply space-y-2 px-5 pb-5 text-sm;
+    @apply space-y-2 px-5 pb-5;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
   }
 
   .wo-info-list div {
@@ -1681,7 +1884,9 @@
   }
 
   .wo-check {
-    @apply mx-5 mb-3 flex items-center gap-2 text-xs;
+    @apply mx-5 mb-3 flex items-center gap-2;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-soft);
     font-weight: var(--wo-font-weight-label);
   }
@@ -1691,7 +1896,9 @@
   }
 
   .wo-badge-danger {
-    @apply rounded-full px-2.5 py-1 text-xs;
+    @apply rounded-full px-2.5 py-1;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--wo-color-danger-soft);
     color: var(--wo-color-danger);
     font-weight: var(--wo-font-weight-label);
@@ -1702,7 +1909,9 @@
   }
 
   .wo-alert {
-    @apply flex items-center gap-2 rounded-xl px-4 py-3 text-sm;
+    @apply flex items-center gap-2 rounded-xl px-4 py-3;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     font-weight: var(--wo-font-weight-label);
   }
 
@@ -1713,7 +1922,9 @@
   }
 
   .wo-toast {
-    @apply fixed right-5 top-5 z-50 flex items-center gap-3 px-5 py-3 text-sm;
+    @apply fixed right-5 top-5 z-50 flex items-center gap-3 px-5 py-3;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     background-color: var(--wo-color-surface-strong);
     border-radius: var(--wo-radius-panel);
     box-shadow: var(--wo-shadow-float);
@@ -1762,7 +1973,9 @@
   }
 
   .wo-tab {
-    @apply h-11 flex-1 rounded-lg px-4 text-sm transition;
+    @apply h-11 flex-1 rounded-lg px-4 transition;
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
     color: var(--wo-color-text-soft);
     font-weight: var(--wo-font-weight-button);
   }
@@ -1795,7 +2008,9 @@
   }
 
   .wo-suggest-item {
-    @apply block w-full rounded-md px-3 py-2 text-left text-xs transition;
+    @apply block w-full rounded-md px-3 py-2 text-left transition;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-soft);
   }
 
@@ -1811,7 +2026,9 @@
 
   .wo-suggest-item span,
   .wo-suggest-empty {
-    @apply mt-1 block text-xs;
+    @apply mt-1 block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-muted);
   }
 
@@ -1827,7 +2044,9 @@
 
 @layer components {
   .wo-field-help {
-    @apply block text-xs;
+    @apply block;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     color: var(--wo-color-text-muted);
   }
 
@@ -1869,7 +2088,9 @@
   }
 
   .pe-validation-box {
-    @apply mx-5 mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-xs;
+    @apply mx-5 mt-4 flex items-start gap-3 rounded-lg border px-4 py-3;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
     background-color: var(--wo-color-danger-soft);
     border-color: var(--wo-color-danger-border);
     color: var(--wo-color-danger);

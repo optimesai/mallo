@@ -847,14 +847,14 @@ function formatDateTime(value: string) {
           </table>
         </div>
         <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-sm app-font-strong app-text-muted">
+          <p class="app-type-sm app-font-strong app-text-muted">
             총 {{ bomStore.bomGroups.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ bomStore.bomGroups.size }}건씩 · {{ bomStore.bomGroups.page + 1 }} / {{ Math.max(bomStore.bomGroups.totalPages, 1) }} 페이지
           </p>
           <div class="flex gap-2">
-            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(0)">처음</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(bomStore.bomGroups.page - 1)">이전</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.page + 1)">다음</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 text-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.totalPages - 1)">마지막</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(0)">처음</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(bomStore.bomGroups.page - 1)">이전</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.page + 1)">다음</button>
+            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.totalPages - 1)">마지막</button>
           </div>
         </div>
       </div>

@@ -274,7 +274,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -310,13 +310,13 @@ function getShippingStatusDotClass(status: ShippingStatus) {
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
         <button
           @click="openRegisterModal"
-          class="h-10 px-4 text-xs app-font-strong app-accent-bg app-hover-muted app-text-inverse rounded-lg shadow-md flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-accent-bg app-hover-muted app-text-inverse rounded-lg shadow-md flex items-center gap-2 transition"
         >
           <Plus class="w-4 h-4" /> 출하 지시 등록
         </button>
@@ -419,7 +419,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
             <col class="w-[120px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">ID</th>
               <th class="px-5 py-3">출하 지시 번호</th>
               <th class="px-5 py-3">고객사</th>
@@ -431,7 +431,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
               <th class="px-5 py-3">피킹 위치</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
               v-for="shipping in filteredShippings"
               :key="shipping.shippingId"
@@ -440,7 +440,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
               :class="{ 'app-bg-primary-soft': selectedShipping?.shippingId === shipping.shippingId }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ shipping.shippingId }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">#{{ shipping.shippingId }}</td>
               <!-- 출하 지시 번호 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ shipping.shippingNo }}</td>
               <!-- 고객사 -->
@@ -448,7 +448,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
                 {{ shipping.partnerName || shipping.partnerCode }}
               </td>
               <!-- 완제품 코드 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ shipping.itemCode }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ shipping.itemCode }}</td>
               <!-- 완제품명 -->
               <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="shipping.itemName">
                 {{ shipping.itemName }}
@@ -460,7 +460,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
               <!-- 출하 상태 -->
               <td class="px-5 py-4 text-center">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="getShippingStatusBadgeClass(shipping.status)"
                 >
                   <span
@@ -475,7 +475,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
                 {{ shipping.vehicleNo || '-' }}
               </td>
               <!-- 피킹 위치 -->
-              <td class="px-5 py-4 font-mono text-xs app-accent app-font-strong">
+              <td class="px-5 py-4 font-mono app-type-xs app-accent app-font-strong">
                 {{ shipping.pickingLocationCode || '-' }}
               </td>
             </tr>
@@ -517,11 +517,11 @@ function getShippingStatusDotClass(status: ShippingStatus) {
       <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Truck class="w-5 h-5 app-accent" />
-          <h3 class="app-font-emphasis text-sm">출하 지시 상세 정보 및 처리 작업 (번호: {{ selectedShipping.shippingNo }})</h3>
+          <h3 class="app-font-emphasis app-type-sm">출하 지시 상세 정보 및 처리 작업 (번호: {{ selectedShipping.shippingNo }})</h3>
         </div>
         <button
           @click="selectedShipping = null"
-          class="app-text-muted text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
+          class="app-text-muted app-type-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -531,27 +531,27 @@ function getShippingStatusDotClass(status: ShippingStatus) {
         <!-- 4컬럼 정보 그리드 -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl space-y-2">
-            <span class="text-xs app-text-muted app-font-strong block">고객사 정보</span>
-            <span class="app-font-strong app-text-strong block text-base">{{ selectedShipping.partnerName }}</span>
-            <span class="text-xs font-mono app-muted block">{{ selectedShipping.partnerCode }}</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">고객사 정보</span>
+            <span class="app-font-strong app-text-strong block app-type-base">{{ selectedShipping.partnerName }}</span>
+            <span class="app-type-xs font-mono app-muted block">{{ selectedShipping.partnerCode }}</span>
           </div>
 
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl space-y-2">
-            <span class="text-xs app-text-muted app-font-strong block">출하 대상 품목</span>
-            <span class="app-font-strong app-text-strong block text-base">{{ selectedShipping.itemName }}</span>
-            <span class="text-xs font-mono app-muted block">{{ selectedShipping.itemCode }}</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출하 대상 품목</span>
+            <span class="app-font-strong app-text-strong block app-type-base">{{ selectedShipping.itemName }}</span>
+            <span class="app-type-xs font-mono app-muted block">{{ selectedShipping.itemCode }}</span>
           </div>
 
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl space-y-2">
-            <span class="text-xs app-text-muted app-font-strong block">출하 요청 수량</span>
-            <span class="app-font-emphasis app-text-strong block text-xl">{{ selectedShipping.requestQty?.toLocaleString() }} EA</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출하 요청 수량</span>
+            <span class="app-font-emphasis app-text-strong block app-type-xl">{{ selectedShipping.requestQty?.toLocaleString() }} EA</span>
           </div>
 
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl space-y-2">
-            <span class="text-xs app-text-muted app-font-strong block">진행 단계</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">진행 단계</span>
             <span class="mt-1 block">
               <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs app-font-emphasis border"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full app-type-xs app-font-emphasis border"
                 :class="getShippingStatusBadgeClass(selectedShipping.status)"
               >
                 {{ getShippingStatusLabel(selectedShipping.status) }}
@@ -561,7 +561,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
         </div>
 
         <!-- 추가 메타데이터 정보 (로케이션, 차량, 날짜, 담당자) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm app-bg-muted p-4 border app-border rounded-xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 app-type-sm app-bg-muted p-4 border app-border rounded-xl">
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <MapPin class="w-4 h-4 app-text-muted" />
@@ -597,13 +597,13 @@ function getShippingStatusDotClass(status: ShippingStatus) {
                 v-model="vehicleInput"
                 type="text"
                 placeholder="배정할 차량 번호 입력 (예: 서울 88 가 1234)"
-                class="w-full h-10 px-3.5 app-bg-surface border app-border rounded-lg text-sm focus:outline-none "
+                class="w-full h-10 px-3.5 app-bg-surface border app-border rounded-lg app-type-sm focus:outline-none "
               />
             </div>
             <button
               :disabled="isSubmitting"
               @click="handleAssignPicking"
-              class="h-10 px-5 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center justify-center gap-2 transition disabled:opacity-50"
+              class="h-10 px-5 app-type-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center justify-center gap-2 transition disabled:opacity-50"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               차량 배정 및 피킹 지시 실행
@@ -612,13 +612,13 @@ function getShippingStatusDotClass(status: ShippingStatus) {
 
           <!-- PICKING 상태: 최종 출하 완료 단추 -->
           <div v-else-if="selectedShipping.status === 'PICKING'" class="w-full flex items-center justify-between">
-            <div class="text-xs app-text-warning app-font-strong flex items-center gap-1">
+            <div class="app-type-xs app-text-warning app-font-strong flex items-center gap-1">
               <AlertTriangle class="w-4 h-4" /> 피킹 및 차량 상차가 완료되면 "최종 출하 완료 처리"를 실행하여 재고를 전산 감산하십시오.
             </div>
             <button
               :disabled="isSubmitting"
               @click="handleCompleteShipping"
-              class="h-10 px-6 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50"
+              class="h-10 px-6 app-type-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               최종 출하 완료 처리
@@ -626,7 +626,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
           </div>
 
           <!-- SHIPPED 상태: 안내 텍스트 -->
-          <div v-else class="text-xs app-text-muted app-font-strong">
+          <div v-else class="app-type-xs app-text-muted app-font-strong">
             현재 상태에서는 이 화면에서 실행할 수 있는 작업이 없습니다.
           </div>
         </div>
@@ -643,7 +643,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
         <div class="px-6 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
           <div class="flex items-center gap-2">
             <Plus class="w-5 h-5 app-accent" />
-            <h3 class="app-font-emphasis text-sm">신규 완제품 출하 지시 등록</h3>
+            <h3 class="app-font-emphasis app-type-sm">신규 완제품 출하 지시 등록</h3>
           </div>
           <button @click="isRegisterModalOpen = false" class="app-text-muted transition">
             <X class="w-5 h-5" />
@@ -669,7 +669,7 @@ function getShippingStatusDotClass(status: ShippingStatus) {
             <input
               v-model="formShippingNo"
               type="text"
-              class="w-full h-10 px-3 app-bg-muted border app-border rounded-lg text-sm font-mono focus:outline-none "
+              class="w-full h-10 px-3 app-bg-muted border app-border rounded-lg app-type-sm font-mono focus:outline-none "
             />
           </div>
 
@@ -725,14 +725,14 @@ function getShippingStatusDotClass(status: ShippingStatus) {
         <div class="px-6 py-4 app-bg-muted border-t app-border-muted flex justify-end gap-2">
           <button
             @click="isRegisterModalOpen = false"
-            class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-hover-muted app-text-soft rounded-lg transition"
+            class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-hover-muted app-text-soft rounded-lg transition"
           >
             취소
           </button>
           <button
             :disabled="isSubmitting"
             @click="handleRegisterShipping"
-            class="h-10 px-5 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50"
+            class="h-10 px-5 app-type-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50"
           >
             <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             지시 등록 완료

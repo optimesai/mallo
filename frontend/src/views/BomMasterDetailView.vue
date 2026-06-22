@@ -128,26 +128,26 @@ function showToast(message: string) {
   <div class="space-y-6 pb-12">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 text-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="router.push({ name: 'bom-master' })">
+        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 app-type-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="router.push({ name: 'bom-master' })">
           <ArrowLeft class="h-4 w-4" />
           목록으로
         </button>
-        <h1 class="text-2xl app-font-emphasis tracking-tight app-text-strong">
+        <h1 class="app-type-2xl app-font-emphasis tracking-tight app-text-strong">
           {{ representative?.parentItemName || 'BOM 상세' }}
         </h1>
-        <p class="mt-1 font-mono text-sm app-font-strong app-text-muted">
+        <p class="mt-1 font-mono app-type-sm app-font-strong app-text-muted">
           {{ representative?.parentItemCode || `ITEM-${parentItemId}` }} · {{ bomVersion }}
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 text-sm app-font-strong app-text-success">{{ toast }}</div>
-        <button class="inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 text-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="loadDetail">
+        <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 app-type-sm app-font-strong app-text-success">{{ toast }}</div>
+        <button class="inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 app-type-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="loadDetail">
           <RefreshCw class="h-4 w-4" />
           새로고침
         </button>
         <button
           v-if="canWrite && lines.length > 0"
-          class="rounded-xl app-bg-warning px-4 py-2 text-sm app-font-emphasis app-text-inverse disabled:opacity-50"
+          class="rounded-xl app-bg-warning px-4 py-2 app-type-sm app-font-emphasis app-text-inverse disabled:opacity-50"
           type="button"
           :disabled="bomStore.isSaving"
           @click="updateGroupStatus"
@@ -156,7 +156,7 @@ function showToast(message: string) {
         </button>
         <button
           v-if="canDelete && lines.length > 0"
-          class="rounded-xl app-bg-danger px-4 py-2 text-sm app-font-emphasis app-text-inverse disabled:opacity-50"
+          class="rounded-xl app-bg-danger px-4 py-2 app-type-sm app-font-emphasis app-text-inverse disabled:opacity-50"
           type="button"
           :disabled="bomStore.isSaving"
           @click="isDeleteOpen = true"
@@ -166,37 +166,37 @@ function showToast(message: string) {
       </div>
     </div>
 
-    <div v-if="pageError" class="rounded-2xl border app-border app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">{{ pageError }}</div>
+    <div v-if="pageError" class="rounded-2xl border app-border app-bg-danger-soft p-4 app-type-sm app-font-strong app-text-danger">{{ pageError }}</div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">상위 품목 유형</p>
-        <strong class="mt-2 block text-xl app-text-strong">{{ representative?.parentItemType || '-' }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">상위 품목 유형</p>
+        <strong class="mt-2 block app-type-xl app-text-strong">{{ representative?.parentItemType || '-' }}</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">상태</p>
-        <strong class="mt-2 block text-xl" :class="groupStatus === 'ACTIVE' ? 'app-text-success' : 'app-text-warning'">{{ getStatusLabel(groupStatus) }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">상태</p>
+        <strong class="mt-2 block app-type-xl" :class="groupStatus === 'ACTIVE' ? 'app-text-success' : 'app-text-warning'">{{ getStatusLabel(groupStatus) }}</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">구성 품목</p>
-        <strong class="mt-2 block text-xl app-text-strong">{{ lines.length.toLocaleString() }}개</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">구성 품목</p>
+        <strong class="mt-2 block app-type-xl app-text-strong">{{ lines.length.toLocaleString() }}개</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">BOM 버전</p>
-        <strong class="mt-2 block text-xl app-text-strong">{{ bomVersion }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">BOM 버전</p>
+        <strong class="mt-2 block app-type-xl app-text-strong">{{ bomVersion }}</strong>
       </div>
     </div>
 
     <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
       <div class="flex flex-wrap gap-2 border-b app-border-muted p-4">
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'lines' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'lines'">구성 품목</button>
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'tree' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'tree'">정전개 트리</button>
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'system' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'system'">시스템</button>
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'lines' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'lines'">구성 품목</button>
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'tree' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'tree'">정전개 트리</button>
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'system' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'system'">시스템</button>
       </div>
 
       <div v-if="activeTab === 'lines'" class="overflow-x-auto p-5">
-        <table class="w-full min-w-[920px] text-left text-sm">
-          <thead class="app-bg-muted text-xs uppercase tracking-widest app-text-muted">
+        <table class="w-full min-w-[920px] text-left app-type-sm">
+          <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
             <tr>
               <th class="px-4 py-3">No</th>
               <th class="px-4 py-3">구성 품목</th>
@@ -221,26 +221,26 @@ function showToast(message: string) {
               <td class="px-4 py-3 app-text-muted">{{ index + 1 }}</td>
               <td class="px-4 py-3">
                 <p class="font-mono app-font-emphasis app-text-strong">{{ line.childItemCode }}</p>
-                <p class="mt-1 text-xs app-font-label app-text-muted">{{ line.childItemName }}</p>
+                <p class="mt-1 app-type-xs app-font-label app-text-muted">{{ line.childItemName }}</p>
               </td>
-              <td class="px-4 py-3"><span class="rounded-full app-bg-muted px-2 py-1 text-xs app-font-emphasis app-text-soft">{{ line.childItemType }}</span></td>
+              <td class="px-4 py-3"><span class="rounded-full app-bg-muted px-2 py-1 app-type-xs app-font-emphasis app-text-soft">{{ line.childItemType }}</span></td>
               <td class="px-4 py-3 text-right tabular-nums app-font-emphasis app-text-strong">{{ formatQuantity(line.quantity) }}</td>
               <td class="px-4 py-3 app-text-soft">{{ line.childUnit }}</td>
               <td class="px-4 py-3">
-                <span class="rounded-full px-2 py-1 text-xs app-font-emphasis" :class="line.bomStatus === 'ACTIVE' ? 'app-bg-success-soft app-text-success' : 'app-bg-warning-soft app-text-warning'">
+                <span class="rounded-full px-2 py-1 app-type-xs app-font-emphasis" :class="line.bomStatus === 'ACTIVE' ? 'app-bg-success-soft app-text-success' : 'app-bg-warning-soft app-text-warning'">
                   {{ getStatusLabel(line.bomStatus) }}
                 </span>
               </td>
               <td class="px-4 py-3 app-text-muted">{{ formatDateTime(line.createdAt) }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-end gap-2">
-                  <button v-if="canWrite" class="rounded-xl border app-border px-3 py-1.5 text-xs app-font-emphasis app-text-soft transition app-hover-muted" type="button" :disabled="bomStore.isSaving" @click="toggleBomStatus(line)">
+                  <button v-if="canWrite" class="rounded-xl border app-border px-3 py-1.5 app-type-xs app-font-emphasis app-text-soft transition app-hover-muted" type="button" :disabled="bomStore.isSaving" @click="toggleBomStatus(line)">
                     {{ line.bomStatus === 'ACTIVE' ? '중지' : '활성' }}
                   </button>
-                  <button v-if="canDelete" class="rounded-xl border px-3 py-1.5 text-xs app-font-emphasis app-text-danger transition app-hover-muted" type="button" :disabled="bomStore.isSaving" @click="deleteBom(line)">
+                  <button v-if="canDelete" class="rounded-xl border px-3 py-1.5 app-type-xs app-font-emphasis app-text-danger transition app-hover-muted" type="button" :disabled="bomStore.isSaving" @click="deleteBom(line)">
                     <Trash2 class="h-3.5 w-3.5" />
                   </button>
-                  <span v-if="!canWrite" class="text-xs app-font-strong app-text-muted">조회 전용</span>
+                  <span v-if="!canWrite" class="app-type-xs app-font-strong app-text-muted">조회 전용</span>
                 </div>
               </td>
             </tr>
@@ -251,13 +251,13 @@ function showToast(message: string) {
       <div v-else-if="activeTab === 'tree'" class="p-5">
         <div class="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 class="flex items-center gap-2 text-sm app-font-emphasis app-text-strong">
+            <h2 class="flex items-center gap-2 app-type-sm app-font-emphasis app-text-strong">
               <GitBranch class="h-4 w-4" />
               정전개 트리
             </h2>
-            <p class="mt-1 text-sm app-font-label app-text-muted">상위 품목 1개 기준으로 하위 구성과 누적 소요량을 확인합니다.</p>
+            <p class="mt-1 app-type-sm app-font-label app-text-muted">상위 품목 1개 기준으로 하위 구성과 누적 소요량을 확인합니다.</p>
           </div>
-          <span class="rounded-full app-bg-muted px-3 py-1 text-xs app-font-emphasis app-text-soft">{{ bomVersion }}</span>
+          <span class="rounded-full app-bg-muted px-3 py-1 app-type-xs app-font-emphasis app-text-soft">{{ bomVersion }}</span>
         </div>
         <BomTreeList
           :nodes="treeNodes"
@@ -270,11 +270,11 @@ function showToast(message: string) {
 
       <div v-else class="grid gap-4 p-5 lg:grid-cols-2">
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="flex items-center gap-2 text-sm app-font-emphasis app-text-strong">
+          <h2 class="flex items-center gap-2 app-type-sm app-font-emphasis app-text-strong">
             <Layers3 class="h-4 w-4" />
             BOM 식별 정보
           </h2>
-          <dl class="mt-4 space-y-3 text-sm">
+          <dl class="mt-4 space-y-3 app-type-sm">
             <div><dt class="app-text-muted">상위 품목 ID</dt><dd class="mt-1 font-mono app-font-emphasis app-text-strong">{{ parentItemId }}</dd></div>
             <div><dt class="app-text-muted">상위 품목 코드</dt><dd class="mt-1 font-mono app-font-emphasis app-text-strong">{{ representative?.parentItemCode || '-' }}</dd></div>
             <div><dt class="app-text-muted">상위 품목명</dt><dd class="mt-1 app-font-strong app-text-strong">{{ representative?.parentItemName || '-' }}</dd></div>
@@ -282,8 +282,8 @@ function showToast(message: string) {
           </dl>
         </section>
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">상태 현황</h2>
-          <dl class="mt-4 space-y-3 text-sm">
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">상태 현황</h2>
+          <dl class="mt-4 space-y-3 app-type-sm">
             <div><dt class="app-text-muted">전체 구성</dt><dd class="mt-1 app-font-strong app-text-strong">{{ lines.length.toLocaleString() }}건</dd></div>
             <div><dt class="app-text-muted">활성 구성</dt><dd class="mt-1 app-font-strong app-text-success">{{ activeLineCount.toLocaleString() }}건</dd></div>
             <div><dt class="app-text-muted">비활성 구성</dt><dd class="mt-1 app-font-strong app-text-warning">{{ inactiveLineCount.toLocaleString() }}건</dd></div>
@@ -295,17 +295,17 @@ function showToast(message: string) {
 
     <div v-if="isDeleteOpen" class="fixed inset-0 z-[60] flex items-center justify-center app-backdrop p-4">
       <div class="w-full max-w-xl rounded-3xl app-bg-surface p-6 shadow-2xl">
-        <h2 class="text-lg app-font-emphasis app-text-strong">BOM 삭제 확인</h2>
+        <h2 class="app-type-lg app-font-emphasis app-text-strong">BOM 삭제 확인</h2>
         <div class="mt-4 rounded-2xl border app-border-muted p-4">
-          <p class="text-sm app-font-emphasis app-text-strong">{{ representative?.parentItemCode || '-' }} · {{ representative?.parentItemName || '-' }}</p>
-          <p class="mt-1 text-sm app-font-label app-text-muted">{{ bomVersion }} · 구성 {{ lines.length.toLocaleString() }}건</p>
+          <p class="app-type-sm app-font-emphasis app-text-strong">{{ representative?.parentItemCode || '-' }} · {{ representative?.parentItemName || '-' }}</p>
+          <p class="mt-1 app-type-sm app-font-label app-text-muted">{{ bomVersion }} · 구성 {{ lines.length.toLocaleString() }}건</p>
         </div>
-        <p class="mt-4 rounded-2xl app-bg-warning-soft p-4 text-sm app-font-strong app-text-warning">
+        <p class="mt-4 rounded-2xl app-bg-warning-soft p-4 app-type-sm app-font-strong app-text-warning">
           BOM 삭제는 현재 정책상 구성 전체를 비활성화합니다. 비활성화된 구성은 생산 자재 산출과 정전개 조회에서 제외됩니다.
         </p>
         <div class="mt-5 flex justify-end gap-2">
-          <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
-          <button class="rounded-2xl app-bg-danger px-5 py-2.5 text-sm app-font-emphasis app-text-inverse disabled:opacity-50" type="button" :disabled="bomStore.isSaving || activeLineCount === 0" @click="deactivateGroup">
+          <button class="rounded-2xl app-bg-muted px-5 py-2.5 app-type-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
+          <button class="rounded-2xl app-bg-danger px-5 py-2.5 app-type-sm app-font-emphasis app-text-inverse disabled:opacity-50" type="button" :disabled="bomStore.isSaving || activeLineCount === 0" @click="deactivateGroup">
             {{ activeLineCount === 0 ? '이미 비활성화됨' : '비활성화' }}
           </button>
         </div>
