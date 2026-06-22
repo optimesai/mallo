@@ -39,8 +39,6 @@ public class ClarificationCandidateService {
             "현황",
             "안전재고",
             "현재고",
-            "보여줘",
-            "알려줘",
             "조회",
             "집계"
     );
