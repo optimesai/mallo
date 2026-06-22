@@ -45,6 +45,12 @@ public interface SqlAssistant {
         - Always use clear snake_case aliases for calculated columns.
         - For chartable results, include one human-readable label column and one or more numeric metric columns.
         - Do not expose only numeric IDs when a name/code column can be joined.
+        - When item_code and item_name are available, include CONCAT(item_code, ' / ', item_name) AS item_label for chart labels.
+        - When partner_code and partner_name are available, include CONCAT(partner_code, ' / ', partner_name) AS partner_label for chart labels.
+        - When factory, line, and operation names are available, include CONCAT(factory_name, '\\n', line_name, '\\n', operation_name) AS operation_label for chart labels.
+        - For daily trends, alias the date bucket as period_date.
+        - For monthly trends, alias the month bucket as period_month.
+        - For weekly trends, alias the week bucket as period_week.
         - For Korean "별" expressions, GROUP BY the requested dimension.
         - For trends, include a date column aliased as period_date, period_week, or period_month.
         - For rates, use NULLIF in denominators to avoid division by zero.

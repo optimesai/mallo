@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.demo_app.api.ai.dto.AiChartResponse;
 import com.ssafy.demo_app.domain.ai.service.assistant.ChartRecommendationGenerator;
 import com.ssafy.demo_app.domain.ai.service.chart.ChartSpecValidationService.ChartSpecValidationResult;
+import com.ssafy.demo_app.domain.ai.service.classification.AiIntentResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -118,23 +119,34 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
 
     private final ChartRecommendationGenerator chartRecommendationGenerator;
     private final ChartSpecValidationService chartSpecValidationService;
+    private final DomainChartRuleService domainChartRuleService;
+    private final ChartLabelPolicyService chartLabelPolicyService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public AiChartResponse recommend(String question, List<Map<String, Object>> rows) {
+    public AiChartResponse recommend(String question, AiIntentResult intentResult, List<Map<String, Object>> rows) {
         if (rows == null || rows.isEmpty()) {
             return AiChartResponse.none(NO_CHART_REASON);
         }
 
-        Optional<AiChartResponse> ruleBasedChart = recommendByRules(question, rows);
+        List<String> columns = resolveColumns(rows);
+        List<String> numericColumns = resolveNumericColumns(columns, rows);
+
+        Optional<AiChartResponse> domainChart = domainChartRuleService.recommend(question, intentResult, columns, numericColumns);
+        if (domainChart.isPresent()) {
+            return validateOrNone(domainChart.get(), rows, question, intentResult, columns);
+        }
+
+        Optional<AiChartResponse> ruleBasedChart = recommendByRules(question, intentResult, rows, columns, numericColumns);
         if (ruleBasedChart.isPresent()) {
             return ruleBasedChart.get();
         }
 
         String rowsJson = toJson(rows);
         try {
-            String rawChartSpec = chartRecommendationGenerator.recommend(question, rowsJson);
+            String rawChartSpec = chartRecommendationGenerator.recommend(question, toJson(intentResult), rowsJson);
             AiChartResponse chart = objectMapper.readValue(sanitize(rawChartSpec), AiChartResponse.class);
+            chartLabelPolicyService.apply(chart, question, intentResult, columns);
             ChartSpecValidationResult validation = chartSpecValidationService.validate(chart, rows);
 
             if (!validation.isValid()) {
@@ -147,12 +159,13 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
         }
     }
 
-    private Optional<AiChartResponse> recommendByRules(String question, List<Map<String, Object>> rows) {
-        List<String> columns = resolveColumns(rows);
-        List<String> numericColumns = columns.stream()
-                .filter(column -> isNumericColumn(column, rows))
-                .filter(column -> !isIdentifierLikeColumn(column))
-                .toList();
+    private Optional<AiChartResponse> recommendByRules(
+            String question,
+            AiIntentResult intentResult,
+            List<Map<String, Object>> rows,
+            List<String> columns,
+            List<String> numericColumns
+    ) {
         List<String> labelColumns = columns.stream()
                 .filter(column -> !numericColumns.contains(column))
                 .toList();
@@ -173,7 +186,7 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
         }
 
         if (rows.size() == 1 && numericColumns.size() == 1) {
-            return Optional.of(validateOrNone(stat(numericColumns.get(0), "핵심 지표", "단일 숫자 지표는 STAT 표시가 적합합니다."), rows));
+            return Optional.of(validateOrNone(stat(numericColumns.get(0), "핵심 지표", "단일 숫자 지표는 STAT 표시가 적합합니다."), rows, question, intentResult, columns));
         }
 
         Optional<String> dateColumn = columns.stream()
@@ -186,7 +199,7 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
                     List.of(numericColumns.get(0)),
                     "기간별 추이",
                     "날짜 기준 숫자 지표 변화는 LINE 차트가 적합합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
         Optional<String> labelColumn = labelColumns.stream()
@@ -199,27 +212,30 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
                     List.of(numericColumns.get(0)),
                     "구성 비중",
                     "상태, 유형, 비중 분포는 DONUT 차트가 적합합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
         if (containsAny(normalizedQuestion, COMPARISON_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
+            AiChartResponse.ChartType type = hasLongBusinessLabel(columns)
+                    ? AiChartResponse.ChartType.HORIZONTAL_BAR
+                    : AiChartResponse.ChartType.BAR;
             return Optional.of(validateOrNone(axis(
-                    AiChartResponse.ChartType.BAR,
+                    type,
                     labelColumn.get(),
                     numericColumns.stream().limit(2).toList(),
                     "항목별 비교",
                     "범주별 숫자 지표 비교는 BAR 차트가 적합합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
         if (containsAny(normalizedQuestion, RISK_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
             return Optional.of(validateOrNone(axis(
-                    AiChartResponse.ChartType.BAR,
+                    AiChartResponse.ChartType.HORIZONTAL_BAR,
                     labelColumn.get(),
                     List.of(numericColumns.get(0)),
                     "운영 위험 항목",
                     "위험, 부족, 지연, 대기, 병목 항목은 우선순위 비교가 가능한 BAR 차트가 적합합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
         if (containsAny(normalizedQuestion, SCATTER_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
@@ -229,7 +245,7 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
                     numericColumns.stream().limit(2).toList(),
                     "지표 대비 비교",
                     "두 지표 간 관계를 BAR 차트로 항목별 비교합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
         if (containsAny(normalizedQuestion, KPI_QUESTION_KEYWORDS) && labelColumn.isPresent()) {
@@ -239,14 +255,21 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
                     List.of(numericColumns.get(0)),
                     "KPI 비율",
                     "진행률, 달성률, 처리율 등 KPI 성격의 값은 DONUT 차트로 요약합니다."
-            ), rows));
+            ), rows, question, intentResult, columns));
         }
 
 
         return Optional.empty();
     }
 
-    private AiChartResponse validateOrNone(AiChartResponse chart, List<Map<String, Object>> rows) {
+    private AiChartResponse validateOrNone(
+            AiChartResponse chart,
+            List<Map<String, Object>> rows,
+            String question,
+            AiIntentResult intentResult,
+            List<String> columns
+    ) {
+        chartLabelPolicyService.apply(chart, question, intentResult, columns);
         ChartSpecValidationResult validation = chartSpecValidationService.validate(chart, rows);
         if (validation.isValid()) {
             return validation.getChart();
@@ -283,6 +306,24 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
             }
         }));
         return columns;
+    }
+
+    private List<String> resolveNumericColumns(List<String> columns, List<Map<String, Object>> rows) {
+        return columns.stream()
+                .filter(column -> isNumericColumn(column, rows))
+                .filter(column -> !isIdentifierLikeColumn(column))
+                .toList();
+    }
+
+    private boolean hasLongBusinessLabel(List<String> columns) {
+        return columns.stream()
+                .map(this::normalize)
+                .anyMatch(column -> column.contains("item_label")
+                        || column.contains("partner_label")
+                        || column.contains("operation_label")
+                        || column.contains("item_name")
+                        || column.contains("partner_name")
+                        || column.contains("operation_name"));
     }
 
     private boolean isNumericColumn(String key, List<Map<String, Object>> rows) {
@@ -344,6 +385,14 @@ public class ChartRecommendationServiceImpl implements ChartRecommendationServic
             return objectMapper.writeValueAsString(rows);
         } catch (JsonProcessingException exception) {
             return "[]";
+        }
+    }
+
+    private String toJson(AiIntentResult intentResult) {
+        try {
+            return objectMapper.writeValueAsString(intentResult);
+        } catch (JsonProcessingException exception) {
+            return "{}";
         }
     }
 

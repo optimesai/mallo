@@ -1,5 +1,6 @@
 package com.ssafy.demo_app.domain.ai.service;
 
+import com.ssafy.demo_app.api.ai.dto.AiQueryRequest;
 import com.ssafy.demo_app.api.ai.dto.AiQueryResponse;
 import com.ssafy.demo_app.domain.ai.entity.AiQueryHistory;
 import com.ssafy.demo_app.domain.ai.repository.AiQueryHistoryRepository;
@@ -23,12 +24,14 @@ import com.ssafy.demo_app.domain.ai.service.sql.SqlValidationService.SqlValidati
 import com.ssafy.demo_app.domain.user.entity.User;
 import com.ssafy.demo_app.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -78,7 +81,7 @@ class AiQueryServiceImplTest {
                 .willAnswer(invocation -> invocation.getArgument(0));
         given(databaseSchemaService.getSchemaDescription()).willThrow(new IllegalStateException("metadata failed"));
 
-        AiQueryResponse response = aiQueryService.ask(1, "이번 달 불량률 보여줘");
+        AiQueryResponse response = aiQueryService.ask(1, request("이번 달 불량률 보여줘"));
 
         assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SCHEMA_LOAD_FAILED);
         assertThat(response.getAnswer()).isEqualTo("데이터 스키마 정보를 불러오는 중 오류가 발생했습니다.");
@@ -100,7 +103,7 @@ class AiQueryServiceImplTest {
         given(clarificationService.evaluate(any(), any(), any()))
                 .willReturn(ClarificationResult.required("불량률을 라인별, 공정별, 품목별 중 어떤 기준으로 조회할까요?"));
 
-        AiQueryResponse response = aiQueryService.ask(1, "이번 달 불량률 보여줘");
+        AiQueryResponse response = aiQueryService.ask(1, request("이번 달 불량률 보여줘"));
 
         assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED);
         assertThat(response.getClarificationRequired()).isTrue();
@@ -133,7 +136,7 @@ class AiQueryServiceImplTest {
         given(sqlExecutionService.execute(any())).willReturn(List.of());
         given(answerGenerator.generateAnswer(any(), any(), any(), any(), any())).willReturn("조건에 맞는 데이터가 없습니다.");
 
-        AiQueryResponse response = aiQueryService.ask(1, "안전재고 미만 품목을 보여줘");
+        AiQueryResponse response = aiQueryService.ask(1, request("안전재고 미만 품목을 보여줘"));
 
         assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SUCCESS);
         verify(sqlAssistant, times(2)).generateSql(any(), any(), any(), any(), any(), any(), any());
@@ -161,13 +164,47 @@ class AiQueryServiceImplTest {
                 .willReturn(SqlSemanticValidationResult.invalid("재고 도메인 질의에는 재고 또는 수불 테이블 사용이 필요합니다."))
                 .willReturn(SqlSemanticValidationResult.invalid("재고 도메인 질의에는 재고 또는 수불 테이블 사용이 필요합니다."));
 
-        AiQueryResponse response = aiQueryService.ask(1, "재고 문제 보여줘");
+        AiQueryResponse response = aiQueryService.ask(1, request("재고 문제 보여줘"));
 
         assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SEMANTIC_VALIDATION_FAILED);
         assertThat(response.getAnswer()).contains("질문을 조금 더 구체화해주세요");
         assertThat(response.getAnswer()).contains("조회 기간");
         assertThat(response.getAnswer()).contains("집계 기준");
         verify(sqlExecutionService, never()).execute(any());
+    }
+
+    @Test
+    void ask_mergesClarificationAnswerWithParentQuestion() {
+        givenDefaultUser();
+        AiQueryHistory parentHistory = new AiQueryHistory();
+        parentHistory.setQueryId(10);
+        parentHistory.setNaturalQuestion("이번 달 불량률 보여줘");
+        parentHistory.setEffectiveQuestion("이번 달 불량률 보여줘");
+        parentHistory.setNaturalAnswer("불량률을 라인별, 공정별, 품목별 중 어떤 기준으로 조회할까요?");
+        parentHistory.setConversationId("conversation-1");
+        parentHistory.setExecutionStatus(AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED);
+
+        given(aiQueryHistoryRepository.findByQueryIdAndWorker(eq(10), any(User.class)))
+                .willReturn(Optional.of(parentHistory));
+        given(aiQueryHistoryRepository.save(any(AiQueryHistory.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(databaseSchemaService.getSchemaDescription()).willReturn("schema");
+        given(businessRulePromptService.getBusinessRules()).willReturn("business rules");
+        AiIntentResult intentResult = AiIntentResult.dataQuestion();
+        intentResult.setNeedsClarification(true);
+        intentResult.setClarificationQuestion("조회 기간을 지정할까요?");
+        given(intentClassificationService.classify(any(), any(), any(), any())).willReturn(intentResult);
+
+        AiQueryResponse response = aiQueryService.ask(1, clarificationRequest("라인별", 10));
+
+        ArgumentCaptor<String> questionCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intentClassificationService).classify(questionCaptor.capture(), any(), any(), any());
+        assertThat(questionCaptor.getValue()).contains("원래 질문: 이번 달 불량률 보여줘");
+        assertThat(questionCaptor.getValue()).contains("사용자 추가 답변: 라인별");
+        assertThat(response.getQuestion()).isEqualTo("라인별");
+        assertThat(response.getEffectiveQuestion()).contains("사용자 추가 답변: 라인별");
+        assertThat(response.getClarificationOfQueryId()).isEqualTo(10);
+        verify(sqlAssistant, never()).generateSql(any(), any(), any(), any(), any(), any(), any());
     }
 
     private void givenDefaultUser() {
@@ -179,5 +216,18 @@ class AiQueryServiceImplTest {
         user.setPassword("password");
         user.setRole(User.Role.WORKER);
         given(userRepository.findById(1)).willReturn(Optional.of(user));
+    }
+
+    private AiQueryRequest request(String question) {
+        AiQueryRequest request = new AiQueryRequest();
+        request.setQuestion(question);
+        request.setConversationId("conversation-1");
+        return request;
+    }
+
+    private AiQueryRequest clarificationRequest(String question, Integer parentQueryId) {
+        AiQueryRequest request = request(question);
+        request.setClarificationOfQueryId(parentQueryId);
+        return request;
     }
 }

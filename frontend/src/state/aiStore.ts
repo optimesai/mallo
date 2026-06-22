@@ -18,6 +18,8 @@ export const useAiStore = defineStore('ai', () => {
   const currentResponse = ref<AiQueryResponse | null>(null)
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
+  const conversationId = ref<string | null>(null)
+  const pendingClarificationQueryId = ref<number | null>(null)
 
   async function ask(question: string) {
     const normalizedQuestion = question.trim()
@@ -30,8 +32,15 @@ export const useAiStore = defineStore('ai', () => {
     error.value = null
 
     try {
-      const response = await aiService.ask({ question: normalizedQuestion })
+      const response = await aiService.ask({
+        question: normalizedQuestion,
+        conversationId: ensureConversationId(),
+        clarificationOfQueryId: pendingClarificationQueryId.value ?? undefined,
+        clientMessageId: String(userMessage.id)
+      })
       currentResponse.value = response
+      conversationId.value = response.conversationId ?? conversationId.value
+      pendingClarificationQueryId.value = response.clarificationRequired ? response.queryId : null
 
       const assistantMessage = createMessage(
         'assistant',
@@ -58,6 +67,15 @@ export const useAiStore = defineStore('ai', () => {
     messages.value = []
     currentResponse.value = null
     error.value = null
+    conversationId.value = null
+    pendingClarificationQueryId.value = null
+  }
+
+  function ensureConversationId() {
+    if (!conversationId.value) {
+      conversationId.value = crypto.randomUUID()
+    }
+    return conversationId.value
   }
 
   function createMessage(
@@ -87,6 +105,8 @@ export const useAiStore = defineStore('ai', () => {
     currentResponse,
     isLoading,
     error,
+    conversationId,
+    pendingClarificationQueryId,
     ask,
     selectResponse,
     clearMessages

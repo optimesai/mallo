@@ -10,4 +10,10 @@ public class AiQueryRequest {
 
     @NotBlank
     private String question;
+
+    private String conversationId;
+
+    private Integer clarificationOfQueryId;
+
+    private String clientMessageId;
 }

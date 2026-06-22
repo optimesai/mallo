@@ -31,7 +31,7 @@ public class AiQueryController {
         if (userDetails == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
-        AiQueryResponse response = aiQueryService.ask(userDetails.getUserId(), request.getQuestion());
+        AiQueryResponse response = aiQueryService.ask(userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

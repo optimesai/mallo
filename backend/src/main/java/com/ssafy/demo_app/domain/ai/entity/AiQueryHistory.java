@@ -25,6 +25,16 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
     @Column(name = "natural_question", nullable = false, columnDefinition = "TEXT")
     private String naturalQuestion;
 
+    @Column(name = "conversation_id")
+    private String conversationId;
+
+    @Column(name = "parent_query_id")
+    private Integer parentQueryId;
+
+    @Lob
+    @Column(name = "effective_question", columnDefinition = "TEXT")
+    private String effectiveQuestion;
+
     @Lob
     @Column(name = "generated_sql", columnDefinition = "TEXT")
     private String generatedSql;

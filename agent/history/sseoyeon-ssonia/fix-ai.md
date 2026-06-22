@@ -132,3 +132,59 @@
     - 없음
 
   </details>
+
+### AI 채팅 연속성 및 차트 추천 고도화 (Codex)
+- **User Intent**: AI 데이터 챗봇에서 추가 확인 답변이 원 질문의 보완 정보로 이어지지 않고 신규 질의로 처리되는 문제를 해결하고, 차트 추천 타입과 라벨 품질을 확장해 달라는 요청
+- **Agent Context**: API 요청이 `question`만 전달하고 서버 히스토리를 질의 맥락으로 재사용하지 않는 것이 근본 원인으로 진단. 프론트 메모리 기반 `conversationId`와 `clarificationOfQueryId`, 서버 `effectiveQuestion` 병합 흐름을 추가하고 차트 추천에는 intent 결과와 도메인 규칙을 전달하도록 구현.
+- **Key Decisions**:
+  - 프론트의 `conversationId`는 Pinia 메모리에만 저장 — 새로고침 또는 초기화 시 이전 채팅을 잊고 신규 채팅으로 간주한다는 사용자 요구사항 준수
+  - `naturalQuestion`과 `effectiveQuestion`을 분리 저장 — 사용자 실제 입력과 SQL 생성 입력을 모두 추적해 AI 변수 전달 경로를 검증 가능하게 유지
+  - 차트 추천은 도메인 규칙을 LLM 추천보다 먼저 적용 — 재고, 생산, 불량률, 출하 현황 같은 반복 업무 질의는 결정 규칙이 더 예측 가능함
+  - 차트 라벨 정책을 별도 서비스로 분리 — 품목코드+품목명, 거래처코드+거래처명, 공장/라인/공정 줄바꿈 라벨을 일관되게 적용
+- **Affected Files**: <details><summary>22개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartLabelPolicyService.java` — 차트 제목, 축, y축, 표시 라벨 정책 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/DomainChartRuleService.java` — 도메인/의도/지표 기반 차트 우선 추천 규칙 추가
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/AiQueryController.java` (+1/-1) — AI 요청 DTO 전체를 서비스로 전달
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiChartResponse.java` (+14/-1) — 신규 차트 타입과 라벨 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiQueryRequest.java` (+6/-0) — conversationId, clarificationOfQueryId, clientMessageId 추가
+    - `backend/src/main/java/com/ssafy/demo_app/api/ai/dto/AiQueryResponse.java` (+3/-0) — conversationId, clarificationOfQueryId, effectiveQuestion 응답 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/entity/AiQueryHistory.java` (+10/-0) — 대화 세션, 부모 질의, 병합 질문 저장 필드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/repository/AiQueryHistoryRepository.java` (+5/-0) — 사용자 소유 clarification 조회 메서드 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryService.java` (+2/-1) — 요청 DTO 기반 서비스 시그니처로 변경
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` (+121/-20) — 후속 답변 병합, effectiveQuestion 전달, 히스토리 메타데이터 저장 구현
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/assistant/ChartRecommendationGenerator.java` (+18/-2) — classificationResult 입력과 신규 차트 타입 프롬프트 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/assistant/SqlAssistant.java` (+6/-0) — 차트용 label alias 생성 규칙 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartRecommendationService.java` (+2/-1) — intent 결과를 받는 추천 시그니처로 변경
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartRecommendationServiceImpl.java` (+68/-19) — 도메인 규칙, 라벨 정책, classificationResult 전달 반영
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/chart/ChartSpecValidationService.java` (+7/-4) — 신규 차트 타입 validation 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/classification/AiIntentResult.java` (+5/-0) — metric, dimensions, chartHint 필드 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImplTest.java` (+54/-4) — clarification 답변 병합 전달 테스트 추가
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/chart/ChartRecommendationServiceImplTest.java` (+44/-18) — 차트 추천 시그니처 변경 반영
+    - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/chart/ChartSpecValidationServiceTest.java` (+34/-0) — 신규 차트 타입 validation 테스트 추가
+    - `frontend/src/api/aiApi.ts` (+22/-1) — AI 요청/응답 및 차트 타입 확장
+    - `frontend/src/state/aiStore.ts` (+21/-1) — 메모리 기반 conversationId와 pending clarification 상태 추가
+    - `frontend/src/ui/AiChartPanel.vue` (+208/-32) — 신규 차트 렌더링과 라벨 표시 개선
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### AI 답변 요약 카드 표시 개선 (Codex)
+- **User Intent**: AI 데이터 챗봇 답변 요약 영역에서 추천 차트 값이 길어 카드 밖으로 넘치고 옆 카드와 겹치는 UI 깨짐 수정 요청
+- **Agent Context**: `HORIZONTAL_BAR` 같은 긴 차트 타입 문자열이 3열 요약 카드의 고정 폭 안에서 줄바꿈되지 않아 발생. 차트 타입을 사용자 친화적인 한글 표시명으로 변환하고 카드/텍스트에 최소 폭 및 줄바꿈 처리를 적용.
+- **Key Decisions**:
+  - 서버 응답 값은 유지하고 프론트 표시명만 변환 — API 계약을 변경하지 않고 UI 깨짐만 국소 수정
+  - 카드와 값 텍스트에 `min-w-0`, `break-words`, 적절한 line-height를 적용 — 작은 카드 폭에서도 긴 텍스트가 이웃 요소를 침범하지 않도록 처리
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/ui/AiAnswerSummary.vue` (+26/-7) — 추천 차트 한글 표시명과 카드 텍스트 줄바꿈 처리 추가
+  - **Deleted**:
+    - 없음
+
+  </details>

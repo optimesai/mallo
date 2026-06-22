@@ -24,6 +24,25 @@ const answerText = computed(() => {
   }
   return props.response.answer || '조회 결과를 확인해 주세요.'
 })
+
+const chartTypeLabel = computed(() => {
+  const type = props.response?.chart?.type
+  if (!type) return '-'
+
+  return {
+    NONE: '없음',
+    TABLE: '표',
+    STAT: '지표',
+    BAR: '막대',
+    LINE: '선',
+    DONUT: '도넛',
+    HORIZONTAL_BAR: '가로 막대',
+    STACKED_BAR: '누적 막대',
+    AREA: '영역',
+    COMBO: '복합',
+    PARETO: '파레토'
+  }[type] ?? type
+})
 </script>
 
 <template>
@@ -55,33 +74,33 @@ const answerText = computed(() => {
             class="mt-0.5 h-5 w-5 shrink-0"
             style="color: var(--color-success);"
           />
-          <p class="whitespace-pre-line text-sm leading-6">{{ answerText }}</p>
+          <p class="min-w-0 whitespace-pre-line break-words text-sm leading-6">{{ answerText }}</p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div class="rounded-lg border p-3" style="border-color: var(--color-border);">
+        <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
           <div class="flex items-center gap-2">
             <Database class="h-4 w-4 app-table-muted" />
             <p class="app-stat-label-compact">조회 행 수</p>
           </div>
-          <p class="app-stat-value-compact">{{ (response?.rowCount ?? 0).toLocaleString() }}</p>
+          <p class="app-stat-value-compact min-w-0 break-words">{{ (response?.rowCount ?? 0).toLocaleString() }}</p>
         </div>
 
-        <div class="rounded-lg border p-3" style="border-color: var(--color-border);">
+        <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
           <div class="flex items-center gap-2">
             <Sparkles class="h-4 w-4 app-table-muted" />
             <p class="app-stat-label-compact">추천 차트</p>
           </div>
-          <p class="app-stat-value-compact">{{ response?.chart?.type || '-' }}</p>
+          <p class="app-stat-value-compact min-w-0 break-words text-lg leading-6">{{ chartTypeLabel }}</p>
         </div>
 
-        <div class="rounded-lg border p-3" style="border-color: var(--color-border);">
+        <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
           <div class="flex items-center gap-2">
             <Bot class="h-4 w-4 app-table-muted" />
             <p class="app-stat-label-compact">질의 번호</p>
           </div>
-          <p class="app-stat-value-compact">{{ response?.queryId ?? '-' }}</p>
+          <p class="app-stat-value-compact min-w-0 break-words">{{ response?.queryId ?? '-' }}</p>
         </div>
       </div>
     </div>
