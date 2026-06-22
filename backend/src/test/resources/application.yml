@@ -22,3 +22,11 @@ jwt:
   access-token-expiration-ms: 1800000
   refresh-token-expiration-ms: 604800000
   refresh-token-cookie-secure: false
+
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://gms.ssafy.io/gmsapi/api.openai.com/v1
+      api-key: test-gms-key
+      model-name: gpt-4o-mini
+      temperature: 0

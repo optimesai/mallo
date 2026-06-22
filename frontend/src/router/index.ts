@@ -132,6 +132,11 @@ const router = createRouter({
           path: 'shipping/picking',
           name: 'shipping-picking',
           component: () => import('../views/PickingView.vue')
+        },
+        {
+          path: 'ai/queries',
+          name: 'ai-queries',
+          component: () => import('../views/AiDataChatbotView.vue')
         }
       ]
     }

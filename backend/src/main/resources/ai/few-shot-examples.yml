@@ -1,0 +1,317 @@
+examples:
+  - id: production-defect-rate-by-line
+    category: production
+    question: "이번 달 A 라인에서 불량률이 가장 높은 공정과 원인은 뭐야?"
+    sql: |
+      SELECT
+        fr.line_name,
+        fr.operation_name,
+        pe.defect_reason,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN factory_routing fr ON pe.routing_id = fr.routing_id
+      WHERE fr.line_name = 'A'
+        AND pe.created_at >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')
+        AND pe.created_at < DATE_ADD(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01'), INTERVAL 1 MONTH)
+      GROUP BY fr.line_name, fr.operation_name, pe.defect_reason
+      ORDER BY defect_rate DESC
+      LIMIT 1
+    notes: "이번 달은 CURRENT_DATE 기준 월초 이상, 다음 달 월초 미만으로 처리한다."
+
+  - id: production-defect-rate-period
+    category: production
+    question: "지난 7일 동안 라인별 불량률을 비교해줘."
+    sql: |
+      SELECT
+        fr.line_name,
+        SUM(pe.defect_qty) AS defect_qty,
+        SUM(pe.good_qty + pe.defect_qty) AS total_qty,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN factory_routing fr ON pe.routing_id = fr.routing_id
+      WHERE pe.created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY fr.line_name
+      ORDER BY defect_rate DESC
+      LIMIT 100
+    notes: "불량률은 defect_qty / (good_qty + defect_qty)로 계산한다."
+
+  - id: inventory-below-safety-stock
+    category: inventory
+    question: "현재고가 안전재고 이하인 품목을 알려줘."
+    sql: |
+      SELECT
+        im.item_code,
+        im.item_name,
+        im.safety_stock,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      GROUP BY im.item_id, im.item_code, im.item_name, im.safety_stock
+      HAVING COALESCE(SUM(ci.current_qty), 0) <= im.safety_stock
+      ORDER BY current_qty ASC
+      LIMIT 100
+    notes: "품목별 현재고는 current_inventory를 item_id 기준으로 합산한다."
+
+  - id: inventory-transaction-recent-trend
+    category: inventory
+    question: "최근 7일 품목별 입출고 수량 추이를 보여줘."
+    sql: |
+      SELECT
+        DATE(ith.created_at) AS transaction_date,
+        im.item_code,
+        im.item_name,
+        ith.transaction_type,
+        SUM(ith.quantity) AS total_qty
+      FROM inventory_transaction_history ith
+      JOIN item_master im ON ith.item_id = im.item_id
+      WHERE ith.created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY DATE(ith.created_at), im.item_code, im.item_name, ith.transaction_type
+      ORDER BY transaction_date ASC, im.item_code ASC
+      LIMIT 100
+    notes: "수불 추이는 inventory_transaction_history.created_at을 기준으로 집계한다."
+
+  - id: bom-material-requirement
+    category: bom
+    question: "완제품 FG-100을 100개 생산하려면 필요한 원자재 수량을 알려줘."
+    sql: |
+      SELECT
+        child.item_code AS child_item_code,
+        child.item_name AS child_item_name,
+        bs.quantity * 100 AS required_qty
+      FROM bom_structure bs
+      JOIN item_master parent ON bs.parent_item_id = parent.item_id
+      JOIN item_master child ON bs.child_item_id = child.item_id
+      WHERE parent.item_code = 'FG-100'
+        AND bs.bom_status = 'ACTIVE'
+      ORDER BY child.item_code ASC
+      LIMIT 100
+    notes: "BOM 소요량은 bom_structure.quantity에 생산 목표 수량을 곱한다."
+
+  - id: shipping-waiting-by-partner
+    category: shipping
+    question: "거래처별 출하 대기 물량을 집계해줘."
+    sql: |
+      SELECT
+        pm.partner_code,
+        pm.partner_name,
+        SUM(os.request_qty - COALESCE(os.shipped_qty, 0)) AS waiting_qty,
+        COUNT(*) AS waiting_order_count
+      FROM outbound_shipping os
+      JOIN partner_master pm ON os.partner_id = pm.partner_id
+      WHERE os.status IN ('READY', 'PICKING', 'PACKING', 'INSPECTING', 'PARTIALLY_SHIPPED')
+      GROUP BY pm.partner_id, pm.partner_code, pm.partner_name
+      ORDER BY waiting_qty DESC
+      LIMIT 100
+    notes: "출하 대기는 완료(SHIPPED)와 취소(CANCELED)를 제외하고 request_qty - shipped_qty 기준으로 계산한다."
+
+  - id: inbound-daily-trend
+    category: inbound
+    question: "최근 7일 입고 수량 일별 추이를 알려줘."
+    sql: |
+      SELECT
+        ir.inbound_date,
+        SUM(ir.inbound_qty) AS total_inbound_qty
+      FROM inbound_receipt ir
+      WHERE ir.inbound_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+      GROUP BY ir.inbound_date
+      ORDER BY ir.inbound_date ASC
+      LIMIT 100
+    notes: "입고 추이는 inbound_receipt.inbound_date와 inbound_qty를 기준으로 집계한다."
+
+  - id: work-order-status-count
+    category: production
+    question: "작업지시 상태별 건수를 보여줘."
+    sql: |
+      SELECT
+        wo.status,
+        COUNT(*) AS order_count,
+        SUM(wo.target_qty) AS total_target_qty
+      FROM work_order wo
+      GROUP BY wo.status
+      ORDER BY order_count DESC
+      LIMIT 100
+    notes: "작업지시 상태는 work_order.status의 READY, RUN, HOLD, CLOSE 값을 기준으로 집계한다."
+
+  - id: work-order-status-summary
+    category: production
+    question: "작업지시 상태별 현황을 보여줘."
+    sql: |
+      SELECT
+        wo.status,
+        COUNT(*) AS work_order_count
+      FROM work_order wo
+      GROUP BY wo.status
+      ORDER BY work_order_count DESC
+      LIMIT 100
+    notes: "작업지시 상태 구성은 status별 COUNT로 계산한다. 상태별 비중은 DONUT 차트에 적합하다."
+
+  - id: work-order-hold-list
+    category: production
+    question: "보류 중인 작업지시 목록을 보여줘."
+    sql: |
+      SELECT
+        wo.order_no,
+        im.item_code,
+        im.item_name,
+        wo.status,
+        wo.target_qty,
+        wo.created_at
+      FROM work_order wo
+      JOIN item_master im
+        ON wo.item_id = im.item_id
+      WHERE wo.status = 'HOLD'
+      ORDER BY wo.created_at DESC
+      LIMIT 100
+    notes: "보류 작업지시는 work_order.status = 'HOLD'로 조회한다. 목록성 질문이므로 TABLE 차트에 적합하다."
+
+
+  - id: inventory-current-stock-by-warehouse
+    category: inventory
+    question: "창고별 현재고 합계를 비교해줘."
+    sql: |
+      SELECT
+        wl.warehouse_name,
+        SUM(ci.current_qty) AS current_qty
+      FROM current_inventory ci
+      JOIN warehouse_location wl ON ci.location_id = wl.location_id
+      GROUP BY wl.warehouse_name
+      ORDER BY current_qty DESC
+      LIMIT 100
+    notes: "창고별 현재고는 current_inventory.current_qty를 warehouse_location.warehouse_name 기준으로 합산한다."
+
+  - id: inventory-transaction-history-by-item
+    category: inventory
+    question: "품목 RM-100의 최근 수불 이력을 보여줘."
+    sql: |
+      SELECT
+        ith.created_at,
+        im.item_code,
+        im.item_name,
+        ith.transaction_type,
+        ith.quantity,
+        ith.reason_desc
+      FROM inventory_transaction_history ith
+      JOIN item_master im ON ith.item_id = im.item_id
+      WHERE im.item_code = 'RM-100'
+      ORDER BY ith.created_at DESC
+      LIMIT 100
+    notes: "수불 이력은 inventory_transaction_history를 기준으로 조회하고 품목 코드는 item_master.item_code로 필터링한다."
+
+  - id: operation-risk-summary
+    category: operation
+    question: "운영 이슈가 될 만한 항목을 요약해줘."
+    sql: |
+      SELECT
+        'SAFETY_STOCK_SHORTAGE' AS issue_type,
+        im.item_code AS target_code,
+        im.item_name AS target_name,
+        im.safety_stock AS threshold_qty,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      GROUP BY im.item_id, im.item_code, im.item_name, im.safety_stock
+      HAVING COALESCE(SUM(ci.current_qty), 0) < im.safety_stock
+      ORDER BY current_qty ASC
+      LIMIT 100
+    notes: "운영 이슈 요약은 먼저 안전재고 미달처럼 명확한 위험 기준을 우선 조회한다."
+
+  - id: inventory-safety-stock-shortage-ranking
+    category: inventory
+    question: "안전재고 부족 수량이 큰 품목 TOP 10을 보여줘."
+    sql: |
+      SELECT
+        im.item_code,
+        im.item_name,
+        im.safety_stock,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty,
+        im.safety_stock - COALESCE(SUM(ci.current_qty), 0) AS shortage_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      GROUP BY im.item_id, im.item_code, im.item_name, im.safety_stock
+      HAVING COALESCE(SUM(ci.current_qty), 0) < im.safety_stock
+      ORDER BY shortage_qty DESC
+      LIMIT 10
+    notes: "부족 수량은 safety_stock - current_qty로 계산하고, BAR 차트에 적합한 결과를 만든다."
+
+
+
+  - id: production-defect-rate-with-volume-threshold
+    category: production
+    question: "이번 달 생산량이 100개 이상인 품목 중 불량률이 높은 품목을 보여줘."
+    sql: |
+      SELECT
+        im.item_code,
+        im.item_name,
+        SUM(pe.defect_qty) AS defect_qty,
+        SUM(pe.good_qty + pe.defect_qty) AS production_qty,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN work_order wo ON pe.order_id = wo.order_id
+      JOIN item_master im ON wo.item_id = im.item_id
+      WHERE pe.created_at >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')
+        AND pe.created_at < DATE_ADD(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01'), INTERVAL 1 MONTH)
+      GROUP BY im.item_id, im.item_code, im.item_name
+      HAVING SUM(pe.good_qty + pe.defect_qty) >= 100
+      ORDER BY defect_rate DESC
+      LIMIT 100
+    notes: "불량률 순위는 생산량이 너무 적은 항목을 제외해야 해석이 안정적이다."
+
+  - id: shipping-waiting-risk-ranking
+    category: shipping
+    question: "출하 대기 물량이 큰 거래처 순으로 보여줘."
+    sql: |
+      SELECT
+        pm.partner_code,
+        pm.partner_name,
+        SUM(os.request_qty - COALESCE(os.shipped_qty, 0)) AS waiting_qty,
+        COUNT(*) AS waiting_order_count
+      FROM outbound_shipping os
+      JOIN partner_master pm ON os.partner_id = pm.partner_id
+      WHERE os.status IN ('READY', 'PICKING', 'PACKING', 'INSPECTING', 'PARTIALLY_SHIPPED')
+      GROUP BY pm.partner_id, pm.partner_code, pm.partner_name
+      ORDER BY waiting_qty DESC
+      LIMIT 100
+    notes: "출하 대기 위험은 잔여 수량 기준으로 정렬한다."
+
+
+  - id: production-defect-rate-by-line
+    category: production
+    question: "라인별 불량률을 비교해줘."
+    sql: |
+      SELECT
+        fr.line_name,
+        SUM(pe.defect_qty) AS defect_qty,
+        SUM(pe.good_qty + pe.defect_qty) AS production_qty,
+        SUM(pe.defect_qty) / NULLIF(SUM(pe.good_qty + pe.defect_qty), 0) AS defect_rate
+      FROM production_execution pe
+      JOIN work_order wo
+        ON pe.order_id = wo.order_id
+      JOIN factory_routing fr
+        ON wo.routing_id = fr.routing_id
+      GROUP BY fr.line_name
+      ORDER BY defect_rate DESC
+      LIMIT 100
+    notes: "라인별 비교는 factory_routing.line_name으로 그룹화한다. 불량률이 높은 라인을 우선 점검 대상으로 볼 수 있다."
+
+  - id: inbound-not-stacked-list
+    category: inbound
+    question: "아직 적재되지 않은 입고 건을 보여줘."
+    sql: |
+      SELECT
+        ir.receipt_no,
+        im.item_code,
+        im.item_name,
+        pm.partner_code,
+        pm.partner_name,
+        ir.inbound_qty,
+        ir.status,
+        ir.inbound_date
+      FROM inbound_receipt ir
+      JOIN item_master im
+        ON ir.item_id = im.item_id
+      LEFT JOIN partner_master pm
+        ON ir.partner_id = pm.partner_id
+      WHERE ir.status IN ('READY', 'COMPLETED')
+      ORDER BY ir.inbound_date DESC
+      LIMIT 100
+    notes: "적재 완료가 아닌 입고 건은 READY 또는 COMPLETED 상태로 조회한다. 실제 ENUM 값은 schema 또는 business rules에 맞춘다."

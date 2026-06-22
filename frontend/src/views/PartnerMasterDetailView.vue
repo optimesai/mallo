@@ -400,13 +400,13 @@ function showToast(message: string) {
           <div v-if="formError" class="md:col-span-2 rounded-2xl border app-border app-bg-danger-soft p-3 text-sm app-font-strong app-text-danger">{{ formError }}</div>
           <label class="block text-sm app-font-emphasis app-text-soft">
             거래처 구분
-            <select v-model="form.partnerType" disabled class="mt-1 h-11 w-full rounded-2xl border app-border bg-slate-100 px-4 text-sm outline-none">
+            <select v-model="form.partnerType" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 text-sm outline-none">
               <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             거래처 코드
-            <input v-model="form.partnerCode" disabled class="mt-1 h-11 w-full rounded-2xl border app-border bg-slate-100 px-4 font-mono text-sm outline-none">
+            <input v-model="form.partnerCode" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 font-mono text-sm outline-none">
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             거래처명
@@ -414,7 +414,7 @@ function showToast(message: string) {
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             사업자등록번호
-            <input v-model="form.businessNo" disabled class="mt-1 h-11 w-full rounded-2xl border app-border bg-slate-100 px-4 text-sm outline-none">
+            <input v-model="form.businessNo" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 text-sm outline-none">
           </label>
           <label class="block text-sm app-font-emphasis app-text-soft">
             대표자명

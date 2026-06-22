@@ -40,4 +40,24 @@ public interface CurrentInventoryRepository extends JpaRepository<CurrentInvento
     boolean existsByItem(ItemMaster item);
     long countByItem(ItemMaster item);
     void deleteByItem(ItemMaster item);
+
+    @Query("""
+            select wl.warehouseName, coalesce(sum(ci.currentQty), 0)
+            from CurrentInventory ci
+            join ci.location wl
+            group by wl.warehouseName
+            order by coalesce(sum(ci.currentQty), 0) desc
+            """)
+    List<Object[]> aggregateCurrentQtyByWarehouse();
+
+    @Query("""
+            select count(i)
+            from ItemMaster i
+            where i.safetyStock > (
+                select coalesce(sum(ci.currentQty), 0)
+                from CurrentInventory ci
+                where ci.item = i
+            )
+            """)
+    long countItemsUnderSafetyStock();
 }
