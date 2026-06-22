@@ -53,6 +53,9 @@ public class AiQueryServiceImpl implements AiQueryService {
     private static final String SEMANTIC_VALIDATION_FAILED_ANSWER = "질문을 조금 더 구체화해주세요. 예: 조회 기간, 집계 기준(품목별/거래처별/라인별), 상태값, 대상 품목 또는 거래처를 함께 입력하면 더 정확하게 조회할 수 있습니다.";
     private static final String SQL_EXECUTION_FAILED_ANSWER = "쿼리 실행 중 오류가 발생했습니다.";
     private static final String ANSWER_GENERATION_FAILED_ANSWER = "답변 생성 중 오류가 발생했습니다.";
+    private static final String NEW_QUESTION_MARKERS = "이번에는|이번엔|이번 질문|새로|다른|말고|대신";
+    private static final String REQUEST_MARKERS = "알려줘|보여줘|조회|집계|분석|확인|찾아|추천|뽑아|나열|리스트|어떤|무엇|뭐|얼마나|몇";
+    private static final String CONDITION_MARKERS = "기준|만|별|상위|하위|최근|지난|이번|오늘|어제|내일|개월|일|주|월|년|창고|공장|라인|거래처|품목|완제품|반제품|원자재|안전재고|이상|이하|미만|초과|부터|까지";
 
     private final UserRepository userRepository;
     private final AiQueryHistoryRepository aiQueryHistoryRepository;
@@ -306,29 +309,75 @@ public class AiQueryServiceImpl implements AiQueryService {
     private QuestionContext resolveQuestionContext(User worker, AiQueryRequest request) {
         String originalQuestion = normalizeQuestion(request.getQuestion());
         String conversationId = resolveConversationId(request.getConversationId());
-        Integer parentQueryId = request.getClarificationOfQueryId();
+        AiQueryHistory pendingHistory = resolvePendingClarification(worker, conversationId, request.getClarificationOfQueryId());
 
-        if (parentQueryId == null) {
+        if (pendingHistory == null) {
             return QuestionContext.of(originalQuestion, originalQuestion, conversationId, null);
         }
 
-        AiQueryHistory parentHistory = aiQueryHistoryRepository.findByQueryIdAndWorker(parentQueryId, worker)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
-        if (parentHistory.getExecutionStatus() != AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-        if (parentHistory.getConversationId() != null
-                && !parentHistory.getConversationId().isBlank()
-                && !parentHistory.getConversationId().equals(conversationId)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        if (isExplicitNewQuestion(originalQuestion)) {
+            cancelPendingClarification(pendingHistory);
+            return QuestionContext.of(originalQuestion, originalQuestion, conversationId, null);
         }
 
         return QuestionContext.of(
                 originalQuestion,
-                buildEffectiveQuestion(parentHistory, originalQuestion),
+                buildEffectiveQuestion(pendingHistory, originalQuestion),
                 conversationId,
-                parentQueryId
+                pendingHistory.getQueryId()
         );
+    }
+
+    private AiQueryHistory resolvePendingClarification(User worker, String conversationId, Integer requestedParentQueryId) {
+        AiQueryHistory latestPendingHistory = aiQueryHistoryRepository
+                .findFirstByWorkerAndConversationIdAndExecutionStatusOrderByCreatedAtDesc(
+                        worker,
+                        conversationId,
+                        AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED
+                )
+                .orElse(null);
+
+        if (latestPendingHistory != null) {
+            return latestPendingHistory;
+        }
+        if (requestedParentQueryId == null) {
+            return null;
+        }
+
+        AiQueryHistory requestedParentHistory = aiQueryHistoryRepository.findByQueryIdAndWorker(requestedParentQueryId, worker)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
+        if (requestedParentHistory.getExecutionStatus() != AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        if (requestedParentHistory.getConversationId() != null
+                && !requestedParentHistory.getConversationId().isBlank()
+                && !requestedParentHistory.getConversationId().equals(conversationId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return requestedParentHistory;
+    }
+
+    private boolean isExplicitNewQuestion(String question) {
+        String normalizedQuestion = question.replaceAll("\\s+", "");
+        if (isConditionOnlyFollowUp(question)) {
+            return false;
+        }
+        return normalizedQuestion.matches(".*(" + NEW_QUESTION_MARKERS + ").*")
+                && normalizedQuestion.matches(".*(" + REQUEST_MARKERS + ").*");
+    }
+
+    private boolean isConditionOnlyFollowUp(String question) {
+        String normalizedQuestion = question.replaceAll("\\s+", "");
+        boolean shortInput = normalizedQuestion.length() <= 30;
+        boolean hasConditionMarker = normalizedQuestion.matches(".*(" + CONDITION_MARKERS + ").*");
+        boolean hasRequestMarker = normalizedQuestion.matches(".*(" + REQUEST_MARKERS + ").*");
+        boolean hasNewQuestionMarker = normalizedQuestion.matches(".*(" + NEW_QUESTION_MARKERS + ").*");
+        return shortInput && hasConditionMarker && (!hasRequestMarker || !hasNewQuestionMarker);
+    }
+
+    private void cancelPendingClarification(AiQueryHistory pendingHistory) {
+        pendingHistory.setExecutionStatus(AiQueryHistory.ExecutionStatus.CANCELLED);
+        pendingHistory.setErrorLog("사용자가 pending clarification 상태에서 새 질문을 입력하여 취소했습니다.");
     }
 
     private String normalizeQuestion(String question) {
@@ -496,7 +545,18 @@ public class AiQueryServiceImpl implements AiQueryService {
         history.setModelName(modelName);
         history.setExecutionStatus(status);
         history.setErrorLog(errorLog);
-        return aiQueryHistoryRepository.save(history);
+        AiQueryHistory savedHistory = aiQueryHistoryRepository.save(history);
+        completeParentClarification(questionContext);
+        return savedHistory;
+    }
+
+    private void completeParentClarification(QuestionContext questionContext) {
+        if (questionContext.getParentQueryId() == null) {
+            return;
+        }
+        aiQueryHistoryRepository.findById(questionContext.getParentQueryId())
+                .filter(history -> history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED)
+                .ifPresent(history -> history.setExecutionStatus(AiQueryHistory.ExecutionStatus.CLARIFICATION_ANSWERED));
     }
 
     private AiQueryResponse toResponse(AiQueryHistory history, List<Map<String, Object>> rows) {
@@ -505,6 +565,7 @@ public class AiQueryServiceImpl implements AiQueryService {
         response.setQuestion(history.getNaturalQuestion());
         response.setConversationId(history.getConversationId());
         response.setClarificationOfQueryId(history.getParentQueryId());
+        response.setPendingClarificationQueryId(resolvePendingClarificationQueryId(history));
         response.setEffectiveQuestion(history.getEffectiveQuestion());
         response.setGeneratedSql(history.getGeneratedSql());
         response.setRows(rows);
@@ -519,6 +580,13 @@ public class AiQueryServiceImpl implements AiQueryService {
             response.setAnswer(history.getNaturalAnswer());
         }
         return response;
+    }
+
+    private Integer resolvePendingClarificationQueryId(AiQueryHistory history) {
+        if (history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED) {
+            return history.getQueryId();
+        }
+        return null;
     }
 
     private AiChartResponse resolveChart(AiQueryHistory history) {

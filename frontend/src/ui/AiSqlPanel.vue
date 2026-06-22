@@ -27,7 +27,7 @@ const isOpen = ref(false)
     </button>
 
     <div v-if="isOpen" class="border-t p-5" style="border-color: var(--color-border-muted);">
-      <pre class="overflow-x-auto rounded-lg p-4 text-xs leading-6" style="background-color: var(--color-surface-strong); color: var(--color-text-inverse);">{{ sql || '생성된 SQL이 없습니다.' }}</pre>
+      <pre class="overflow-x-auto rounded-lg p-4 app-type-xs leading-6" style="background-color: var(--color-surface-strong); color: var(--color-text-inverse);">{{ sql || '생성된 SQL이 없습니다.' }}</pre>
     </div>
   </div>
 </template>

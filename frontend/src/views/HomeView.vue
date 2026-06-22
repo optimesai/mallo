@@ -162,7 +162,7 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
           <div class="min-w-0">
             <p class="app-stat-label">{{ card.label }}</p>
             <p class="app-stat-value">{{ card.value }}</p>
-            <p class="mt-1 truncate text-xs app-table-muted">{{ card.caption }}</p>
+            <p class="mt-1 truncate app-type-xs app-table-muted">{{ card.caption }}</p>
           </div>
         </div>
       </section>
@@ -197,8 +197,8 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
                     :style="dashboardStore.selectedMetricId === metric.id ? 'color: var(--color-primary);' : 'color: var(--color-text-muted);'"
                   />
                   <div>
-                    <p class="text-sm app-table-main">{{ metric.label }}</p>
-                    <p class="mt-1 text-xs app-table-muted">{{ metric.chart.type }} 추천</p>
+                    <p class="app-type-sm app-table-main">{{ metric.label }}</p>
+                    <p class="mt-1 app-type-xs app-table-muted">{{ metric.chart.type }} 추천</p>
                   </div>
                 </button>
               </div>
@@ -206,8 +206,8 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
               <div v-if="dashboardStore.selectedMetric" class="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1fr)_22rem]">
                 <div class="space-y-4">
                   <div>
-                    <h3 class="text-lg app-table-main">{{ dashboardStore.selectedMetric.title }}</h3>
-                    <p class="mt-1 text-sm app-table-muted">{{ dashboardStore.selectedMetric.subtitle }}</p>
+                    <h3 class="app-type-lg app-table-main">{{ dashboardStore.selectedMetric.title }}</h3>
+                    <p class="mt-1 app-type-sm app-table-muted">{{ dashboardStore.selectedMetric.subtitle }}</p>
                   </div>
 
                   <AiChartPanel
@@ -244,7 +244,7 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
                 <AlertTriangle class="app-panel-icon" />
                 우선 확인 인사이트
               </h2>
-              <span class="text-xs app-table-muted">{{ dashboardStore.insights.length }}건</span>
+              <span class="app-type-xs app-table-muted">{{ dashboardStore.insights.length }}건</span>
             </div>
 
             <div class="divide-y" style="border-color: var(--color-border-muted);">
@@ -257,14 +257,14 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
                   <span class="app-status" :class="severityClass(insight.severity)">
                     {{ severityLabel(insight.severity) }}
                   </span>
-                  <span class="flex items-center gap-1 text-xs app-table-muted">
+                  <span class="flex items-center gap-1 app-type-xs app-table-muted">
                     <Database class="h-3.5 w-3.5" />
                     {{ insight.source }}
                   </span>
                 </div>
                 <div>
-                  <h3 class="text-sm app-table-main">{{ insight.title }}</h3>
-                  <p class="mt-1 text-sm leading-6 app-table-muted">{{ insight.description }}</p>
+                  <h3 class="app-type-sm app-table-main">{{ insight.title }}</h3>
+                  <p class="mt-1 app-type-sm leading-6 app-table-muted">{{ insight.description }}</p>
                 </div>
               </div>
             </div>

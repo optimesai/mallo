@@ -17,6 +17,8 @@ export type AiExecutionStatus =
   | 'ANSWER_GENERATION_FAILED'
   | 'SCHEMA_LOAD_FAILED'
   | 'CLARIFICATION_REQUIRED'
+  | 'CLARIFICATION_ANSWERED'
+  | 'CANCELLED'
   | 'SEMANTIC_VALIDATION_FAILED'
   | 'TIMEOUT'
 
@@ -51,6 +53,7 @@ export interface AiQueryResponse {
   question: string
   conversationId?: string
   clarificationOfQueryId?: number
+  pendingClarificationQueryId?: number
   effectiveQuestion?: string
   generatedSql: string
   rows: Record<string, unknown>[]

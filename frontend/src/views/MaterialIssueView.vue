@@ -153,7 +153,7 @@ async function selectRow(order: WorkOrderResponse) {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -178,7 +178,7 @@ async function selectRow(order: WorkOrderResponse) {
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -262,7 +262,7 @@ async function selectRow(order: WorkOrderResponse) {
             <col class="w-[180px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">ID</th>
               <th class="px-5 py-3">작업 지시 번호</th>
               <th class="px-5 py-3">생산 품목코드</th>
@@ -272,7 +272,7 @@ async function selectRow(order: WorkOrderResponse) {
               <th class="px-5 py-3">계획 일자</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
               v-for="order in filteredOrders"
               :key="order.orderId"
@@ -281,11 +281,11 @@ async function selectRow(order: WorkOrderResponse) {
               :class="{ 'app-bg-primary-soft': selectedOrder?.orderId === order.orderId }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ order.orderId }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">#{{ order.orderId }}</td>
               <!-- 작업 지시 번호 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ order.orderNo }}</td>
               <!-- 생산 품목코드 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ order.itemCode }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ order.itemCode }}</td>
               <!-- 생산 품목명 -->
               <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="order.itemName">
                 {{ order.itemName }}
@@ -297,7 +297,7 @@ async function selectRow(order: WorkOrderResponse) {
               <!-- 지시 상태 -->
               <td class="px-5 py-4 text-center">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="{
                     'app-bg-warning-soft app-border app-text-warning': order.status === 'READY',
                     'app-bg-primary-soft app-border app-accent': order.status === 'RUN',
@@ -337,11 +337,11 @@ async function selectRow(order: WorkOrderResponse) {
       <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Package class="w-5 h-5 app-accent" />
-          <h3 class="app-font-emphasis text-sm">BOM 부품명세 및 가용재고 대조 검증 (작업 지시: {{ selectedOrder.orderNo }})</h3>
+          <h3 class="app-font-emphasis app-type-sm">BOM 부품명세 및 가용재고 대조 검증 (작업 지시: {{ selectedOrder.orderNo }})</h3>
         </div>
         <button
           @click="selectedOrder = null"
-          class="app-text-muted text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
+          class="app-text-muted app-type-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -349,17 +349,17 @@ async function selectRow(order: WorkOrderResponse) {
 
       <div class="p-6 space-y-6">
         <!-- 메타 요약 정보 -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 app-bg-muted border app-border-muted rounded-xl text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 app-bg-muted border app-border-muted rounded-xl app-type-sm">
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">생산 품목</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">생산 품목</span>
             <span class="app-font-strong app-text-strong mt-1 block">{{ selectedOrder.itemName }} ({{ selectedOrder.itemCode }})</span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">목표 생산량</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">목표 생산량</span>
             <span class="app-font-emphasis app-text-strong mt-1 block">{{ selectedOrder.targetQty.toLocaleString() }} EA</span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">출고 적합 여부</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출고 적합 여부</span>
             <span class="mt-1 block">
               <span
                 v-if="isStockSufficient"
@@ -373,7 +373,7 @@ async function selectRow(order: WorkOrderResponse) {
             </span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">지시 처리 상태</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">지시 처리 상태</span>
             <span class="app-font-strong app-accent mt-1 block uppercase">{{ selectedOrder.status }}</span>
           </div>
         </div>
@@ -391,7 +391,7 @@ async function selectRow(order: WorkOrderResponse) {
               <col class="w-[160px]" />
             </colgroup>
             <thead>
-              <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+              <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
                 <th class="px-5 py-3">자재 코드</th>
                 <th class="px-5 py-3">자재명</th>
                 <th class="px-5 py-3">단위</th>
@@ -401,7 +401,7 @@ async function selectRow(order: WorkOrderResponse) {
                 <th class="px-5 py-3 text-center">충족 상태</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 text-sm">
+            <tbody class="divide-y divide-slate-100 app-type-sm">
               <tr
                 v-for="mat in selectedOrderBOMStatus"
                 :key="mat.itemCode"
@@ -409,7 +409,7 @@ async function selectRow(order: WorkOrderResponse) {
                 :class="{ 'app-bg-danger-soft/10': !mat.isSufficient }"
               >
                 <!-- 자재 코드 -->
-                <td class="px-5 py-4 font-mono text-xs app-font-strong app-text-strong">{{ mat.itemCode }}</td>
+                <td class="px-5 py-4 font-mono app-type-xs app-font-strong app-text-strong">{{ mat.itemCode }}</td>
                 <!-- 자재명 -->
                 <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="mat.itemName">
                   {{ mat.itemName }}
@@ -432,13 +432,13 @@ async function selectRow(order: WorkOrderResponse) {
                 <td class="px-5 py-4 text-center">
                   <span
                     v-if="mat.isSufficient"
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs app-font-strong app-bg-success-soft app-text-success border app-border"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full app-type-xs app-font-strong app-bg-success-soft app-text-success border app-border"
                   >
                     충족
                   </span>
                   <span
                     v-else
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs app-font-strong app-bg-danger-soft app-text-danger border app-border"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full app-type-xs app-font-strong app-bg-danger-soft app-text-danger border app-border"
                   >
                     부족
                   </span>
@@ -450,7 +450,7 @@ async function selectRow(order: WorkOrderResponse) {
 
         <!-- 실행 액션 툴바 -->
         <div class="flex items-center justify-between pt-4 border-t app-border-muted">
-          <div class="text-xs app-muted">
+          <div class="app-type-xs app-muted">
             <span v-if="selectedOrder.status !== 'READY'">
               이미 불출 처리되었거나 마감된 작업 지시 건입니다. (불출 실행 비활성화)
             </span>
@@ -466,7 +466,7 @@ async function selectRow(order: WorkOrderResponse) {
             <button
               :disabled="selectedOrder.status !== 'READY' || !isStockSufficient || isSubmitting"
               @click="handleIssueMaterials"
-              class="h-10 px-5 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md flex items-center gap-2 transition"
+              class="h-10 px-5 app-type-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md flex items-center gap-2 transition"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               <Play v-else class="w-4 h-4 fill-current" />

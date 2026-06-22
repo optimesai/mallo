@@ -172,7 +172,7 @@ async function selectRow(item: any) {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -184,7 +184,7 @@ async function selectRow(item: any) {
       <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
       <div>
         <h4 class="app-alert-title">오류가 발생했습니다</h4>
-        <p class="text-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
+        <p class="app-type-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
       </div>
     </div>
 
@@ -199,7 +199,7 @@ async function selectRow(item: any) {
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -214,8 +214,8 @@ async function selectRow(item: any) {
           <Package class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">재고 품목 종류</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalItems }} 종</span>
+          <span class="app-type-xs app-font-label app-text-muted block">재고 품목 종류</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalItems }} 종</span>
         </div>
       </div>
 
@@ -225,8 +225,8 @@ async function selectRow(item: any) {
           <Layers class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">전체 재고 수량</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalStockQty.toLocaleString() }} EA</span>
+          <span class="app-type-xs app-font-label app-text-muted block">전체 재고 수량</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalStockQty.toLocaleString() }} EA</span>
         </div>
       </div>
 
@@ -242,9 +242,9 @@ async function selectRow(item: any) {
           <AlertTriangle class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">안전재고 미달 품목</span>
+          <span class="app-type-xs app-font-label app-text-muted block">안전재고 미달 품목</span>
           <span
-            class="text-2xl app-font-emphasis mt-0.5 block"
+            class="app-type-2xl app-font-emphasis mt-0.5 block"
             :class="stats.warningCount > 0 ? 'app-text-danger animate-pulse-subtle' : 'app-text-strong'"
           >
             {{ stats.warningCount }} 건
@@ -307,7 +307,7 @@ async function selectRow(item: any) {
                 type="checkbox"
                 class="w-4.5 h-4.5 rounded app-text-danger app-border-strong"
               />
-              <span class="text-sm app-font-label app-text-danger">안전재고 미달 품목만 표시</span>
+              <span class="app-type-sm app-font-label app-text-danger">안전재고 미달 품목만 표시</span>
             </label>
           </div>
         </div>
@@ -344,7 +344,7 @@ async function selectRow(item: any) {
             <col class="w-[140px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
               <th class="px-5 py-3">ID</th>
               <th class="px-5 py-3">품목 코드</th>
               <th class="px-5 py-3">품목명</th>
@@ -356,7 +356,7 @@ async function selectRow(item: any) {
               <th class="px-5 py-3">최종 수정일시</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
               v-for="item in filteredInventories"
               :key="item.itemCode"
@@ -368,7 +368,7 @@ async function selectRow(item: any) {
               }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">{{ item.inventoryId ? `#${item.inventoryId}` : '-' }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">{{ item.inventoryId ? `#${item.inventoryId}` : '-' }}</td>
               <!-- 품목 코드 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
@@ -383,7 +383,7 @@ async function selectRow(item: any) {
                 </span>
               </td>
               <!-- 로케이션 코드 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode || '-' }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ item.locationCode || '-' }}</td>
               <!-- 현재고 수량 -->
               <td class="px-5 py-4 text-right app-font-emphasis" :class="item.isUnderSafety ? 'app-text-danger' : 'app-text-strong'">
                 {{ item.currentQty.toLocaleString() }}
@@ -396,19 +396,19 @@ async function selectRow(item: any) {
               <td class="px-5 py-4 text-center">
                 <span
                   v-if="item.isUnderSafety"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong app-bg-danger-soft app-text-danger border app-border animate-pulse-subtle shadow-sm"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong app-bg-danger-soft app-text-danger border app-border animate-pulse-subtle shadow-sm"
                 >
                   <AlertTriangle class="w-3.5 h-3.5 app-text-danger" /> 부족
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong app-bg-success-soft app-text-success border app-border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong app-bg-success-soft app-text-success border app-border"
                 >
                   정상
                 </span>
               </td>
               <!-- 최종 수정일시 -->
-              <td class="px-5 py-4 text-xs app-text-muted font-mono">
+              <td class="px-5 py-4 app-type-xs app-text-muted font-mono">
                 {{ item.updatedAt ? item.updatedAt.replace('T', ' ').substring(0, 19) : '-' }}
               </td>
             </tr>
@@ -450,7 +450,7 @@ async function selectRow(item: any) {
       <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Package class="w-5 h-5 app-accent" />
-          <h3 class="app-font-emphasis text-sm">
+          <h3 class="app-font-emphasis app-type-sm">
             재고 상세 정보
             <span v-if="inventoryStore.selectedDetail.inventoryId">(ID: {{ inventoryStore.selectedDetail.inventoryId }})</span>
             <span v-else>(품목 기준)</span>
@@ -458,7 +458,7 @@ async function selectRow(item: any) {
         </div>
         <button
           @click="selectedInventory = null; inventoryStore.selectedDetail = null"
-          class="app-text-muted text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
+          class="app-text-muted app-type-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -470,7 +470,7 @@ async function selectRow(item: any) {
           <h4 class="app-section-kicker">
             품목 마스터 세부 정보
           </h4>
-          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 text-sm">
+          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 app-type-sm">
             <div class="grid grid-cols-3">
               <span class="app-text-muted app-font-strong">품목 코드</span>
               <span class="col-span-2 font-mono app-font-strong app-text-strong">{{ inventoryStore.selectedDetail.itemCode }}</span>
@@ -491,7 +491,7 @@ async function selectRow(item: any) {
               <span class="app-text-muted app-font-strong">품목 유형</span>
               <span class="col-span-2">
                 <span
-                  class="px-2 py-0.5 rounded text-xs app-font-emphasis border"
+                  class="px-2 py-0.5 rounded app-type-xs app-font-emphasis border"
                   :class="{
                     'app-bg-warning-soft app-border app-text-warning': selectedItemDetail?.itemType === 'RAW',
                     'app-bg-primary-soft app-border app-accent': selectedItemDetail?.itemType === 'HALF',
@@ -510,7 +510,7 @@ async function selectRow(item: any) {
           <h4 class="app-section-kicker">
             재고 및 보관 정보
           </h4>
-          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 text-sm">
+          <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 app-type-sm">
             <div class="grid grid-cols-3">
               <span class="app-text-muted app-font-strong">적재 창고</span>
               <span class="col-span-2 app-text-strong app-font-strong">{{ inventoryStore.selectedDetail.warehouseName || '-' }}</span>

@@ -260,12 +260,12 @@ function formatCell(value: unknown) {
         <div class="flex items-start gap-3 rounded-lg border p-4" style="border-color: var(--color-border-muted); background-color: var(--color-surface-muted);">
           <Table2 class="mt-0.5 h-5 w-5 app-table-muted" />
           <div>
-            <p class="text-sm app-table-main">표 형식이 가장 적합합니다.</p>
-            <p class="mt-1 text-xs leading-5 app-table-muted">{{ chart.reason || '목록 또는 상세 데이터는 그래프보다 표로 확인하는 편이 정확합니다.' }}</p>
+            <p class="app-type-sm app-table-main">표 형식이 가장 적합합니다.</p>
+            <p class="mt-1 app-type-xs leading-5 app-table-muted">{{ chart.reason || '목록 또는 상세 데이터는 그래프보다 표로 확인하는 편이 정확합니다.' }}</p>
           </div>
         </div>
         <div class="overflow-hidden rounded-lg border" style="border-color: var(--color-border);">
-          <table class="w-full text-xs">
+          <table class="w-full app-type-xs">
             <thead style="background-color: var(--color-surface-muted);">
               <tr>
                 <th v-for="column in columns.slice(0, 4)" :key="column" class="px-3 py-2 text-left app-table-muted">
@@ -295,7 +295,7 @@ function formatCell(value: unknown) {
       </div>
 
       <div v-else-if="chart.type === 'BAR' || chart.type === 'HORIZONTAL_BAR'" class="space-y-3">
-        <div v-for="point in points" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
+        <div v-for="point in points" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 app-type-xs">
           <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
           <div class="h-6 rounded app-bg-muted">
             <div
@@ -309,7 +309,7 @@ function formatCell(value: unknown) {
       </div>
 
       <div v-else-if="chart.type === 'STACKED_BAR'" class="space-y-3">
-        <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
+        <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 app-type-xs">
           <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
           <div class="flex h-6 overflow-hidden rounded app-bg-muted">
             <div
@@ -340,7 +340,7 @@ function formatCell(value: unknown) {
           />
         </svg>
         <div class="space-y-2">
-          <div v-for="segment in donutSegments.slice(0, 6)" :key="segment.label" class="flex items-center justify-between gap-3 text-xs">
+          <div v-for="segment in donutSegments.slice(0, 6)" :key="segment.label" class="flex items-center justify-between gap-3 app-type-xs">
             <span class="flex min-w-0 items-center gap-2">
               <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }"></span>
               <span class="truncate app-table-strong">{{ segment.label }}</span>
@@ -438,7 +438,7 @@ function formatCell(value: unknown) {
       </div>
 
       <div v-else-if="chart.type === 'PARETO'" class="space-y-3">
-        <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
+        <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 app-type-xs">
           <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
           <div class="h-6 rounded app-bg-muted">
             <div
@@ -464,7 +464,7 @@ function formatCell(value: unknown) {
       >
         <div class="app-modal-shell w-full max-w-5xl">
           <div class="app-modal-head">
-            <h3 class="flex items-center gap-2 text-sm font-bold">
+            <h3 class="flex items-center gap-2 app-type-sm font-bold">
               <BarChart3 class="h-4 w-4" />
               {{ chart?.title || '차트 추천 크게 보기' }}
             </h3>
@@ -487,12 +487,12 @@ function formatCell(value: unknown) {
               <div class="flex items-start gap-3 rounded-lg border p-5" style="border-color: var(--color-border-muted); background-color: var(--color-surface-muted);">
                 <Table2 class="mt-0.5 h-5 w-5 app-table-muted" />
                 <div>
-                  <p class="text-sm app-table-main">표 형식이 가장 적합합니다.</p>
-                  <p class="mt-1 text-xs leading-5 app-table-muted">{{ chart.reason || '목록 또는 상세 데이터는 그래프보다 표로 확인하는 편이 정확합니다.' }}</p>
+                  <p class="app-type-sm app-table-main">표 형식이 가장 적합합니다.</p>
+                  <p class="mt-1 app-type-xs leading-5 app-table-muted">{{ chart.reason || '목록 또는 상세 데이터는 그래프보다 표로 확인하는 편이 정확합니다.' }}</p>
                 </div>
               </div>
               <div class="overflow-auto rounded-lg border" style="border-color: var(--color-border);">
-                <table class="w-full min-w-[720px] text-xs">
+                <table class="w-full min-w-[720px] app-type-xs">
                   <thead style="background-color: var(--color-surface-muted);">
                     <tr>
                       <th v-for="column in columns" :key="column" class="px-3 py-2 text-left app-table-muted">
@@ -517,12 +517,12 @@ function formatCell(value: unknown) {
               </div>
               <div>
 	                <p class="app-stat-label">{{ formatMetricLabel(primaryYKey) }}</p>
-                <p class="text-5xl app-table-main">{{ statValue.toLocaleString() }}</p>
+                <p class="app-type-5xl app-table-main">{{ statValue.toLocaleString() }}</p>
               </div>
             </div>
 
 	            <div v-else-if="chart.type === 'BAR' || chart.type === 'HORIZONTAL_BAR'" class="space-y-4">
-	              <div v-for="point in points" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	              <div v-for="point in points" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 app-type-sm">
 	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
 	                <div class="h-9 rounded app-bg-muted">
 	                  <div
@@ -536,13 +536,13 @@ function formatCell(value: unknown) {
 	            </div>
 
 	            <div v-else-if="chart.type === 'STACKED_BAR'" class="space-y-4">
-	              <div class="flex flex-wrap gap-3 text-xs">
+	              <div class="flex flex-wrap gap-3 app-type-xs">
 	                <span v-for="segment in stackedPoints[0]?.segments ?? []" :key="segment.key" class="flex items-center gap-2 app-table-muted">
 	                  <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.color }"></span>
 	                  {{ segment.label }}
 	                </span>
 	              </div>
-	              <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	              <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 app-type-sm">
 	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
 	                <div class="flex h-9 overflow-hidden rounded app-bg-muted">
 	                  <div
@@ -574,7 +574,7 @@ function formatCell(value: unknown) {
                 />
               </svg>
               <div class="space-y-3">
-                <div v-for="segment in donutSegments" :key="segment.label" class="flex items-center justify-between gap-4 text-sm">
+                <div v-for="segment in donutSegments" :key="segment.label" class="flex items-center justify-between gap-4 app-type-sm">
                   <span class="flex min-w-0 items-center gap-2">
                     <span class="h-3 w-3 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }"></span>
                     <span class="truncate app-table-strong">{{ segment.label }}</span>
@@ -672,7 +672,7 @@ function formatCell(value: unknown) {
 	            </div>
 
 	            <div v-else-if="chart.type === 'PARETO'" class="space-y-4">
-	              <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	              <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 app-type-sm">
 	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
 	                <div class="h-9 rounded app-bg-muted">
 	                  <div

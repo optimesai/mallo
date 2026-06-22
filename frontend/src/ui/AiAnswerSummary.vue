@@ -74,7 +74,7 @@ const chartTypeLabel = computed(() => {
             class="mt-0.5 h-5 w-5 shrink-0"
             style="color: var(--color-success);"
           />
-          <p class="min-w-0 whitespace-pre-line break-words text-sm leading-6">{{ answerText }}</p>
+          <p class="min-w-0 whitespace-pre-line break-words app-type-sm leading-6">{{ answerText }}</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ const chartTypeLabel = computed(() => {
             <Sparkles class="h-4 w-4 app-table-muted" />
             <p class="app-stat-label-compact">추천 차트</p>
           </div>
-          <p class="app-stat-value-compact min-w-0 break-words text-lg leading-6">{{ chartTypeLabel }}</p>
+          <p class="app-stat-value-compact min-w-0 break-words app-type-lg leading-6">{{ chartTypeLabel }}</p>
         </div>
 
         <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
