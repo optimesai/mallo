@@ -3,6 +3,9 @@ import type { ApiResponse } from '@/api/authApi'
 
 export interface AiQueryRequest {
   question: string
+  conversationId?: string
+  clarificationOfQueryId?: number
+  clientMessageId?: string
 }
 
 export type AiExecutionStatus =
@@ -17,13 +20,28 @@ export type AiExecutionStatus =
   | 'SEMANTIC_VALIDATION_FAILED'
   | 'TIMEOUT'
 
-export type AiChartType = 'NONE' | 'TABLE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
+export type AiChartType =
+  | 'NONE'
+  | 'TABLE'
+  | 'STAT'
+  | 'BAR'
+  | 'LINE'
+  | 'DONUT'
+  | 'HORIZONTAL_BAR'
+  | 'STACKED_BAR'
+  | 'AREA'
+  | 'COMBO'
+  | 'PARETO'
 
 export interface AiChartResponse {
   enabled: boolean
   type: AiChartType
   xKey?: string
   yKeys: string[]
+  xLabel?: string
+  yLabels?: Record<string, string>
+  labelKey?: string
+  labelFormat?: string
   title?: string
   reason?: string
 }
@@ -31,6 +49,9 @@ export interface AiChartResponse {
 export interface AiQueryResponse {
   queryId: number
   question: string
+  conversationId?: string
+  clarificationOfQueryId?: number
+  effectiveQuestion?: string
   generatedSql: string
   rows: Record<string, unknown>[]
   rowCount: number

@@ -13,6 +13,9 @@ public class AiQueryResponse {
 
     private Integer queryId;
     private String question;
+    private String conversationId;
+    private Integer clarificationOfQueryId;
+    private String effectiveQuestion;
     private String generatedSql;
     private List<Map<String, Object>> rows;
     private Integer rowCount;

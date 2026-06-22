@@ -19,6 +19,18 @@ interface LinePoint extends ChartPoint {
   shortLabel: string
 }
 
+interface StackedPoint {
+  label: string
+  total: number
+  segments: {
+    key: string
+    label: string
+    value: number
+    percent: number
+    color: string
+  }[]
+}
+
 const primaryYKey = computed(() => props.chart?.yKeys?.[0])
 const isModalOpen = ref(false)
 const donutColors = ['#2563eb', '#16a34a', '#f97316', '#dc2626', '#7c3aed', '#0891b2', '#64748b', '#ca8a04']
@@ -43,7 +55,7 @@ const previewRows = computed(() => props.rows.slice(0, 5))
 const modalRows = computed(() => props.rows.slice(0, 20))
 
 const points = computed<ChartPoint[]>(() => {
-  const xKey = props.chart?.xKey
+  const xKey = props.chart?.labelKey || props.chart?.xKey
   const yKey = primaryYKey.value
   if (!xKey || !yKey) return []
 
@@ -89,6 +101,14 @@ const linePath = computed(() => {
     .join(' ')
 })
 
+const areaPath = computed(() => {
+  if (linePoints.value.length === 0 || !linePath.value) return ''
+  const firstPoint = linePoints.value[0]
+  const lastPoint = linePoints.value[linePoints.value.length - 1]
+  const baseline = lineChart.top + lineInnerHeight
+  return `${linePath.value} L ${lastPoint.x.toFixed(1)} ${baseline} L ${firstPoint.x.toFixed(1)} ${baseline} Z`
+})
+
 const linePoints = computed<LinePoint[]>(() => {
   if (points.value.length === 0) return []
   const gap = points.value.length === 1 ? 0 : lineInnerWidth / (points.value.length - 1)
@@ -124,6 +144,42 @@ const statValue = computed(() => {
   return props.rows.reduce((sum, row) => sum + toNumber(row[yKey]), 0)
 })
 
+const stackedPoints = computed<StackedPoint[]>(() => {
+  const xKey = props.chart?.labelKey || props.chart?.xKey
+  const yKeys = props.chart?.yKeys ?? []
+  if (!xKey || yKeys.length === 0) return []
+
+  return props.rows.slice(0, 10).map(row => {
+    const values = yKeys.map((key, index) => ({
+      key,
+      label: formatMetricLabel(key),
+      value: Math.max(toNumber(row[key]), 0),
+      color: donutColors[index % donutColors.length]
+    }))
+    const total = values.reduce((sum, item) => sum + item.value, 0)
+    return {
+      label: formatLabel(row[xKey]),
+      total,
+      segments: values.map(item => ({
+        ...item,
+        percent: total > 0 ? (item.value / total) * 100 : 0
+      }))
+    }
+  })
+})
+
+const paretoPoints = computed(() => {
+  const total = points.value.reduce((sum, point) => sum + Math.max(point.value, 0), 0)
+  let cumulative = 0
+  return points.value.map(point => {
+    cumulative += Math.max(point.value, 0)
+    return {
+      ...point,
+      cumulativePercent: total > 0 ? (cumulative / total) * 100 : 0
+    }
+  })
+})
+
 function toNumber(value: unknown) {
   if (typeof value === 'number') return value
   if (typeof value === 'string') {
@@ -142,6 +198,23 @@ function formatAxisLabel(value: unknown) {
   const label = formatLabel(value)
   const normalized = label.includes('T') ? label.split('T')[0] : label
   return normalized.length > 12 ? `${normalized.slice(0, 12)}...` : normalized
+}
+
+function formatMultilineLabel(value: unknown) {
+  return formatLabel(value).split('\n')
+}
+
+function formatMetricLabel(key?: string) {
+  if (!key) return '값'
+  return props.chart?.yLabels?.[key] || key
+}
+
+function formatXLabel() {
+  return props.chart?.xLabel || props.chart?.xKey || 'x축'
+}
+
+function barWidth(value: number, max: number) {
+  return max > 0 ? `${Math.max((value / max) * 100, 2)}%` : '0%'
 }
 
 function formatChartValue(value: number) {
@@ -216,22 +289,37 @@ function formatCell(value: unknown) {
           <BarChart3 class="h-5 w-5" />
         </div>
         <div>
-          <p class="app-stat-label">{{ primaryYKey || '합계' }}</p>
+          <p class="app-stat-label">{{ formatMetricLabel(primaryYKey) }}</p>
           <p class="app-stat-value">{{ statValue.toLocaleString() }}</p>
         </div>
       </div>
 
-      <div v-else-if="chart.type === 'BAR'" class="space-y-3">
+      <div v-else-if="chart.type === 'BAR' || chart.type === 'HORIZONTAL_BAR'" class="space-y-3">
         <div v-for="point in points" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
-          <span class="truncate app-table-strong">{{ point.label }}</span>
+          <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
           <div class="h-6 rounded app-bg-muted">
             <div
               class="h-6 rounded"
               style="background-color: var(--color-primary);"
-              :style="{ width: maxValue > 0 ? `${Math.max((point.value / maxValue) * 100, 2)}%` : '0%' }"
+              :style="{ width: barWidth(point.value, maxValue) }"
             ></div>
           </div>
           <span class="text-right tabular-nums app-table-number">{{ point.value.toLocaleString() }}</span>
+        </div>
+      </div>
+
+      <div v-else-if="chart.type === 'STACKED_BAR'" class="space-y-3">
+        <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
+          <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
+          <div class="flex h-6 overflow-hidden rounded app-bg-muted">
+            <div
+              v-for="segment in point.segments"
+              :key="segment.key"
+              class="h-6"
+              :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"
+            ></div>
+          </div>
+          <span class="text-right tabular-nums app-table-number">{{ point.total.toLocaleString() }}</span>
         </div>
       </div>
 
@@ -262,7 +350,7 @@ function formatCell(value: unknown) {
         </div>
       </div>
 
-      <div v-else-if="chart.type === 'LINE'" class="space-y-4">
+      <div v-else-if="chart.type === 'LINE' || chart.type === 'AREA' || chart.type === 'COMBO'" class="space-y-4">
         <svg :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`" class="h-64 w-full overflow-visible">
           <g class="app-table-muted" font-size="11">
             <line
@@ -298,7 +386,7 @@ function formatCell(value: unknown) {
               text-anchor="middle"
               fill="currentColor"
             >
-              {{ chart.xKey || 'x축' }}
+              {{ formatXLabel() }}
             </text>
             <text
               :x="18"
@@ -307,8 +395,27 @@ function formatCell(value: unknown) {
               fill="currentColor"
               transform="rotate(-90 18 125)"
             >
-              {{ primaryYKey || 'y축' }}
+              {{ formatMetricLabel(primaryYKey) }}
             </text>
+          </g>
+          <path
+            v-if="chart.type === 'AREA'"
+            :d="areaPath"
+            fill="var(--color-primary)"
+            opacity="0.16"
+          />
+          <g v-if="chart.type === 'COMBO'">
+            <rect
+              v-for="point in linePoints"
+              :key="`bar-${point.label}`"
+              :x="point.x - 10"
+              :y="point.y"
+              width="20"
+              :height="lineChart.top + lineInnerHeight - point.y"
+              rx="3"
+              fill="var(--color-primary)"
+              opacity="0.25"
+            />
           </g>
           <path
             :d="linePath"
@@ -328,6 +435,20 @@ function formatCell(value: unknown) {
             </text>
           </g>
         </svg>
+      </div>
+
+      <div v-else-if="chart.type === 'PARETO'" class="space-y-3">
+        <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[8rem_1fr_5rem] items-center gap-3 text-xs">
+          <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
+          <div class="h-6 rounded app-bg-muted">
+            <div
+              class="h-6 rounded"
+              style="background-color: var(--color-primary);"
+              :style="{ width: barWidth(point.value, maxValue) }"
+            ></div>
+          </div>
+          <span class="text-right tabular-nums app-table-number">{{ point.cumulativePercent.toFixed(1) }}%</span>
+        </div>
       </div>
 
       <div v-else class="app-empty py-10">
@@ -395,24 +516,46 @@ function formatCell(value: unknown) {
                 <BarChart3 class="h-7 w-7" />
               </div>
               <div>
-                <p class="app-stat-label">{{ primaryYKey || '합계' }}</p>
+	                <p class="app-stat-label">{{ formatMetricLabel(primaryYKey) }}</p>
                 <p class="text-5xl app-table-main">{{ statValue.toLocaleString() }}</p>
               </div>
             </div>
 
-            <div v-else-if="chart.type === 'BAR'" class="space-y-4">
-              <div v-for="point in points" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
-                <span class="truncate app-table-strong">{{ point.label }}</span>
-                <div class="h-9 rounded app-bg-muted">
-                  <div
-                    class="h-9 rounded"
-                    style="background-color: var(--color-primary);"
-                    :style="{ width: maxValue > 0 ? `${Math.max((point.value / maxValue) * 100, 2)}%` : '0%' }"
-                  ></div>
-                </div>
-                <span class="text-right tabular-nums app-table-number">{{ point.value.toLocaleString() }}</span>
-              </div>
-            </div>
+	            <div v-else-if="chart.type === 'BAR' || chart.type === 'HORIZONTAL_BAR'" class="space-y-4">
+	              <div v-for="point in points" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
+	                <div class="h-9 rounded app-bg-muted">
+	                  <div
+	                    class="h-9 rounded"
+	                    style="background-color: var(--color-primary);"
+	                    :style="{ width: barWidth(point.value, maxValue) }"
+	                  ></div>
+	                </div>
+	                <span class="text-right tabular-nums app-table-number">{{ point.value.toLocaleString() }}</span>
+	              </div>
+	            </div>
+
+	            <div v-else-if="chart.type === 'STACKED_BAR'" class="space-y-4">
+	              <div class="flex flex-wrap gap-3 text-xs">
+	                <span v-for="segment in stackedPoints[0]?.segments ?? []" :key="segment.key" class="flex items-center gap-2 app-table-muted">
+	                  <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.color }"></span>
+	                  {{ segment.label }}
+	                </span>
+	              </div>
+	              <div v-for="point in stackedPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
+	                <div class="flex h-9 overflow-hidden rounded app-bg-muted">
+	                  <div
+	                    v-for="segment in point.segments"
+	                    :key="segment.key"
+	                    class="h-9"
+	                    :title="`${segment.label}: ${formatChartValue(segment.value)}`"
+	                    :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"
+	                  ></div>
+	                </div>
+	                <span class="text-right tabular-nums app-table-number">{{ point.total.toLocaleString() }}</span>
+	              </div>
+	            </div>
 
             <div v-else-if="chart.type === 'DONUT'" class="grid grid-cols-[18rem_1fr] items-center gap-8">
               <svg viewBox="0 0 42 42" class="h-72 w-72 -rotate-90">
@@ -441,8 +584,8 @@ function formatCell(value: unknown) {
               </div>
             </div>
 
-            <div v-else-if="chart.type === 'LINE'" class="space-y-5">
-              <svg :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`" class="h-96 w-full overflow-visible">
+	            <div v-else-if="chart.type === 'LINE' || chart.type === 'AREA' || chart.type === 'COMBO'" class="space-y-5">
+	              <svg :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`" class="h-96 w-full overflow-visible">
                 <g class="app-table-muted" font-size="11">
                   <line
                     :x1="lineChart.left"
@@ -477,7 +620,7 @@ function formatCell(value: unknown) {
                     text-anchor="middle"
                     fill="currentColor"
                   >
-                    {{ chart.xKey || 'x축' }}
+	                    {{ formatXLabel() }}
                   </text>
                   <text
                     :x="18"
@@ -486,11 +629,30 @@ function formatCell(value: unknown) {
                     fill="currentColor"
                     transform="rotate(-90 18 125)"
                   >
-                    {{ primaryYKey || 'y축' }}
-                  </text>
-                </g>
-                <path
-                  :d="linePath"
+	                    {{ formatMetricLabel(primaryYKey) }}
+	                  </text>
+	                </g>
+	                <path
+	                  v-if="chart.type === 'AREA'"
+	                  :d="areaPath"
+	                  fill="var(--color-primary)"
+	                  opacity="0.16"
+	                />
+	                <g v-if="chart.type === 'COMBO'">
+	                  <rect
+	                    v-for="point in linePoints"
+	                    :key="`modal-bar-${point.label}`"
+	                    :x="point.x - 12"
+	                    :y="point.y"
+	                    width="24"
+	                    :height="lineChart.top + lineInnerHeight - point.y"
+	                    rx="4"
+	                    fill="var(--color-primary)"
+	                    opacity="0.25"
+	                  />
+	                </g>
+	                <path
+	                  :d="linePath"
                   fill="none"
                   stroke="var(--color-primary)"
                   stroke-width="3"
@@ -506,8 +668,22 @@ function formatCell(value: unknown) {
                     {{ point.shortLabel }}
                   </text>
                 </g>
-              </svg>
-            </div>
+	              </svg>
+	            </div>
+
+	            <div v-else-if="chart.type === 'PARETO'" class="space-y-4">
+	              <div v-for="point in paretoPoints" :key="point.label" class="grid grid-cols-[12rem_1fr_7rem] items-center gap-4 text-sm">
+	                <span class="whitespace-pre-line break-words app-table-strong">{{ point.label }}</span>
+	                <div class="h-9 rounded app-bg-muted">
+	                  <div
+	                    class="h-9 rounded"
+	                    style="background-color: var(--color-primary);"
+	                    :style="{ width: barWidth(point.value, maxValue) }"
+	                  ></div>
+	                </div>
+	                <span class="text-right tabular-nums app-table-number">{{ point.cumulativePercent.toFixed(1) }}%</span>
+	              </div>
+	            </div>
 
             <div v-else class="app-empty py-16">
               {{ chart.type }} 차트는 표 형태로 확인해 주세요.
