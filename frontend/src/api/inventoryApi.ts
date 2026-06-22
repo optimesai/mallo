@@ -3,13 +3,13 @@ import type { ApiResponse } from '@/api/authApi'
 import type { PageResponse } from '@/api/types'
 
 export interface CurrentInventoryResponse {
-  inventoryId: number
+  inventoryId: number | null
   itemCode: string
   itemName: string
-  locationCode: string
-  warehouseName: string
+  locationCode: string | null
+  warehouseName: string | null
   currentQty: number
-  updatedAt: string
+  updatedAt: string | null
 }
 
 export interface TransactionHistoryResponse {

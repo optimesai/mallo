@@ -80,6 +80,7 @@ const executionValidationMessages = computed(() => {
   if (!form.routingId) messages.push('실제 수행 공정을 선택해주세요.')
   if (selectedOrder.value && executionRoutingOptions.value.length === 0) messages.push('현재 등록 가능한 공정이 없습니다.')
   if (form.goodQty + form.defectQty <= 0) messages.push('양품과 불량 수량의 합계는 1 이상이어야 합니다.')
+  if (selectedOperationProgress.value && form.goodQty + form.defectQty > getRemainingOperationQty(selectedOperationProgress.value)) messages.push('선택 공정의 잔여 수량을 초과할 수 없습니다.')
   if (form.defectQty > 0 && !form.defectReason?.trim()) messages.push('불량 수량이 있으면 불량 사유를 입력해주세요.')
   if (form.manHoursMinutes <= 0) messages.push('총 소요 시간은 1분 이상이어야 합니다.')
 
@@ -106,12 +107,15 @@ const operationOptions = computed(() => routings.value.filter((routing) => {
   return true
 }))
 const executionRoutingOptions = computed(() => {
-  return operationProgresses.value.filter((progress) => getRemainingOperationQty(progress) > 0)
+  return operationProgresses.value
 })
 const currentOperationProgress = computed(() => {
   return operationProgresses.value.find((progress) => progress.currentOperation)
-    ?? executionRoutingOptions.value[0]
+    ?? operationProgresses.value[0]
     ?? null
+})
+const selectedOperationProgress = computed(() => {
+  return operationProgresses.value.find((progress) => progress.routingId === form.routingId) ?? null
 })
 const keywordSuggestions = computed(() => {
   const query = keywordInput.value.trim().toLowerCase()
@@ -230,6 +234,12 @@ function getRemainingOperationQty(progress: WorkOrderOperationProgressResponse) 
   return Math.max(progress.availableQty - progress.completedQty, 0)
 }
 
+function getOperationProgressStatusLabel(progress: WorkOrderOperationProgressResponse) {
+  if (progress.currentOperation) return '진행 가능'
+  if (progress.completed) return '완료'
+  return '대기'
+}
+
 function getOrderOperationLabel(order: WorkOrderResponse) {
   const operationSeq = order.currentOperationSeq ?? order.operationSeq
   const operationName = order.currentOperationName ?? order.operationName
@@ -314,9 +324,10 @@ function validateExecutionForm() {
   if (!selectedOrder.value) return '작업 지시를 먼저 선택해주세요.'
   if (!canSubmitExecution.value) return '진행(RUN) 상태의 작업 지시에만 실적을 등록할 수 있습니다.'
   if (!form.routingId) return '실제 수행 공정을 선택해주세요.'
-  if (!executionRoutingOptions.value.some((progress) => progress.routingId === form.routingId)) return '현재 등록 가능한 공정을 선택해주세요.'
+  if (!executionRoutingOptions.value.some((progress) => progress.routingId === form.routingId)) return '선택 작업건의 공정을 선택해주세요.'
   if (form.goodQty < 0 || form.defectQty < 0) return '양품/불량 수량은 0 이상이어야 합니다.'
   if (form.goodQty + form.defectQty <= 0) return '양품과 불량 수량의 합계는 1 이상이어야 합니다.'
+  if (selectedOperationProgress.value && form.goodQty + form.defectQty > getRemainingOperationQty(selectedOperationProgress.value)) return '선택 공정의 잔여 수량을 초과할 수 없습니다.'
   if (form.defectQty > 0 && !form.defectReason?.trim()) return '불량 수량이 있으면 불량 사유를 입력해주세요.'
   if (form.manHoursMinutes < 1) return '총 소요 시간은 1분 이상이어야 합니다.'
   return null
@@ -712,10 +723,10 @@ function selectKeywordSuggestion(orderNo: string) {
                 <select v-model.number="form.routingId" class="wo-control" :disabled="!canSubmitExecution">
                   <option :value="0">공정 선택</option>
                   <option v-for="progress in executionRoutingOptions" :key="progress.routingId" :value="progress.routingId">
-                    {{ progress.operationSeq }}. {{ progress.operationName }} · 잔여 {{ formatNumber(getRemainingOperationQty(progress)) }}
+                    {{ progress.operationSeq }}. {{ progress.operationName }} · 잔여 {{ formatNumber(getRemainingOperationQty(progress)) }} · {{ getOperationProgressStatusLabel(progress) }}
                   </option>
                 </select>
-                <span class="wo-field-help">이전 공정 양품 수량 안에서 현재 등록 가능한 공정만 표시됩니다.</span>
+                <span class="wo-field-help">선택 작업건의 라인 공정을 모두 표시하며, 등록 가능 수량은 서버에서 최종 검증됩니다.</span>
               </label>
               <label class="wo-field">
                 <span class="wo-label">양품 수량</span>

@@ -24,13 +24,11 @@ import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.PageResponse;
 
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,9 +77,12 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
 
     @Override
     public PageResponse<ShippingResponse> getShippings(Pageable pageable, String status, String keyword) {
-        Specification<OutboundShipping> spec = buildShippingSpec(status, keyword);
-        Page<OutboundShipping> page = outboundShippingRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(ShippingResponse::from));
+        String normalizedStatus = normalizeShippingStatus(status);
+        String normalizedKeyword = normalizeKeyword(keyword);
+        Page<ShippingResponse> page = outboundShippingRepository
+                .findShippingList(normalizedStatus, normalizedKeyword, sanitizeShippingPageable(pageable))
+                .map(ShippingResponse::from);
+        return PageResponse.from(page);
     }
 
     @Override
@@ -106,14 +107,11 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
             throw new BusinessException(ErrorCode.SHIPPING_STATUS_INVALID);
         }
 
-        if (shipping.getShippedQty() == null) {
-            shipping.setShippedQty(shipping.getRequestQty());
-        }
+        int completedQty = shipping.getRequestQty();
+        shipping.setShippedQty(completedQty);
 
         // Update shipping
-        shipping.setStatus(shipping.getShippedQty() < shipping.getRequestQty()
-                ? OutboundShipping.ShippingStatus.PARTIALLY_SHIPPED
-                : OutboundShipping.ShippingStatus.SHIPPED);
+        shipping.setStatus(OutboundShipping.ShippingStatus.SHIPPED);
         shipping.setShippedAt(java.time.LocalDateTime.now());
         shipping.setWorker(worker);
         outboundShippingRepository.save(shipping);
@@ -123,7 +121,7 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         history.setItem(shipping.getItem());
         history.setLocation(shipping.getPickingLocation());
         history.setTransactionType(TransactionType.OUTBOUND);
-        history.setQuantity(shipping.getShippedQty());
+        history.setQuantity(completedQty);
         history.setReasonDesc("Outbound shipping complete. ShippingNo: " + shipping.getShippingNo());
         history.setWorker(worker);
         transactionHistoryRepository.save(history);
@@ -303,30 +301,31 @@ public class OutboundShippingServiceImpl implements OutboundShippingService {
         outboundShippingRepository.save(shipping);
     }
 
-    // --- Specification builder ---
+    private String normalizeShippingStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        String normalizedStatus = status.trim();
+        try {
+            OutboundShipping.ShippingStatus.valueOf(normalizedStatus);
+            return normalizedStatus;
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
 
-    private Specification<OutboundShipping> buildShippingSpec(String status, String keyword) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
+    }
 
-            if (status != null && !status.isBlank()) {
-                predicates.add(cb.equal(root.get("status"),
-                        OutboundShipping.ShippingStatus.valueOf(status)));
-            }
-
-            if (keyword != null && !keyword.isBlank()) {
-                String pattern = "%" + keyword.toLowerCase() + "%";
-                Join<OutboundShipping, ItemMaster> itemJoin = root.join("item");
-                Join<OutboundShipping, PartnerMaster> partnerJoin = root.join("partner");
-                Predicate shippingNoMatch = cb.like(cb.lower(root.get("shippingNo")), pattern);
-                Predicate itemCodeMatch = cb.like(cb.lower(itemJoin.get("itemCode")), pattern);
-                Predicate itemNameMatch = cb.like(cb.lower(itemJoin.get("itemName")), pattern);
-                Predicate partnerMatch = cb.like(cb.lower(partnerJoin.get("partnerName")), pattern);
-                predicates.add(cb.or(shippingNoMatch, itemCodeMatch, itemNameMatch, partnerMatch));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    private Pageable sanitizeShippingPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return Pageable.unpaged();
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
     private void validateShippingPartner(PartnerMaster partner) {

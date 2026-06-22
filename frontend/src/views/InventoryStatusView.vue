@@ -139,9 +139,12 @@ const detailSafetyStock = computed(() => {
 })
 
 async function selectRow(item: any) {
-  if (selectedInventory.value?.inventoryId === item.inventoryId) {
+  if (selectedInventory.value?.itemCode === item.itemCode) {
     selectedInventory.value = null
     inventoryStore.selectedDetail = null
+  } else if (!item.inventoryId) {
+    selectedInventory.value = item
+    inventoryStore.selectedDetail = item
   } else {
     selectedInventory.value = item
     try {
@@ -185,27 +188,7 @@ async function selectRow(item: any) {
       </div>
     </div>
 
-    <!-- 안전재고 부족 긴급 배너 -->
-    <div
-      v-if="stats.warningCount > 0"
-      class="p-4 bg-gradient-to-r from-rose-500 to-rose-600 app-text-inverse rounded-xl shadow-lg flex items-center justify-between gap-4 animate-pulse-subtle"
-    >
-      <div class="flex items-center gap-3">
-        <div class="p-2 app-bg-muted rounded-lg">
-          <ShieldAlert class="w-6 h-6 app-text-inverse" />
-        </div>
-        <div>
-          <h4 class="app-font-strong text-base">안전 재고 부족 경고 발령 ({{ stats.warningCount }}건)</h4>
-          <p class="text-xs app-text-inverse mt-0.5">품목별 안전 재고량 미만으로 떨어진 자재가 존재합니다. 즉시 발주 및 입고 처리를 진행하십시오.</p>
-        </div>
-      </div>
-      <button
-        @click="filterWarningOnly = true"
-        class="px-4 py-2 app-bg-surface app-text-danger hover:app-bg-danger-soft app-font-strong text-xs rounded-lg transition shadow-sm shrink-0"
-      >
-        경고 대상 필터링
-      </button>
-    </div>
+
 
     <!-- 상단 대시보드 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -376,16 +359,16 @@ async function selectRow(item: any) {
           <tbody class="divide-y divide-slate-100 text-sm">
             <tr
               v-for="item in filteredInventories"
-              :key="item.inventoryId"
+              :key="item.itemCode"
               @click="selectRow(item)"
               class="app-hover-muted cursor-pointer transition select-none"
               :class="{
-                'app-bg-primary-soft': selectedInventory?.inventoryId === item.inventoryId,
+                'app-bg-primary-soft': selectedInventory?.itemCode === item.itemCode,
                 'app-bg-danger-soft/10': item.isUnderSafety
               }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ item.inventoryId }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-text-muted">{{ item.inventoryId ? `#${item.inventoryId}` : '-' }}</td>
               <!-- 품목 코드 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
@@ -396,11 +379,11 @@ async function selectRow(item: any) {
               <td class="px-5 py-4 app-text-soft">
                 <span class="inline-flex items-center gap-1.5">
                   <Home class="w-3.5 h-3.5 app-text-muted" />
-                  {{ item.warehouseName }}
+                  {{ item.warehouseName || '-' }}
                 </span>
               </td>
               <!-- 로케이션 코드 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode }}</td>
+              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode || '-' }}</td>
               <!-- 현재고 수량 -->
               <td class="px-5 py-4 text-right app-font-emphasis" :class="item.isUnderSafety ? 'app-text-danger' : 'app-text-strong'">
                 {{ item.currentQty.toLocaleString() }}
@@ -467,7 +450,11 @@ async function selectRow(item: any) {
       <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Package class="w-5 h-5 app-accent" />
-          <h3 class="app-font-emphasis text-sm">재고 단건 상세 정보 (ID: {{ inventoryStore.selectedDetail.inventoryId }})</h3>
+          <h3 class="app-font-emphasis text-sm">
+            재고 상세 정보
+            <span v-if="inventoryStore.selectedDetail.inventoryId">(ID: {{ inventoryStore.selectedDetail.inventoryId }})</span>
+            <span v-else>(품목 기준)</span>
+          </h3>
         </div>
         <button
           @click="selectedInventory = null; inventoryStore.selectedDetail = null"
@@ -526,11 +513,11 @@ async function selectRow(item: any) {
           <div class="app-bg-muted border app-border-muted rounded-xl p-4 space-y-3 text-sm">
             <div class="grid grid-cols-3">
               <span class="app-text-muted app-font-strong">적재 창고</span>
-              <span class="col-span-2 app-text-strong app-font-strong">{{ inventoryStore.selectedDetail.warehouseName }}</span>
+              <span class="col-span-2 app-text-strong app-font-strong">{{ inventoryStore.selectedDetail.warehouseName || '-' }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="app-text-muted app-font-strong">로케이션 주소</span>
-              <span class="col-span-2 app-text-strong font-mono">{{ inventoryStore.selectedDetail.locationCode }}</span>
+              <span class="col-span-2 app-text-strong font-mono">{{ inventoryStore.selectedDetail.locationCode || '-' }}</span>
             </div>
             <div class="grid grid-cols-3">
               <span class="app-text-muted app-font-strong">현재고 수량</span>

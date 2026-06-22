@@ -34,6 +34,7 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -169,9 +170,10 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public PageResponse<CurrentInventoryResponse> getInventories(Pageable pageable, String keyword) {
-        Specification<CurrentInventory> spec = buildInventorySpec(keyword);
-        Page<CurrentInventory> page = currentInventoryRepository.findAll(spec, pageable);
-        return PageResponse.from(page.map(CurrentInventoryResponse::from));
+        Page<CurrentInventoryResponse> page = currentInventoryRepository
+                .findInventorySummaries(normalizeKeyword(keyword), sanitizeInventoryPageable(pageable))
+                .map(CurrentInventoryResponse::from);
+        return PageResponse.from(page);
     }
 
     @Override
@@ -398,6 +400,20 @@ public class InventoryServiceImpl implements InventoryService {
         };
     }
 
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
+    }
+
+    private Pageable sanitizeInventoryPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return Pageable.unpaged();
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+    }
+
     private void validateInboundPartner(PartnerMaster partner) {
         if (partner.getPartnerType() != PartnerMaster.PartnerType.SUPPLIER) {
             throw new BusinessException(ErrorCode.PARTNER_TYPE_INVALID);
@@ -405,19 +421,6 @@ public class InventoryServiceImpl implements InventoryService {
         if (partner.getPartnerStatus() != PartnerMaster.PartnerStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.PARTNER_STATUS_INACTIVE);
         }
-    }
-
-    private Specification<CurrentInventory> buildInventorySpec(String keyword) {
-        return (root, query, cb) -> {
-            if (keyword == null || keyword.isBlank()) {
-                return cb.conjunction();
-            }
-            String pattern = "%" + keyword.toLowerCase() + "%";
-            Join<CurrentInventory, ItemMaster> itemJoin = root.join("item");
-            Predicate nameMatch = cb.like(cb.lower(itemJoin.get("itemName")), pattern);
-            Predicate codeMatch = cb.like(cb.lower(itemJoin.get("itemCode")), pattern);
-            return cb.or(nameMatch, codeMatch);
-        };
     }
 
     private Specification<InventoryTransactionHistory> buildTransactionHistorySpec(

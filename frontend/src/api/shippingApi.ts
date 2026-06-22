@@ -12,10 +12,12 @@ export interface ShippingResponse {
   requestQty: number
   pickingLocationCode: string | null
   vehicleNo: string | null
-  status: 'READY' | 'PICKING' | 'SHIPPED'
+  status: ShippingStatus
   workerName: string | null
   shippedAt: string | null
 }
+
+export type ShippingStatus = 'READY' | 'PICKING' | 'PACKING' | 'INSPECTING' | 'SHIPPED' | 'PARTIALLY_SHIPPED' | 'CANCELED'
 
 export interface ShippingCreateRequest {
   shippingNo: string

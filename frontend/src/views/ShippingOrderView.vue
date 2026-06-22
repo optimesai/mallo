@@ -19,12 +19,14 @@ import {
 } from '@lucide/vue'
 import { useShippingStore } from '@/state/shippingStore'
 import { useInboundStore } from '@/state/inboundStore'
+import type { ShippingStatus } from '@/api/shippingApi'
 
 const shippingStore = useShippingStore()
 const inboundStore = useInboundStore()
 
 // State
 const pageError = ref<string | null>(null)
+const referenceDataError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
 const isSearchExpanded = ref(true)
 const isSubmitting = ref(false)
@@ -43,27 +45,42 @@ const vehicleInput = ref('')
 // Filter states
 const filterShippingNo = ref('')
 const filterPartnerName = ref('')
-const filterStatus = ref<'ALL' | 'READY' | 'PICKING' | 'SHIPPED'>('ALL')
+const filterStatus = ref<'ALL' | ShippingStatus>('ALL')
 
 onMounted(async () => {
   await fetchPageData()
 })
 
 async function fetchPageData() {
+  await Promise.all([
+    fetchShippingList(),
+    loadReferenceData()
+  ])
+}
+
+async function fetchShippingList() {
   try {
     pageError.value = null
+    await shippingStore.loadShippings({
+      page: shippingStore.page,
+      size: 20,
+      status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
+      keyword: filterShippingNo.value || filterPartnerName.value || undefined,
+    })
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '출하 지시 목록을 불러오는데 실패했습니다.'
+  }
+}
+
+async function loadReferenceData() {
+  try {
+    referenceDataError.value = null
     await Promise.all([
-      shippingStore.loadShippings({
-        page: shippingStore.page,
-        size: 20,
-        status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
-        keyword: filterShippingNo.value || filterPartnerName.value || undefined,
-      }),
       inboundStore.loadItems('FG'),
       inboundStore.loadPartners('CUSTOMER')
     ])
   } catch (err) {
-    pageError.value = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.'
+    referenceDataError.value = err instanceof Error ? err.message : '출하 등록 기준정보를 불러오는데 실패했습니다.'
   }
 }
 
@@ -115,6 +132,9 @@ const filteredShippings = computed(() => {
 })
 
 function openRegisterModal() {
+  if (inboundStore.items.length === 0 || inboundStore.partners.length === 0) {
+    loadReferenceData()
+  }
   // Generate random shipping no
   const now = new Date()
   const year = now.getFullYear()
@@ -210,6 +230,32 @@ function formatDate(dateStr: string | null) {
   const d = new Date(dateStr)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+function getShippingStatusLabel(status: ShippingStatus) {
+  const labels: Record<ShippingStatus, string> = {
+    READY: '출하대기',
+    PICKING: '피킹중',
+    PACKING: '포장중',
+    INSPECTING: '검수중',
+    SHIPPED: '출하완료',
+    PARTIALLY_SHIPPED: '부분출하',
+    CANCELED: '취소'
+  }
+  return labels[status] || status
+}
+
+function getShippingStatusBadgeClass(status: ShippingStatus) {
+  if (status === 'READY') return 'app-bg-warning-soft app-border app-text-warning'
+  if (status === 'PICKING' || status === 'PACKING' || status === 'INSPECTING') return 'app-bg-primary-soft app-border app-accent'
+  if (status === 'SHIPPED') return 'app-bg-success-soft app-border app-text-success'
+  return 'app-bg-muted app-border app-text-muted'
+}
+
+function getShippingStatusDotClass(status: ShippingStatus) {
+  if (status === 'READY') return 'app-bg-warning'
+  if (status === 'SHIPPED') return 'app-bg-success'
+  return 'app-accent-bg'
+}
 </script>
 
 <template>
@@ -241,6 +287,17 @@ function formatDate(dateStr: string | null) {
       <div>
         <h4 class="app-alert-title">출하 처리 중 주의사항 (에러 발생)</h4>
         <p class="app-alert-text">{{ pageError }}</p>
+      </div>
+    </div>
+
+    <div
+      v-if="referenceDataError"
+      class="app-alert app-alert-danger"
+    >
+      <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
+      <div>
+        <h4 class="app-alert-title">출하 등록 기준정보 오류</h4>
+        <p class="app-alert-text">{{ referenceDataError }}</p>
       </div>
     </div>
 
@@ -322,7 +379,11 @@ function formatDate(dateStr: string | null) {
               <option value="ALL">전체 상태</option>
               <option value="READY">출하 대기 (READY)</option>
               <option value="PICKING">차량/피킹배정 (PICKING)</option>
+              <option value="PACKING">포장 중 (PACKING)</option>
+              <option value="INSPECTING">검수 중 (INSPECTING)</option>
+              <option value="PARTIALLY_SHIPPED">부분 출하 (PARTIALLY_SHIPPED)</option>
               <option value="SHIPPED">출하 완료 (SHIPPED)</option>
+              <option value="CANCELED">취소 (CANCELED)</option>
             </select>
           </div>
         </div>
@@ -400,21 +461,13 @@ function formatDate(dateStr: string | null) {
               <td class="px-5 py-4 text-center">
                 <span
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
-                  :class="{
-                    'app-bg-warning-soft app-border app-text-warning': shipping.status === 'READY',
-                    'app-bg-primary-soft app-border app-accent': shipping.status === 'PICKING',
-                    'app-bg-success-soft app-border app-text-success': shipping.status === 'SHIPPED'
-                  }"
+                  :class="getShippingStatusBadgeClass(shipping.status)"
                 >
                   <span
                     class="w-1.5 h-1.5 rounded-full"
-                    :class="{
-                      'app-bg-warning': shipping.status === 'READY',
-                      'app-accent-bg': shipping.status === 'PICKING',
-                      'app-bg-success': shipping.status === 'SHIPPED'
-                    }"
+                    :class="getShippingStatusDotClass(shipping.status)"
                   ></span>
-                  {{ shipping.status === 'READY' ? '출하대기' : shipping.status === 'PICKING' ? '피킹중' : '출하완료' }}
+                  {{ getShippingStatusLabel(shipping.status) }}
                 </span>
               </td>
               <!-- 배정 차량 -->
@@ -499,13 +552,9 @@ function formatDate(dateStr: string | null) {
             <span class="mt-1 block">
               <span
                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs app-font-emphasis border"
-                :class="{
-                  'app-bg-warning-soft app-border app-text-warning': selectedShipping.status === 'READY',
-                  'app-bg-primary-soft app-border app-accent': selectedShipping.status === 'PICKING',
-                  'app-bg-success-soft app-border app-text-success': selectedShipping.status === 'SHIPPED'
-                }"
+                :class="getShippingStatusBadgeClass(selectedShipping.status)"
               >
-                {{ selectedShipping.status === 'READY' ? '출하 지시 대기' : selectedShipping.status === 'PICKING' ? '피킹 및 상차 진행 중' : '출하 완료 및 재고 차감됨' }}
+                {{ getShippingStatusLabel(selectedShipping.status) }}
               </span>
             </span>
           </div>
@@ -572,13 +621,13 @@ function formatDate(dateStr: string | null) {
               class="h-10 px-6 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted rounded-lg shadow-md flex items-center gap-2 transition disabled:opacity-50"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-              최종 출하 완료 처리 (재고 차감)
+              최종 출하 완료 처리
             </button>
           </div>
 
           <!-- SHIPPED 상태: 안내 텍스트 -->
           <div v-else class="text-xs app-text-muted app-font-strong">
-            이 출하 건은 이미 성공적으로 완결 처리되었습니다.
+            현재 상태에서는 이 화면에서 실행할 수 있는 작업이 없습니다.
           </div>
         </div>
       </div>
@@ -603,6 +652,17 @@ function formatDate(dateStr: string | null) {
 
         <!-- 모달 바디 -->
         <div class="p-6 space-y-4">
+          <div
+            v-if="referenceDataError"
+            class="app-alert app-alert-danger"
+          >
+            <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
+            <div>
+              <h4 class="app-alert-title">기준정보 로딩 실패</h4>
+              <p class="app-alert-text">{{ referenceDataError }}</p>
+            </div>
+          </div>
+
           <!-- 1) 출하 지시 번호 (자동생성 / 수정가능) -->
           <div>
             <label class="app-label mb-1.5">출하 지시 번호 <span class="app-text-danger">*</span></label>
