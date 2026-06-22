@@ -29,6 +29,13 @@ public interface SqlAssistant {
         Retry Reason:
         {{retryReason}}
 
+        Pending Clarification Context Rules:
+        - If the user question contains "원래 질문", "AI 추가 확인 질문", and "사용자 추가 답변", treat it as one resolved data question.
+        - If the current user input is a short condition/filter and pending clarification context is provided, always interpret it as additional constraints for the pending original question.
+        - Never attach a short follow-up condition to an older completed question.
+        - If no pending clarification context is provided and the input is only a condition/filter, do not invent a SQL target.
+        - Build the resolved question internally before generating SQL.
+
         Output Rules:
         - Return ONLY one SQL query.
         - Do not use markdown.

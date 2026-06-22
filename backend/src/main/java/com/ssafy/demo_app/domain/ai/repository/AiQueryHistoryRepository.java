@@ -14,4 +14,10 @@ public interface AiQueryHistoryRepository extends JpaRepository<AiQueryHistory, 
     Optional<AiQueryHistory> findByQueryIdAndWorker(Integer queryId, User worker);
 
     List<AiQueryHistory> findTop10ByWorkerAndConversationIdOrderByCreatedAtDesc(User worker, String conversationId);
+
+    Optional<AiQueryHistory> findFirstByWorkerAndConversationIdAndExecutionStatusOrderByCreatedAtDesc(
+            User worker,
+            String conversationId,
+            AiQueryHistory.ExecutionStatus executionStatus
+    );
 }

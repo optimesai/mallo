@@ -15,6 +15,7 @@ public class AiQueryResponse {
     private String question;
     private String conversationId;
     private Integer clarificationOfQueryId;
+    private Integer pendingClarificationQueryId;
     private String effectiveQuestion;
     private String generatedSql;
     private List<Map<String, Object>> rows;

@@ -39,6 +39,10 @@ public interface IntentClassifier {
 
         Rules:
         - dataQuestion is true when the request can be answered from schema or business rules.
+        - If the request contains "원래 질문", "AI 추가 확인 질문", and "사용자 추가 답변", classify the internally resolved question, not the short follow-up alone.
+        - If pending clarification context is present and the current input is a short condition/filter, interpret it as an additional condition for the pending original question.
+        - Do not attach a follow-up condition to older completed questions.
+        - If no pending clarification context is present and the input is only a condition/filter, set needsClarification to true and ask what original metric or target it should apply to.
         - Extract metric, dimensions, timeRange, and filters explicitly.
         - If the user asks for '별', put the grouping target in dimensions.
         - If the user asks for '추이', intent must be trend and a date dimension should be included.

@@ -77,6 +77,8 @@ public class AiQueryHistory extends BaseCreatedTimeEntity {
         ANSWER_GENERATION_FAILED,
         SCHEMA_LOAD_FAILED,
         CLARIFICATION_REQUIRED,
+        CLARIFICATION_ANSWERED,
+        CANCELLED,
         SEMANTIC_VALIDATION_FAILED,
         TIMEOUT
     }
