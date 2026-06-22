@@ -54,10 +54,10 @@
   - 프론트 View 계층에서 선택지 산식만 조정 — `agent/project/frontend.md`의 View → Store → Service → API 흐름을 유지하고 API 스키마 변경을 피하기 위함
   - 잔여 수량이 0인 공정도 드롭다운에 표시 — 사용자가 요청한 해당 작업건의 모든 공정 선택지 노출 요구를 충족하기 위함
   - 입력 수량이 선택 공정의 잔여 수량을 초과하면 프론트에서 먼저 차단 — 서버 검증을 우회하지 않으면서 사용자 피드백을 명확히 하기 위함
-- **Affected Files**: <details><summary>2개 파일</summary>
+- **Affected Files**: <details><summary>1개 파일</summary>
 
   - **Created**:
-    - `agent/plans/production-execution-routing-options.md` — 공정 실적 실제 수행 공정 선택지 개선 구현 기획서
+    - 없음
   - **Modified**:
     - `frontend/src/views/ProductionExecutionView.vue` (+16/-5) — 실제 수행 공정 드롭다운을 작업건 전체 공정 목록 기반으로 변경하고 잔여 수량 초과 검증 추가
   - **Deleted**:
@@ -72,10 +72,10 @@
   - `completeShipping()`에서 `shippedQty`를 `requestQty`로 확정 — 피킹 단계에서 이미 요청 수량만큼 FIFO 재고를 예약/차감하는 현재 서비스 정책과 일치시키기 위함
   - 완료 상태를 `SHIPPED`로 직접 저장 — `최종 출하 완료 처리` 버튼의 의미가 부분 출하가 아닌 전체 출하 확정이기 때문
   - 피킹 배정 후 완료까지의 통합 테스트 추가 — 사용자 재현 경로를 테스트로 고정하여 회귀를 방지하기 위함
-- **Affected Files**: <details><summary>3개 파일</summary>
+- **Affected Files**: <details><summary>2개 파일</summary>
 
   - **Created**:
-    - `agent/plans/shipping-complete-after-picking.md` — 상차 완료 및 출하 확정 오류 수정 구현 기획서
+    - 없음
   - **Modified**:
     - `backend/src/main/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceImpl.java` (+34/-35) — 완료 처리 시 요청 수량을 출하 완료 수량으로 확정하고 `SHIPPED` 상태 저장
     - `backend/src/test/java/com/ssafy/demo_app/domain/shipping/service/OutboundShippingServiceTest.java` (+61/-2) — 피킹 배정 후 완료 처리 통합 흐름 테스트 추가

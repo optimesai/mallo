@@ -25,4 +25,9 @@ public class AiQueryResponse {
     private AiChartResponse chart;
     private Boolean clarificationRequired;
     private String clarificationQuestion;
+    private String interpretedDomain;
+    private String interpretedIntent;
+    private String interpretationSummary;
+    private String answerType;
+    private List<String> suggestedQuestions;
 }

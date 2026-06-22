@@ -14,11 +14,15 @@ import com.ssafy.demo_app.domain.ai.service.classification.AiIntentResult;
 import com.ssafy.demo_app.domain.ai.service.classification.IntentClassificationService;
 import com.ssafy.demo_app.domain.ai.service.clarification.ClarificationService.ClarificationResult;
 import com.ssafy.demo_app.domain.ai.service.clarification.ClarificationService;
+import com.ssafy.demo_app.domain.ai.service.interpretation.AiQuestionInterpretation;
+import com.ssafy.demo_app.domain.ai.service.interpretation.AiQuestionInterpretationService;
 import com.ssafy.demo_app.domain.ai.service.prompt.DataQuestionCandidateService;
 import com.ssafy.demo_app.domain.ai.service.prompt.FewShotPromptService;
 import com.ssafy.demo_app.domain.ai.service.rule.BusinessRulePromptService;
 import com.ssafy.demo_app.domain.ai.service.schema.DatabaseSchemaService;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlExecutionService;
+import com.ssafy.demo_app.domain.ai.service.sql.SqlReviewService.SqlReviewResult;
+import com.ssafy.demo_app.domain.ai.service.sql.SqlReviewService;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSanitizer;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSemanticValidationService.SqlSemanticValidationResult;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSemanticValidationService;
@@ -63,10 +67,12 @@ public class AiQueryServiceImpl implements AiQueryService {
     private final BusinessRulePromptService businessRulePromptService;
     private final IntentClassificationService intentClassificationService;
     private final DataQuestionCandidateService dataQuestionCandidateService;
+    private final AiQuestionInterpretationService aiQuestionInterpretationService;
     private final SqlAssistant sqlAssistant;
     private final FewShotPromptService fewShotPromptService;
     private final ClarificationService clarificationService;
     private final SqlSanitizer sqlSanitizer;
+    private final SqlReviewService sqlReviewService;
     private final SqlValidationService sqlValidationService;
     private final SqlSemanticValidationService sqlSemanticValidationService;
     private final SqlExecutionService sqlExecutionService;
@@ -84,6 +90,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         QuestionContext questionContext = resolveQuestionContext(worker, request);
         String effectiveQuestion = questionContext.getEffectiveQuestion();
+        AiQuestionInterpretation interpretation = aiQuestionInterpretationService.interpret(effectiveQuestion);
         long startedAt = System.currentTimeMillis();
         String currentTime = LocalDateTime.now().format(CURRENT_TIME_FORMATTER);
         String schema;
@@ -102,7 +109,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.SCHEMA_LOAD_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         String businessRules = businessRulePromptService.getBusinessRules();
@@ -122,11 +129,12 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
+        applyInterpretation(intentResult, interpretation);
         boolean dataQuestionCandidate = dataQuestionCandidateService.isCandidate(effectiveQuestion);
-        if (!intentResult.isDataQuestion() && !dataQuestionCandidate) {
+        if (!intentResult.isDataQuestion() && !dataQuestionCandidate && !interpretation.isDataQuestion()) {
             AiQueryHistory history = saveHistory(
                     worker,
                     questionContext,
@@ -139,11 +147,11 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.NOT_DATA_QUESTION,
                     null
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
         if (!intentResult.isDataQuestion()) {
             intentResult.setDataQuestion(true);
-            intentResult.setReason("도메인 키워드 기반 데이터 질의 후보로 판단했습니다.");
+            intentResult.setReason(resolveDataQuestionReason(interpretation));
         }
         if (intentResult.isNeedsClarification() && !intentResult.getClarificationQuestion().isBlank()) {
             AiQueryHistory history = saveHistory(
@@ -158,7 +166,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED,
                     null
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         String fewShotExamples;
@@ -180,7 +188,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         ClarificationResult clarification = clarificationService.evaluate(effectiveQuestion, schema, currentTime);
@@ -197,10 +205,10 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED,
                     null
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
-        String classificationResult = toJson(intentResult);
+        String classificationResult = toJson(intentResult, interpretation);
         ValidatedSql validatedSql;
         try {
             validatedSql = generateValidatedSql(
@@ -225,7 +233,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.SQL_GENERATION_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         if (!validatedSql.isValid()) {
@@ -241,7 +249,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     validatedSql.getStatus(),
                     validatedSql.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         List<Map<String, Object>> rows;
@@ -260,7 +268,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.SQL_EXECUTION_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, List.of());
+            return toResponse(history, List.of(), interpretation);
         }
 
         String resultJson = toJson(rows);
@@ -286,7 +294,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                     AiQueryHistory.ExecutionStatus.ANSWER_GENERATION_FAILED,
                     exception.getMessage()
             );
-            return toResponse(history, rows);
+            return toResponse(history, rows, interpretation);
         }
 
         AiChartResponse chart = chartRecommendationService.recommend(effectiveQuestion, intentResult, rows);
@@ -303,7 +311,7 @@ public class AiQueryServiceImpl implements AiQueryService {
                 AiQueryHistory.ExecutionStatus.SUCCESS,
                 null
         );
-        return toResponse(history, rows);
+        return toResponse(history, rows, interpretation);
     }
 
     private QuestionContext resolveQuestionContext(User worker, AiQueryRequest request) {
@@ -410,6 +418,54 @@ public class AiQueryServiceImpl implements AiQueryService {
         ).trim();
     }
 
+    private void applyInterpretation(AiIntentResult intentResult, AiQuestionInterpretation interpretation) {
+        if (intentResult == null || interpretation == null || !interpretation.isDataQuestion()) {
+            return;
+        }
+        if (!intentResult.isDataQuestion()) {
+            intentResult.setDataQuestion(true);
+        }
+        if (isBlankOrUnknown(intentResult.getDomain())) {
+            intentResult.setDomain(interpretation.getDomain());
+        }
+        if (isBlankOrUnknown(intentResult.getIntent())) {
+            intentResult.setIntent(interpretation.getIntent());
+        }
+        if (isBlankOrUnknown(intentResult.getMetric())) {
+            intentResult.setMetric(interpretation.getMetric());
+        }
+        if ((intentResult.getDimensions() == null || intentResult.getDimensions().isEmpty())
+                && !interpretation.getDimensions().isEmpty()) {
+            intentResult.setDimensions(interpretation.getDimensions());
+        }
+        if (isBlankOrUnknown(intentResult.getChartHint())) {
+            intentResult.setChartHint(resolveChartHint(interpretation));
+        }
+    }
+
+    private String resolveChartHint(AiQuestionInterpretation interpretation) {
+        if ("trend".equals(interpretation.getIntent())) {
+            return "LINE";
+        }
+        if ("aggregate".equals(interpretation.getIntent())
+                || "ranking".equals(interpretation.getIntent())
+                || "comparison".equals(interpretation.getIntent())) {
+            return "BAR";
+        }
+        return "TABLE";
+    }
+
+    private String resolveDataQuestionReason(AiQuestionInterpretation interpretation) {
+        if (interpretation != null && interpretation.isDataQuestion()) {
+            return "질의 해석 계층에서 %s 도메인 데이터 질의로 판단했습니다.".formatted(interpretation.getDomain());
+        }
+        return "도메인 키워드 기반 데이터 질의 후보로 판단했습니다.";
+    }
+
+    private boolean isBlankOrUnknown(String value) {
+        return value == null || value.isBlank() || "unknown".equalsIgnoreCase(value);
+    }
+
     private ValidatedSql generateValidatedSql(
             String question,
             String schema,
@@ -419,13 +475,21 @@ public class AiQueryServiceImpl implements AiQueryService {
             String fewShotExamples,
             String currentTime
     ) {
-        String sql = generateSql(question, schema, businessRules, classificationResult, fewShotExamples, currentTime, "");
+        String sql = generateReviewedSql(
+                question,
+                schema,
+                businessRules,
+                classificationResult,
+                fewShotExamples,
+                currentTime,
+                ""
+        );
         ValidatedSql firstResult = validateSql(question, intentResult, sql);
         if (firstResult.isValid()) {
             return firstResult;
         }
 
-        String retriedSql = generateSql(
+        String retriedSql = generateReviewedSql(
                 question,
                 schema,
                 businessRules,
@@ -439,6 +503,67 @@ public class AiQueryServiceImpl implements AiQueryService {
             return retryResult;
         }
         return retryResult;
+    }
+
+    private String generateReviewedSql(
+            String question,
+            String schema,
+            String businessRules,
+            String classificationResult,
+            String fewShotExamples,
+            String currentTime,
+            String retryReason
+    ) {
+        String effectiveRetryReason = retryReason;
+        String sql = generateSql(
+                question,
+                schema,
+                businessRules,
+                classificationResult,
+                fewShotExamples,
+                currentTime,
+                effectiveRetryReason
+        );
+        SqlReviewResult reviewResult = sqlReviewService.review(
+                question,
+                schema,
+                businessRules,
+                classificationResult,
+                sql
+        );
+        if (reviewResult.isValid()) {
+            return sql;
+        }
+
+        String reviewRetryReason = "SQL 검토 실패: %s. 재생성 지시: %s".formatted(
+                reviewResult.getReason(),
+                reviewResult.getRetryInstruction()
+        );
+        effectiveRetryReason = joinRetryReasons(effectiveRetryReason, reviewRetryReason);
+        sql = generateSql(
+                question,
+                schema,
+                businessRules,
+                classificationResult,
+                fewShotExamples,
+                currentTime,
+                effectiveRetryReason
+        );
+        reviewResult = sqlReviewService.review(
+                question,
+                schema,
+                businessRules,
+                classificationResult,
+                sql
+        );
+        return sql;
+    }
+
+    private String joinRetryReasons(String originalRetryReason, String reviewRetryReason) {
+        if (originalRetryReason == null || originalRetryReason.isBlank()) {
+            return reviewRetryReason;
+        }
+        return originalRetryReason + "\n" + reviewRetryReason;
     }
 
     private ValidatedSql validateSql(String question, AiIntentResult intentResult, String sql) {
@@ -510,9 +635,12 @@ public class AiQueryServiceImpl implements AiQueryService {
         }
     }
 
-    private String toJson(AiIntentResult intentResult) {
+    private String toJson(AiIntentResult intentResult, AiQuestionInterpretation interpretation) {
         try {
-            return objectMapper.writeValueAsString(intentResult);
+            return objectMapper.writeValueAsString(Map.of(
+                    "classification", intentResult,
+                    "interpretation", interpretation
+            ));
         } catch (JsonProcessingException exception) {
             return "{}";
         }
@@ -559,7 +687,11 @@ public class AiQueryServiceImpl implements AiQueryService {
                 .ifPresent(history -> history.setExecutionStatus(AiQueryHistory.ExecutionStatus.CLARIFICATION_ANSWERED));
     }
 
-    private AiQueryResponse toResponse(AiQueryHistory history, List<Map<String, Object>> rows) {
+    private AiQueryResponse toResponse(
+            AiQueryHistory history,
+            List<Map<String, Object>> rows,
+            AiQuestionInterpretation interpretation
+    ) {
         AiQueryResponse response = new AiQueryResponse();
         response.setQueryId(history.getQueryId());
         response.setQuestion(history.getNaturalQuestion());
@@ -573,6 +705,8 @@ public class AiQueryServiceImpl implements AiQueryService {
         response.setExecutionStatus(history.getExecutionStatus());
         response.setChart(resolveChart(history));
         response.setClarificationRequired(history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED);
+        applyInterpretationResponse(response, interpretation);
+        response.setAnswerType(resolveAnswerType(history));
         if (Boolean.TRUE.equals(response.getClarificationRequired())) {
             response.setAnswer(CLARIFICATION_REQUIRED_ANSWER);
             response.setClarificationQuestion(history.getNaturalAnswer());
@@ -580,6 +714,36 @@ public class AiQueryServiceImpl implements AiQueryService {
             response.setAnswer(history.getNaturalAnswer());
         }
         return response;
+    }
+
+    private void applyInterpretationResponse(AiQueryResponse response, AiQuestionInterpretation interpretation) {
+        if (interpretation == null) {
+            response.setInterpretedDomain("unknown");
+            response.setInterpretedIntent("unknown");
+            response.setInterpretationSummary("");
+            response.setSuggestedQuestions(List.of());
+            return;
+        }
+        response.setInterpretedDomain(interpretation.getDomain());
+        response.setInterpretedIntent(interpretation.getIntent());
+        response.setInterpretationSummary(interpretation.getSummary());
+        response.setSuggestedQuestions(interpretation.getSuggestedQuestions());
+    }
+
+    private String resolveAnswerType(AiQueryHistory history) {
+        if (history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.SUCCESS) {
+            return "NORMAL";
+        }
+        if (history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.CLARIFICATION_REQUIRED) {
+            return "CLARIFICATION";
+        }
+        if (history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.NOT_DATA_QUESTION) {
+            return "UNSUPPORTED";
+        }
+        if (history.getExecutionStatus() == AiQueryHistory.ExecutionStatus.SEMANTIC_VALIDATION_FAILED) {
+            return "CLARIFICATION";
+        }
+        return "ERROR";
     }
 
     private Integer resolvePendingClarificationQueryId(AiQueryHistory history) {
