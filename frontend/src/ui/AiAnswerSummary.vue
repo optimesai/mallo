@@ -7,6 +7,10 @@ const props = defineProps<{
   response?: AiQueryResponse | null
 }>()
 
+const emit = defineEmits<{
+  selectSuggested: [question: string]
+}>()
+
 const statusClass = computed(() => {
   if (!props.response) return 'app-status-neutral'
   if (props.response.clarificationRequired) return 'app-status-warning'
@@ -43,6 +47,15 @@ const chartTypeLabel = computed(() => {
     PARETO: '파레토'
   }[type] ?? type
 })
+
+const interpretationLabel = computed(() => {
+  if (!props.response?.interpretedDomain || props.response.interpretedDomain === 'unknown') {
+    return '-'
+  }
+  return `${props.response.interpretedDomain} / ${props.response.interpretedIntent || 'unknown'}`
+})
+
+const suggestedQuestions = computed(() => props.response?.suggestedQuestions ?? [])
 </script>
 
 <template>
@@ -78,7 +91,16 @@ const chartTypeLabel = computed(() => {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div
+        v-if="response?.interpretationSummary"
+        class="rounded-lg border p-3"
+        style="border-color: var(--color-border);"
+      >
+        <p class="app-stat-label-compact">질의 해석</p>
+        <p class="mt-1 min-w-0 break-words app-type-sm leading-6">{{ response.interpretationSummary }}</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
           <div class="flex items-center gap-2">
             <Database class="h-4 w-4 app-table-muted" />
@@ -101,6 +123,29 @@ const chartTypeLabel = computed(() => {
             <p class="app-stat-label-compact">질의 번호</p>
           </div>
           <p class="app-stat-value-compact min-w-0 break-words">{{ response?.queryId ?? '-' }}</p>
+        </div>
+
+        <div class="min-w-0 rounded-lg border p-3" style="border-color: var(--color-border);">
+          <div class="flex items-center gap-2">
+            <Bot class="h-4 w-4 app-table-muted" />
+            <p class="app-stat-label-compact">해석 도메인</p>
+          </div>
+          <p class="app-stat-value-compact min-w-0 break-words app-type-lg leading-6">{{ interpretationLabel }}</p>
+        </div>
+      </div>
+
+      <div v-if="suggestedQuestions.length > 0" class="space-y-2">
+        <p class="app-stat-label-compact">추천 후속 질문</p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="suggestedQuestion in suggestedQuestions"
+            :key="suggestedQuestion"
+            type="button"
+            class="app-status app-status-neutral"
+            @click="emit('selectSuggested', suggestedQuestion)"
+          >
+            {{ suggestedQuestion }}
+          </button>
         </div>
       </div>
     </div>

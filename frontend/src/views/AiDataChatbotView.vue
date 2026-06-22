@@ -51,6 +51,11 @@ async function useExample(example: string) {
   await submitQuestion()
 }
 
+async function useSuggestedQuestion(suggestedQuestion: string) {
+  question.value = suggestedQuestion
+  await submitQuestion()
+}
+
 onMounted(() => {
   submitRouteQuestion()
 })
@@ -226,7 +231,10 @@ function formatTime(value: string) {
           </div>
         </div>
 
-        <AiAnswerSummary :response="aiStore.currentResponse" />
+        <AiAnswerSummary
+          :response="aiStore.currentResponse"
+          @select-suggested="useSuggestedQuestion"
+        />
       </section>
 
       <section class="space-y-6">

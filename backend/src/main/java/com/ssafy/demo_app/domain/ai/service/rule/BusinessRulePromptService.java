@@ -18,6 +18,8 @@ public class BusinessRulePromptService {
         - 출하 대기 잔량 means outbound_shipping.request_qty - COALESCE(outbound_shipping.shipped_qty, 0).
         - 불량률 means SUM(production_execution.defect_qty) / NULLIF(SUM(production_execution.good_qty + production_execution.defect_qty), 0).
         - 생산량 means SUM(production_execution.good_qty + production_execution.defect_qty) unless the user explicitly asks for good quantity only.
+        - BOM 소요량 means bom_structure.quantity multiplied by the requested production target quantity.
+        - BOM 최신 버전 means the latest bom_structure.bom_version among ACTIVE rows for the matched parent item.
 
         Status Rules:
         - 출하 대기 means outbound_shipping.status in ('READY', 'PICKING', 'PACKING', 'INSPECTING', 'PARTIALLY_SHIPPED'). Exclude SHIPPED and CANCELED.
@@ -32,6 +34,14 @@ public class BusinessRulePromptService {
         - 거래처별 means GROUP BY partner_master.partner_id, partner_master.partner_code, partner_master.partner_name.
         - 창고별 means GROUP BY warehouse_location.warehouse_name.
         - 로케이션별 means GROUP BY warehouse_location.location_code.
+
+        Entity Matching Rules:
+        - 품목 키워드 must be matched against item_master.item_code, item_master.item_name, and item_master.item_id when possible.
+        - 거래처 키워드 must be matched against partner_master.partner_code, partner_master.partner_name, and partner_master.partner_id when possible.
+        - BOM 생산 대상 품목 is the parent item in bom_structure.parent_item_id.
+        - BOM 필요 자재 품목 is the child item in bom_structure.child_item_id.
+        - Do not assume a free-form item keyword is always item_code.
+        - If an item or partner keyword is present, prefer exact match first and allow case-insensitive match.
 
         Date Rules:
         - 입고 date means inbound_receipt.inbound_date unless the user asks by record creation time.

@@ -11,11 +11,14 @@ import com.ssafy.demo_app.domain.ai.service.classification.AiIntentResult;
 import com.ssafy.demo_app.domain.ai.service.classification.IntentClassificationService;
 import com.ssafy.demo_app.domain.ai.service.clarification.ClarificationService.ClarificationResult;
 import com.ssafy.demo_app.domain.ai.service.clarification.ClarificationService;
+import com.ssafy.demo_app.domain.ai.service.interpretation.AiQuestionInterpretationService;
 import com.ssafy.demo_app.domain.ai.service.prompt.DataQuestionCandidateService;
 import com.ssafy.demo_app.domain.ai.service.prompt.FewShotPromptService;
 import com.ssafy.demo_app.domain.ai.service.rule.BusinessRulePromptService;
 import com.ssafy.demo_app.domain.ai.service.schema.DatabaseSchemaService;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlExecutionService;
+import com.ssafy.demo_app.domain.ai.service.sql.SqlReviewService.SqlReviewResult;
+import com.ssafy.demo_app.domain.ai.service.sql.SqlReviewService;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSanitizer;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSemanticValidationService;
 import com.ssafy.demo_app.domain.ai.service.sql.SqlSemanticValidationService.SqlSemanticValidationResult;
@@ -46,10 +49,12 @@ class AiQueryServiceImplTest {
     private final BusinessRulePromptService businessRulePromptService = mock(BusinessRulePromptService.class);
     private final IntentClassificationService intentClassificationService = mock(IntentClassificationService.class);
     private final DataQuestionCandidateService dataQuestionCandidateService = mock(DataQuestionCandidateService.class);
+    private final AiQuestionInterpretationService aiQuestionInterpretationService = new AiQuestionInterpretationService();
     private final SqlAssistant sqlAssistant = mock(SqlAssistant.class);
     private final FewShotPromptService fewShotPromptService = mock(FewShotPromptService.class);
     private final ClarificationService clarificationService = mock(ClarificationService.class);
     private final SqlSanitizer sqlSanitizer = mock(SqlSanitizer.class);
+    private final SqlReviewService sqlReviewService = mock(SqlReviewService.class);
     private final SqlValidationService sqlValidationService = mock(SqlValidationService.class);
     private final SqlSemanticValidationService sqlSemanticValidationService = mock(SqlSemanticValidationService.class);
     private final SqlExecutionService sqlExecutionService = mock(SqlExecutionService.class);
@@ -63,10 +68,12 @@ class AiQueryServiceImplTest {
             businessRulePromptService,
             intentClassificationService,
             dataQuestionCandidateService,
+            aiQuestionInterpretationService,
             sqlAssistant,
             fewShotPromptService,
             clarificationService,
             sqlSanitizer,
+            sqlReviewService,
             sqlValidationService,
             sqlSemanticValidationService,
             sqlExecutionService,
@@ -144,6 +151,80 @@ class AiQueryServiceImplTest {
     }
 
     @Test
+    void ask_usesInterpretationWhenClassifierMissesDataQuestion() {
+        givenDefaultUser();
+        given(aiQueryHistoryRepository.save(any(AiQueryHistory.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(databaseSchemaService.getSchemaDescription()).willReturn("schema");
+        given(businessRulePromptService.getBusinessRules()).willReturn("business rules");
+        given(intentClassificationService.classify(any(), any(), any(), any())).willReturn(AiIntentResult.notDataQuestion());
+        given(dataQuestionCandidateService.isCandidate("최근 7일 입고 수량 추이를 알려줘")).willReturn(false);
+        given(fewShotPromptService.getFewShotExamples(any(), any())).willReturn("few shot");
+        given(clarificationService.evaluate(any(), any(), any())).willReturn(ClarificationResult.notRequired());
+        given(sqlAssistant.generateSql(any(), any(), any(), any(), any(), any(), any()))
+                .willReturn("SELECT inbound_date, SUM(inbound_qty) AS total_inbound_qty FROM inbound_receipt GROUP BY inbound_date");
+        given(sqlSanitizer.sanitize(any())).willAnswer(invocation -> invocation.getArgument(0));
+        given(sqlValidationService.validate(any()))
+                .willReturn(SqlValidationResult.valid("SELECT inbound_date, SUM(inbound_qty) AS total_inbound_qty FROM inbound_receipt GROUP BY inbound_date"));
+        given(sqlSemanticValidationService.validate(any(), any(), any()))
+                .willReturn(SqlSemanticValidationResult.valid());
+        given(sqlExecutionService.execute(any())).willReturn(List.of());
+        given(answerGenerator.generateAnswer(any(), any(), any(), any(), any())).willReturn("최근 7일 입고 수량 추이입니다.");
+
+        AiQueryResponse response = aiQueryService.ask(1, request("최근 7일 입고 수량 추이를 알려줘"));
+
+        assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SUCCESS);
+        assertThat(response.getInterpretedDomain()).isEqualTo("inbound");
+        assertThat(response.getInterpretedIntent()).isEqualTo("trend");
+        assertThat(response.getInterpretationSummary()).contains("도메인=inbound");
+        assertThat(response.getSuggestedQuestions()).isNotEmpty();
+        verify(sqlAssistant).generateSql(any(), any(), any(), any(), any(), any(), any());
+        verify(sqlExecutionService).execute(any());
+    }
+
+    @Test
+    void ask_regeneratesSqlWhenSqlReviewFails() {
+        givenDefaultUser();
+        given(aiQueryHistoryRepository.save(any(AiQueryHistory.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(databaseSchemaService.getSchemaDescription()).willReturn("schema");
+        given(businessRulePromptService.getBusinessRules()).willReturn("business rules");
+        given(intentClassificationService.classify(any(), any(), any(), any())).willReturn(AiIntentResult.dataQuestion());
+        given(dataQuestionCandidateService.isCandidate(any())).willReturn(true);
+        given(fewShotPromptService.getFewShotExamples(any(), any())).willReturn("few shot");
+        given(clarificationService.evaluate(any(), any(), any())).willReturn(ClarificationResult.notRequired());
+        given(sqlAssistant.generateSql(any(), any(), any(), any(), any(), any(), any()))
+                .willReturn(
+                        "SELECT child.item_code FROM bom_structure bs JOIN item_master parent ON bs.parent_item_id = parent.item_id JOIN item_master child ON bs.child_item_id = child.item_id WHERE parent.item_code = 'testparent'",
+                        "SELECT child.item_code FROM bom_structure bs JOIN item_master parent ON bs.parent_item_id = parent.item_id JOIN item_master child ON bs.child_item_id = child.item_id WHERE (LOWER(parent.item_code) = LOWER('testparent') OR LOWER(parent.item_name) = LOWER('testparent'))"
+                );
+        given(sqlSanitizer.sanitize(any())).willAnswer(invocation -> invocation.getArgument(0));
+        given(sqlReviewService.review(any(), any(), any(), any(), any()))
+                .willReturn(SqlReviewResult.invalid(
+                        "품목 필터가 item_code만 사용되었습니다.",
+                        "item_code, item_name, item_id를 모두 고려하세요."
+                ))
+                .willReturn(SqlReviewResult.valid("해석 슬롯을 반영했습니다."));
+        given(sqlValidationService.validate(any()))
+                .willReturn(SqlValidationResult.valid("SELECT child.item_code FROM bom_structure bs JOIN item_master parent ON bs.parent_item_id = parent.item_id JOIN item_master child ON bs.child_item_id = child.item_id WHERE (LOWER(parent.item_code) = LOWER('testparent') OR LOWER(parent.item_name) = LOWER('testparent'))"));
+        given(sqlSemanticValidationService.validate(any(), any(), any()))
+                .willReturn(SqlSemanticValidationResult.valid());
+        given(sqlExecutionService.execute(any())).willReturn(List.of());
+        given(answerGenerator.generateAnswer(any(), any(), any(), any(), any())).willReturn("조회 결과입니다.");
+
+        AiQueryResponse response = aiQueryService.ask(
+                1,
+                request("testparent 100개 생산하려면 필요한 자재 수량을 알려줘. 가장 최신 버전 BOM 기준으로")
+        );
+
+        assertThat(response.getExecutionStatus()).isEqualTo(AiQueryHistory.ExecutionStatus.SUCCESS);
+        assertThat(response.getInterpretedDomain()).isEqualTo("bom");
+        verify(sqlAssistant, times(2)).generateSql(any(), any(), any(), any(), any(), any(), any());
+        verify(sqlReviewService, times(2)).review(any(), any(), any(), any(), any());
+        verify(sqlExecutionService).execute(any());
+    }
+
+    @Test
     void ask_returnsClarificationGuideWhenSemanticValidationStillFailsAfterRetry() {
         givenDefaultUser();
         given(aiQueryHistoryRepository.save(any(AiQueryHistory.class)))
@@ -216,6 +297,8 @@ class AiQueryServiceImplTest {
         user.setPassword("password");
         user.setRole(User.Role.WORKER);
         given(userRepository.findById(1)).willReturn(Optional.of(user));
+        given(sqlReviewService.review(any(), any(), any(), any(), any()))
+                .willReturn(SqlReviewResult.valid("success"));
     }
 
     private AiQueryRequest request(String question) {

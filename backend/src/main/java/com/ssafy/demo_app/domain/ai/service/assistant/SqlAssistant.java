@@ -44,7 +44,8 @@ public interface SqlAssistant {
         - Do not generate INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE.
         - Use only tables and columns listed in the schema.
         - Use Business Rules before guessing from column names.
-        - Respect the Classification Result domain, intent, metric, dimensions, filters, and timeRange.
+        - Respect the Classification Result domain, intent, metric, dimensions, filters, timeRange, and interpretation slots.
+        - Treat interpretation slots as authoritative constraints when present.
         - Prefer explicit JOIN conditions from Relationships.
         - Do not invent enum values. Use enum values from Business Rules or schema only.
 
@@ -72,6 +73,12 @@ public interface SqlAssistant {
         - Defect rate should include defect_qty, total_qty, and defect_rate.
         - Production quantity should include good_qty, defect_qty, and production_qty when useful.
         - Operation issue summaries should include issue_type, target_code, target_name, metric_value, severity, and reason_text if possible.
+        - If the user provides a free-form item keyword, match it against item_master.item_code, item_master.item_name, and item_master.item_id when those columns are available.
+        - If the user provides a free-form partner keyword, match it against partner_master.partner_code, partner_master.partner_name, and partner_master.partner_id when those columns are available.
+        - If BOM material requirement is requested, multiply bom_structure.quantity by the requested target quantity.
+        - If BOM latest version is requested, select the latest version among ACTIVE BOM rows for the target parent item.
+        - For BOM parent item lookup, match the production target against parent item code, name, or id, not child item columns.
+        - Do not filter only by item_code when the user-provided item value may be a name.
 
         Retry Rules:
         - If Retry Reason is not empty, fix the failed SQL while preserving the user's original intent.

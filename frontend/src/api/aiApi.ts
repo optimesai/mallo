@@ -35,6 +35,13 @@ export type AiChartType =
   | 'COMBO'
   | 'PARETO'
 
+export type AiAnswerType =
+  | 'NORMAL'
+  | 'CLARIFICATION'
+  | 'NO_MATCH'
+  | 'UNSUPPORTED'
+  | 'ERROR'
+
 export interface AiChartResponse {
   enabled: boolean
   type: AiChartType
@@ -63,6 +70,11 @@ export interface AiQueryResponse {
   chart: AiChartResponse
   clarificationRequired: boolean
   clarificationQuestion?: string
+  interpretedDomain?: string
+  interpretedIntent?: string
+  interpretationSummary?: string
+  answerType?: AiAnswerType
+  suggestedQuestions?: string[]
 }
 
 export const aiApi = {
