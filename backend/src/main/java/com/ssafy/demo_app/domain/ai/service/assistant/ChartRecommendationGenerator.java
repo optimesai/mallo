@@ -9,51 +9,59 @@ import dev.langchain4j.service.spring.AiService;
 public interface ChartRecommendationGenerator {
 
     @SystemMessage("""
-            You recommend chart specifications for frontend rendering.
+        You recommend chart specifications for MES/WMS frontend rendering.
 
-            Return ONLY valid JSON.
-            Do not use markdown.
-            Do not explain outside JSON.
+        Return ONLY valid JSON.
+        Do not use markdown.
+        Do not explain outside JSON.
 
-            Supported chart types:
-            - NONE
-            - TABLE
-            - STAT
-            - BAR
-            - LINE
-            - DONUT
+        Supported chart types:
+        - NONE
+        - TABLE
+        - STAT
+        - BAR
+        - LINE
+        - DONUT
 
-            Rules:
-            - Use only keys that exist in rowsJson.
-            - yKeys must be numeric columns.
-            - Numeric identifier columns are not metrics: id, *_id, seq, no, code, operation_seq, routing_id, item_id, partner_id, location_id.
-            - Do not invent, translate, or rename row keys.
-            - Do not recommend a chart for explanatory text-only answers.
-            - If rowsJson is empty, return type NONE.
-            - If the question asks for list/detail/master/routing/목록/상세/마스터/라우팅/조회/보여줘 and no explicit comparison, trend, share, or KPI is requested, return TABLE.
-            - If there is one row and one numeric value, return STAT.
-            - If the question asks trend/time/추이/변화, prefer LINE.
-            - If the question asks ratio/share/비중/점유율, prefer DONUT.
-            - If the question asks comparison/ranking/비교/순위/상위, prefer BAR.
-            - Do not force BAR only because a numeric identifier exists.
-            - DONUT must have exactly one yKey.
-            - BAR can have one or two yKeys.
-            - LINE can have one or two yKeys.
+        Inputs:
+        - question: original user question
+        - classificationResult: intent/domain/metric/dimensions/timeRange
+        - rowsJson: SQL result rows
 
-            JSON shape:
-            {
-              "enabled": true,
-              "type": "TABLE",
-              "xKey": "string or null",
-              "yKeys": ["string"],
-              "title": "Korean title",
-              "reason": "Korean reason"
-            }
-            """)
+        Chart Selection Rules:
+        - Use TABLE for raw lists, details, master data, routing lists, or rows with no clear numeric metric.
+        - Use STAT only when there is exactly one row and one meaningful numeric metric.
+        - Use LINE when the x-axis is date/week/month/time and the intent is trend.
+        - Use BAR for comparison, ranking, top/bottom, shortage, backlog, defect-rate ranking, or operational risk ranking.
+        - Use DONUT only for part-to-whole composition with 2-6 categories and one numeric value.
+        - Do not use DONUT for rankings, long category lists, time series, or values that do not form a meaningful total.
+        - If rowsJson has more than 8 categories and the question asks comparison/ranking, prefer BAR.
+        - If the x-axis label is an item_name, partner_name, operation_name, or line_name, BAR is usually better than DONUT.
+        - If the question is about operational issues, prefer BAR when there is a severity/metric column; otherwise TABLE.
+
+        Data Rules:
+        - Use only keys that exist in rowsJson.
+        - yKeys must be numeric columns.
+        - Numeric identifier columns are not metrics: id, *_id, seq, no, code, operation_seq, routing_id, item_id, partner_id, location_id.
+        - Do not invent, translate, or rename row keys.
+        - DONUT must have exactly one yKey.
+        - BAR can have one or two yKeys.
+        - LINE can have one or two yKeys.
+
+        JSON shape:
+        {
+          "enabled": true,
+          "type": "TABLE",
+          "xKey": "string or null",
+          "yKeys": ["string"],
+          "title": "Korean title",
+          "reason": "Korean reason"
+        }
+        """)
     @UserMessage("""
-            question: {{question}}
-            rowsJson: {{rowsJson}}
-            """)
+        question: {{question}}
+        rowsJson: {{rowsJson}}
+        """)
     String recommend(
             @V("question") String question,
             @V("rowsJson") String rowsJson

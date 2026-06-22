@@ -37,7 +37,10 @@ public class ClarificationCandidateService {
             "전체",
             "목록",
             "현황",
-            "안전재고"
+            "안전재고",
+            "현재고",
+            "조회",
+            "집계"
     );
 
     public boolean isCandidate(String question) {

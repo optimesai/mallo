@@ -20,23 +20,24 @@ public class DatabaseSchemaMetadataReader {
                 .map(table -> "?")
                 .toList());
         String sql = """
-                SELECT
-                  t.table_name,
-                  t.table_comment,
-                  c.column_name,
-                  c.column_comment,
-                  c.data_type,
-                  c.column_key,
-                  c.is_nullable,
-                  c.ordinal_position
-                FROM information_schema.tables t
-                JOIN information_schema.columns c
-                  ON t.table_schema = c.table_schema
-                 AND t.table_name = c.table_name
-                WHERE t.table_schema = DATABASE()
-                  AND t.table_name IN (%s)
-                ORDER BY t.table_name, c.ordinal_position
-                """.formatted(placeholders);
+        SELECT
+          t.table_name,
+          t.table_comment,
+          c.column_name,
+          c.column_comment,
+          c.data_type,
+          c.column_type,
+          c.column_key,
+          c.is_nullable,
+          c.ordinal_position
+        FROM information_schema.tables t
+        JOIN information_schema.columns c
+          ON t.table_schema = c.table_schema
+         AND t.table_name = c.table_name
+        WHERE t.table_schema = DATABASE()
+          AND t.table_name IN (%s)
+        ORDER BY t.table_name, c.ordinal_position
+        """.formatted(placeholders);
 
         Map<String, AiSchemaTable> tables = new LinkedHashMap<>();
         jdbcTemplate.query(sql, ps -> {
@@ -56,6 +57,7 @@ public class DatabaseSchemaMetadataReader {
             column.setColumnName(rs.getString("column_name"));
             column.setColumnComment(rs.getString("column_comment"));
             column.setDataType(rs.getString("data_type"));
+            column.setColumnType(rs.getString("column_type"));
             column.setColumnKey(rs.getString("column_key"));
             column.setNullable("YES".equalsIgnoreCase(rs.getString("is_nullable")));
             table.getColumns().add(column);

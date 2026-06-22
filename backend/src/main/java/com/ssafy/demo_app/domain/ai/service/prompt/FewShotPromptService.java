@@ -15,23 +15,54 @@ public class FewShotPromptService {
 
     private static final String FEW_SHOT_RESOURCE = "ai/few-shot-examples.yml";
 
-    private String cachedFewShotExamples;
+    private List<FewShotExample> cachedExamples;
 
     public synchronized String getFewShotExamples() {
-        if (cachedFewShotExamples != null) {
-            return cachedFewShotExamples;
+        return buildPrompt(getCachedExamples());
+    }
+
+    public synchronized String getFewShotExamples(String domain, String intent) {
+        List<FewShotExample> examples = getCachedExamples();
+        if (examples.isEmpty()) {
+            return "No examples.";
         }
-        cachedFewShotExamples = loadAndBuildPrompt();
-        return cachedFewShotExamples;
+
+        List<FewShotExample> selected = examples.stream()
+                .filter(example -> example.getCategory().equalsIgnoreCase(domain))
+                .limit(4)
+                .toList();
+
+        if (selected.isEmpty()) {
+            selected = examples.stream()
+                    .filter(example -> example.getCategory().equalsIgnoreCase(intent))
+                    .limit(3)
+                    .toList();
+        }
+
+        if (selected.isEmpty()) {
+            selected = examples.stream()
+                    .limit(3)
+                    .toList();
+        }
+
+        return buildPrompt(selected);
     }
 
     public synchronized void evictCache() {
-        cachedFewShotExamples = null;
+        cachedExamples = null;
     }
 
-    private String loadAndBuildPrompt() {
-        List<FewShotExample> examples = loadExamples();
-        if (examples.isEmpty()) {
+    private List<FewShotExample> getCachedExamples() {
+        if (cachedExamples != null) {
+            return cachedExamples;
+        }
+
+        cachedExamples = loadExamples();
+        return cachedExamples;
+    }
+
+    private String buildPrompt(List<FewShotExample> examples) {
+        if (examples == null || examples.isEmpty()) {
             return "No examples.";
         }
 

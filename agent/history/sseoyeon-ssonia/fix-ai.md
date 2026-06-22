@@ -114,3 +114,21 @@
     - 없음
 
   </details>
+
+### AI 답변 생성 실패 수정 (Codex)
+- **User Intent**: 최근 7일 입고 수량 추이 질문에서 SQL 조회 결과는 2건 표시되지만 답변 요약이 `ANSWER_GENERATION_FAILED`로 실패하는 원인 파악 및 수정 요청
+- **Agent Context**: `AnswerGenerator`와 `ChartRecommendationGenerator` 프롬프트에 실제 `@V` 파라미터로 전달되지 않는 템플릿 변수가 남아 LangChain4j 런타임 바인딩 예외가 발생할 수 있는 상태로 진단. 호출 흐름 변경 없이 미바인딩 변수 참조만 제거
+- **Key Decisions**:
+  - 프롬프트 변수 제거 방식 선택 — `agent/project/backend.md`의 실제 코드 우선 및 기존 Service 호출 계약 유지 원칙에 맞춰 호출부와 응답 구조 변경을 피함
+  - `chartSpec` 전달 추가를 보류 — 현재 차트 추천은 답변 생성 이후 수행되므로 값 전달을 위해 처리 순서를 바꾸는 것은 사용자 요청 범위를 초과한다고 판단
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/assistant/AnswerGenerator.java` (+0/-2) — 전달되지 않는 `rowCount`, `chartSpec` 템플릿 변수 제거
+    - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/assistant/ChartRecommendationGenerator.java` (+0/-1) — 전달되지 않는 `classificationResult` 템플릿 변수 제거
+  - **Deleted**:
+    - 없음
+
+  </details>

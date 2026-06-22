@@ -156,7 +156,10 @@ public class AiQueryServiceImpl implements AiQueryService {
 
         String fewShotExamples;
         try {
-            fewShotExamples = fewShotPromptService.getFewShotExamples();
+            fewShotExamples = fewShotPromptService.getFewShotExamples(
+                    intentResult.getDomain(),
+                    intentResult.getIntent()
+            );
         } catch (Exception exception) {
             AiQueryHistory history = saveHistory(
                     worker,
