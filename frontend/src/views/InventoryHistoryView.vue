@@ -26,6 +26,8 @@ const filterItem = ref('')
 const filterType = ref<'ALL' | 'INBOUND' | 'PRODUCTION_ISSUE'>('ALL')
 const filterDateStart = ref('')
 const filterDateEnd = ref('')
+const sortField = ref('createdAt')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 onMounted(async () => {
   await fetchPageData()
@@ -70,6 +72,34 @@ function resetFilters() {
   filterDateEnd.value = ''
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // Filtered transaction history list
 const filteredHistories = computed(() => {
   return inventoryStore.histories.filter(history => {
@@ -98,6 +128,10 @@ const filteredHistories = computed(() => {
     }
     return true
   })
+})
+
+const sortedHistories = computed(() => {
+  return [...filteredHistories.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 // Statistics calculations
@@ -283,11 +317,11 @@ const stats = computed(() => {
     <!-- 타임라인 데이터 테이블 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">수불(변동) 타임라인 이력 (총 {{ filteredHistories.length }}건)</span>
+        <span class="app-panel-title">수불(변동) 타임라인 이력</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -301,20 +335,20 @@ const stats = computed(() => {
           </colgroup>
           <thead>
             <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">번호</th>
-              <th class="px-5 py-3">품목 코드</th>
-              <th class="px-5 py-3">품목명</th>
-              <th class="px-5 py-3">수불 유형</th>
-              <th class="px-5 py-3">적재 위치</th>
-              <th class="px-5 py-3 text-right">변동 수량</th>
-              <th class="px-5 py-3">변동 사유</th>
-              <th class="px-5 py-3">작업자</th>
-              <th class="px-5 py-3">발생 일시</th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionId')">번호 <span class="app-sort-mark">{{ getSortMark('transactionId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemCode')">품목 코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionType')">수불 유형 <span class="app-sort-mark">{{ getSortMark('transactionType') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('locationCode')">적재 위치 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('quantity')">변동 수량 <span class="app-sort-mark">{{ getSortMark('quantity') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('reason')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reason') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('createdBy')">작업자 <span class="app-sort-mark">{{ getSortMark('createdBy') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('createdAt')">발생 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="item in filteredHistories"
+              v-for="item in sortedHistories"
               :key="item.transactionId"
               class="app-hover-muted transition select-none"
             >
@@ -384,15 +418,15 @@ const stats = computed(() => {
           총 <span class="app-count-strong">{{ inventoryStore.histTotalElements.toLocaleString() }}</span>건
           ({{ inventoryStore.histPage + 1 }} / {{ inventoryStore.histTotalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="inventoryStore.histPage === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(inventoryStore.histPage - 1)" :disabled="inventoryStore.histPage === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(inventoryStore.histPage + 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(inventoryStore.histTotalPages - 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>

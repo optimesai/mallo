@@ -312,50 +312,44 @@ function showToast(message: string) {
       </button>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-3">
-      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="app-type-sm app-text-muted">전체 거래처</p>
-            <p class="mt-2 app-type-2xl font-bold app-text-primary">{{ stats.total }} 사</p>
-          </div>
-          <div class="rounded-2xl app-bg-muted p-3 app-text-soft">
-            <Building2 class="h-6 w-6" />
-          </div>
+    <div class="app-news-grid">
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">전체 거래처</p>
+          <strong class="app-news-value">{{ stats.total }} 사</strong>
+        </div>
+        <div class="app-news-icon">
+          <Building2 />
         </div>
       </div>
-      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="app-type-sm app-text-muted">활성 거래처</p>
-            <p class="mt-2 app-type-2xl font-bold text-emerald-700">{{ stats.active }} 사</p>
-          </div>
-          <div class="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
-            <Users class="h-6 w-6" />
-          </div>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">활성 거래처</p>
+          <strong class="app-news-value app-text-success">{{ stats.active }} 사</strong>
+        </div>
+        <div class="app-news-icon app-bg-success-soft app-text-success">
+          <Users />
         </div>
       </div>
-      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="app-type-sm app-text-muted">비활성 거래처</p>
-            <p class="mt-2 app-type-2xl font-bold text-amber-700">{{ stats.inactive }} 사</p>
-          </div>
-          <div class="rounded-2xl bg-amber-50 p-3 text-amber-700">
-            <RefreshCw class="h-6 w-6" />
-          </div>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">비활성 거래처</p>
+          <strong class="app-news-value app-text-warning">{{ stats.inactive }} 사</strong>
+        </div>
+        <div class="app-news-icon app-bg-warning-soft app-text-warning">
+          <RefreshCw />
         </div>
       </div>
     </div>
 
-    <section class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+    <section class="app-search-panel">
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_0.8fr_0.8fr_0.8fr_auto]">
         <div class="relative">
           <Search class="pointer-events-none absolute left-4 top-3.5 z-10 h-4 w-4 app-text-muted" />
           <input
             id="partner-keyword"
             v-model="filterKeyword"
-            class="h-11 w-full rounded-xl border app-border app-bg-surface pl-11 pr-4 app-type-sm app-font-label outline-none transition focus:ring-2"
+            class="app-control app-control-lg app-control-search"
             placeholder="거래처 ID, 거래처코드, 거래처명, 사업자번호 검색"
             @input="handleKeywordInput"
             @focus="openSuggestions"
@@ -375,60 +369,63 @@ function showToast(message: string) {
           </div>
         </div>
 
-        <select id="partner-type-filter" v-model="filterPartnerType" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
+        <select id="partner-type-filter" v-model="filterPartnerType" class="app-control app-control-lg">
           <option value="ALL">전체 구분</option>
           <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
 
-        <select id="partner-status-filter" v-model="filterPartnerStatus" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
+        <select id="partner-status-filter" v-model="filterPartnerStatus" class="app-control app-control-lg">
           <option value="ALL">전체 상태</option>
           <option value="ACTIVE">활성</option>
           <option value="INACTIVE">비활성</option>
         </select>
 
-        <select id="partner-business-filter" v-model="filterHasBusinessNo" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
+        <select id="partner-business-filter" v-model="filterHasBusinessNo" class="app-control app-control-lg">
           <option value="ALL">사업자번호 전체</option>
           <option value="YES">사업자번호 등록</option>
           <option value="NO">사업자번호 미등록</option>
         </select>
 
-        <div class="flex gap-2">
-          <button class="h-11 rounded-2xl app-bg-strong px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="handleSearch">조회</button>
-          <button class="h-11 rounded-2xl app-bg-muted px-5 app-type-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
-          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="openCreateForm">신규 등록</button>
+        <div class="app-search-actions">
+          <button class="app-button app-button-lg app-button-primary" type="button" @click="handleSearch">조회</button>
+          <button class="app-button app-button-lg app-button-muted" type="button" @click="resetFilters">초기화</button>
+          <button v-if="canWrite" class="app-button app-button-lg app-button-primary" type="button" @click="openCreateForm">신규 등록</button>
         </div>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
+      <div class="app-list-head">
+        <span class="app-list-title">거래처 목록</span>
+      </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1120px] text-left app-type-sm">
-          <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
+        <table class="app-table min-w-[1120px]">
+          <thead>
             <tr>
-              <th class="px-4 py-3">No</th>
-              <th class="cursor-pointer px-4 py-3" @click="changeSort('partnerCode')">
+              <th>No</th>
+              <th class="app-sortable-header" @click="changeSort('partnerCode')">
                 거래처 코드
-                <span v-if="sortField === 'partnerCode'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === 'partnerCode'" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="cursor-pointer px-4 py-3" @click="changeSort('partnerName')">
+              <th class="app-sortable-header" @click="changeSort('partnerName')">
                 거래처명
-                <span v-if="sortField === 'partnerName'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === 'partnerName'" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3">구분</th>
-              <th class="px-5 py-3">상태</th>
-              <th class="px-4 py-3">사업자등록번호</th>
-              <th class="px-4 py-3">담당자</th>
-              <th class="cursor-pointer px-4 py-3 text-right" @click="changeSort('usageCount')">
+              <th>구분</th>
+              <th>상태</th>
+              <th>사업자등록번호</th>
+              <th>담당자</th>
+              <th class="app-sortable-header text-right" @click="changeSort('usageCount')">
                 사용 건수
-                <span v-if="sortField === 'usageCount'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === 'usageCount'" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="cursor-pointer px-4 py-3" @click="changeSort('lastUsedAt')">
+              <th class="app-sortable-header" @click="changeSort('lastUsedAt')">
                 최근 거래 일시
-                <span v-if="sortField === 'lastUsedAt'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === 'lastUsedAt'" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="cursor-pointer px-4 py-3" @click="changeSort('createdAt')">
+              <th class="app-sortable-header" @click="changeSort('createdAt')">
                 등록 일시
-                <span v-if="sortField === 'createdAt'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === 'createdAt'" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
             </tr>
           </thead>
@@ -446,39 +443,37 @@ function showToast(message: string) {
               v-for="(partner, index) in partnerMasterStore.partners"
               v-else
               :key="partner.partnerId"
-              class="cursor-pointer border-t app-border-muted transition app-hover-muted"
+              class="app-table-row"
               @click="goToDetail(partner)"
             >
-              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
-              <td class="px-4 py-3 font-mono app-font-emphasis app-text-strong">{{ partner.partnerCode }}</td>
-              <td class="px-4 py-3 app-font-strong app-text-strong">{{ partner.partnerName }}</td>
-              <td class="px-4 py-3">
-                {{ getPartnerTypeLabel(partner.partnerType) }}
-              </td>
-              <td class="px-4 py-3">
-                <span class="rounded-full px-2.5 py-1 app-type-xs app-font-emphasis" :class="partner.partnerStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
+              <td class="app-table-id">{{ partnerMasterStore.page * partnerMasterStore.size + index + 1 }}</td>
+              <td class="app-table-main font-mono">{{ partner.partnerCode }}</td>
+              <td class="app-table-main">{{ partner.partnerName }}</td>
+              <td class="whitespace-nowrap">{{ getPartnerTypeLabel(partner.partnerType) }}</td>
+              <td>
+                <span class="app-status" :class="partner.partnerStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
                   {{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}
                 </span>
               </td>
-              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ partner.businessNo || '미등록' }}</td>
-              <td class="px-4 py-3 app-text-muted">{{ partner.representative || '-' }}</td>
-              <td class="px-4 py-3 text-right app-font-strong app-text-strong">{{ partner.usageCount }}건</td>
-              <td class="px-4 py-3 app-type-xs app-text-muted">{{ formatDateTime(partner.lastUsedAt) }}</td>
-              <td class="px-4 py-3 app-type-xs app-text-muted">{{ formatDateTime(partner.createdAt) }}</td>
+              <td class="app-table-id">{{ partner.businessNo || '미등록' }}</td>
+              <td class="app-table-muted">{{ partner.representative || '-' }}</td>
+              <td class="app-table-number">{{ partner.usageCount }}건</td>
+              <td class="app-table-id">{{ formatDateTime(partner.lastUsedAt) }}</td>
+              <td class="app-table-id">{{ formatDateTime(partner.createdAt) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="app-type-sm app-font-strong app-text-muted">
+      <div class="app-pagination">
+        <p>
           총 {{ partnerMasterStore.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ partnerMasterStore.size }}건씩 · {{ partnerMasterStore.page + 1 }} / {{ Math.max(partnerMasterStore.totalPages, 1) }} 페이지
         </p>
-        <div class="flex gap-2">
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
+        <div class="app-pagination-actions">
+          <button class="app-page-button" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(0)">처음</button>
+          <button class="app-page-button" type="button" :disabled="partnerMasterStore.page === 0" @click="goToPage(partnerMasterStore.page - 1)">이전</button>
+          <button class="app-page-button" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.page + 1)">다음</button>
+          <button class="app-page-button" type="button" :disabled="partnerMasterStore.page >= partnerMasterStore.totalPages - 1" @click="goToPage(partnerMasterStore.totalPages - 1)">마지막</button>
         </div>
       </div>
     </section>

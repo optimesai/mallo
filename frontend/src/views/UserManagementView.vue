@@ -23,6 +23,8 @@ const pageMode = ref<'list' | 'detail'>('list')
 const isSuggestOpen = ref(false)
 const pageError = ref<string | null>(null)
 const successToast = ref<string | null>(null)
+const currentPage = ref(0)
+const pageSize = 10
 
 const currentUserId = computed(() => authStore.user?.userId ?? null)
 const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
@@ -48,6 +50,17 @@ const filteredUsers = computed(() => {
       || user.department.toLowerCase().includes(keyword)
     return matchesRole && matchesKeyword
   })
+})
+
+const totalPages = computed(() => Math.max(Math.ceil(filteredUsers.value.length / pageSize), 1))
+const pageStart = computed(() => {
+  if (filteredUsers.value.length === 0) return 0
+  return currentPage.value * pageSize + 1
+})
+const pageEnd = computed(() => Math.min((currentPage.value + 1) * pageSize, filteredUsers.value.length))
+const pagedUsers = computed(() => {
+  const start = currentPage.value * pageSize
+  return filteredUsers.value.slice(start, start + pageSize)
 })
 
 const keywordSuggestions = computed(() => {
@@ -91,6 +104,7 @@ async function fetchUsers() {
 function submitSearch() {
   appliedKeyword.value = keywordInput.value.trim()
   isSuggestOpen.value = false
+  currentPage.value = 0
 }
 
 function resetFilters() {
@@ -98,6 +112,15 @@ function resetFilters() {
   appliedKeyword.value = ''
   roleFilter.value = 'ALL'
   isSuggestOpen.value = false
+  currentPage.value = 0
+}
+
+function handleRoleFilterChange() {
+  currentPage.value = 0
+}
+
+function goToPage(page: number) {
+  currentPage.value = Math.max(0, Math.min(page, totalPages.value - 1))
 }
 
 async function selectSuggestion(user: UserResponse) {
@@ -140,6 +163,7 @@ async function requestDelete(user: UserResponse) {
     await userStore.deleteUser(user.userId)
     showToast('사용자가 삭제되었습니다.')
     pageMode.value = 'list'
+    goToPage(currentPage.value)
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '사용자를 삭제하지 못했습니다.'
   }
@@ -175,7 +199,7 @@ function showToast(message: string) {
 </script>
 
 <template>
-  <section class="min-h-full app-bg-muted p-6 app-text-strong">
+  <section class="app-page">
     <div v-if="successToast" class="fixed right-6 top-20 z-40 rounded-xl app-bg-strong px-4 py-3 app-type-sm app-font-label app-text-inverse shadow-2xl">
       {{ successToast }}
     </div>
@@ -206,32 +230,50 @@ function showToast(message: string) {
 
     <template v-else>
       <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border app-border app-bg-surface p-5 shadow-sm">
-          <div class="flex items-center justify-between app-type-sm app-font-strong app-text-muted">전체 사용자 <Users class="h-5 w-5 app-text-muted" /></div>
-          <div class="mt-3 app-type-3xl app-font-emphasis app-text-strong">{{ stats.total }}</div>
+        <div class="app-news-card">
+          <div>
+            <p class="app-news-label">전체 사용자</p>
+            <strong class="app-news-value">{{ stats.total }}</strong>
+          </div>
+          <div class="app-news-icon"><Users /></div>
         </div>
-        <div class="rounded-2xl border app-border-muted app-bg-danger-soft p-5 shadow-sm">
-          <div class="app-type-sm app-font-strong app-text-danger">시스템 관리자 [ADMIN]</div>
-          <div class="mt-3 app-type-3xl app-font-emphasis app-text-danger">{{ stats.admin }}</div>
+        <div class="app-news-card">
+          <div>
+            <p class="app-news-label app-text-danger">시스템 관리자 [ADMIN]</p>
+            <strong class="app-news-value app-text-danger">{{ stats.admin }}</strong>
+          </div>
+          <div class="app-news-icon app-bg-danger-soft app-text-danger">
+            <ShieldCheck />
+          </div>
         </div>
-        <div class="rounded-2xl border app-border-muted app-bg-warning-soft p-5 shadow-sm">
-          <div class="app-type-sm app-font-strong app-text-warning">현장 관리자 [MANAGER]</div>
-          <div class="mt-3 app-type-3xl app-font-emphasis app-text-warning">{{ stats.manager }}</div>
+        <div class="app-news-card">
+          <div>
+            <p class="app-news-label app-text-warning">현장 관리자 [MANAGER]</p>
+            <strong class="app-news-value app-text-warning">{{ stats.manager }}</strong>
+          </div>
+          <div class="app-news-icon app-bg-warning-soft app-text-warning">
+            <UserCog />
+          </div>
         </div>
-        <div class="rounded-2xl border app-border-muted app-bg-primary-soft p-5 shadow-sm">
-          <div class="app-type-sm app-font-strong app-accent">현장 작업자 [WORKER]</div>
-          <div class="mt-3 app-type-3xl app-font-emphasis app-accent">{{ stats.worker }}</div>
+        <div class="app-news-card">
+          <div>
+            <p class="app-news-label app-accent">현장 작업자 [WORKER]</p>
+            <strong class="app-news-value">{{ stats.worker }}</strong>
+          </div>
+          <div class="app-news-icon app-bg-primary-soft app-accent">
+            <Users />
+          </div>
         </div>
       </div>
 
       <p v-if="pageError" class="mb-4 rounded-2xl border app-border app-bg-danger-soft px-4 py-3 app-type-sm app-font-strong app-text-danger">{{ pageError }}</p>
 
       <div v-if="pageMode === 'list'" class="space-y-5">
-        <form class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm" @submit.prevent="submitSearch">
+        <form class="app-search-panel" @submit.prevent="submitSearch">
           <div class="grid gap-3 lg:grid-cols-[1fr_260px_auto_auto]">
             <label class="relative block">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 app-text-muted" />
-              <input v-model="keywordInput" class="h-12 w-full rounded-2xl border app-border app-bg-muted pl-11 pr-4 app-type-sm app-font-label outline-none transition  " placeholder="사번, 이름, 부서 검색" @focus="isSuggestOpen = true" @input="isSuggestOpen = true">
+              <input v-model="keywordInput" class="app-control app-control-lg app-control-search app-bg-muted" placeholder="사번, 이름, 부서 검색" @focus="isSuggestOpen = true" @input="isSuggestOpen = true">
               <div v-if="isSuggestOpen && keywordSuggestions.length > 0" class="absolute left-0 right-0 top-14 z-30 overflow-hidden rounded-2xl border app-border app-bg-surface shadow-2xl">
                 <button v-for="candidate in keywordSuggestions" :key="`${candidate.label}-${candidate.user.userId}`" class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition app-hover-muted" type="button" @mousedown.prevent="selectSuggestion(candidate.user)">
                   <span>
@@ -242,42 +284,50 @@ function showToast(message: string) {
                 </button>
               </div>
             </label>
-            <select v-model="roleFilter" class="h-12 rounded-2xl border app-border app-bg-muted px-4 app-type-sm app-font-strong outline-none transition  ">
+            <select v-model="roleFilter" class="app-control app-control-lg app-bg-muted" @change="handleRoleFilterChange">
               <option value="ALL">전체 권한</option>
               <option value="ADMIN">시스템 관리자 [ADMIN]</option>
               <option value="MANAGER">현장 관리자 [MANAGER]</option>
               <option value="WORKER">현장 작업자 [WORKER]</option>
             </select>
-            <button class="h-12 rounded-2xl app-bg-strong px-6 app-type-sm app-font-emphasis app-text-inverse transition app-hover-muted" type="submit">검색</button>
-            <button class="h-12 rounded-2xl border app-border px-5 app-type-sm app-font-strong app-text-soft transition app-hover-muted" type="button" @click="resetFilters">초기화</button>
+            <button class="app-button app-button-lg app-button-primary" type="submit">검색</button>
+            <button class="app-button app-button-lg app-button-muted" type="button" @click="resetFilters">초기화</button>
           </div>
           <p class="mt-3 app-type-xs app-font-label app-text-muted">검색어는 검색 버튼 또는 Enter 입력 후 목록에 반영됩니다.</p>
         </form>
 
-        <div class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
-          <div class="flex items-center justify-between border-b app-border-muted px-5 py-4">
-            <div>
-              <h2 class="app-type-lg app-font-emphasis app-text-strong">사용자 목록</h2>
-              <p class="mt-1 app-type-xs app-font-label app-text-muted">검색 결과 {{ filteredUsers.length }}명</p>
-            </div>
+        <div class="app-panel">
+          <div class="app-list-head">
+            <span class="app-list-title">사용자 목록</span>
           </div>
           <div v-if="userStore.isLoading" class="flex h-72 items-center justify-center gap-3 app-type-sm app-font-strong app-text-muted"><Loader2 class="h-5 w-5 animate-spin" />사용자 정보를 불러오는 중입니다.</div>
           <div v-else class="overflow-x-auto">
-            <table class="w-full min-w-[860px] text-left app-type-sm">
-              <thead class="app-bg-muted app-type-xs uppercase tracking-wide app-text-muted">
-                <tr><th class="px-5 py-3 app-font-emphasis">사번</th><th class="px-5 py-3 app-font-emphasis">이름</th><th class="px-5 py-3 app-font-emphasis">부서</th><th class="px-5 py-3 app-font-emphasis">권한</th><th class="px-5 py-3 app-font-emphasis">가입일</th></tr>
+            <table class="app-table min-w-[860px]">
+              <thead>
+                <tr><th>사번</th><th>이름</th><th>부서</th><th>권한</th><th>가입일</th></tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr v-for="targetUser in filteredUsers" :key="targetUser.userId" class="cursor-pointer transition app-hover-muted" @click="openUserDetail(targetUser)">
-                  <td class="px-5 py-4 app-font-emphasis app-text-strong">{{ targetUser.employeeNo }}</td>
-                  <td class="px-5 py-4 app-font-label app-text-soft">{{ targetUser.userName }}</td>
-                  <td class="px-5 py-4 app-text-muted">{{ targetUser.department }}</td>
-                  <td class="px-5 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 app-type-xs app-font-emphasis" :class="getRoleBadgeClass(targetUser.role)">{{ getRoleLabel(targetUser.role) }}</span></td>
-                  <td class="px-5 py-4 app-type-xs app-font-label app-text-muted">{{ formatDateTime(targetUser.createdAt) }}</td>
+              <tbody>
+                <tr v-for="targetUser in pagedUsers" :key="targetUser.userId" class="app-table-row" @click="openUserDetail(targetUser)">
+                  <td class="app-table-main">{{ targetUser.employeeNo }}</td>
+                  <td class="app-table-strong">{{ targetUser.userName }}</td>
+                  <td class="app-table-muted">{{ targetUser.department }}</td>
+                  <td><span class="app-status" :class="getRoleBadgeClass(targetUser.role)">{{ getRoleLabel(targetUser.role) }}</span></td>
+                  <td class="app-table-id">{{ formatDateTime(targetUser.createdAt) }}</td>
                 </tr>
               </tbody>
             </table>
             <div v-if="filteredUsers.length === 0" class="px-5 py-16 text-center app-type-sm app-font-strong app-text-muted">조건에 맞는 사용자가 없습니다.</div>
+          </div>
+          <div class="app-pagination">
+            <p>
+              총 <span class="app-count-strong">{{ filteredUsers.length.toLocaleString() }}</span>건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ pageSize }}건씩 · {{ currentPage + 1 }} / {{ totalPages }} 페이지
+            </p>
+            <div class="app-pagination-actions">
+              <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="goToPage(0)">처음</button>
+              <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="goToPage(currentPage - 1)">이전</button>
+              <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="goToPage(currentPage + 1)">다음</button>
+              <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="goToPage(totalPages - 1)">마지막</button>
+            </div>
           </div>
         </div>
       </div>

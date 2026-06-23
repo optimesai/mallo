@@ -333,91 +333,91 @@ function showToast(message: string) {
 
     <div v-if="pageError" class="factory-master-error">
       <span>{{ pageError }}</span>
-      <button class="factory-master-icon-button" type="button" @click="pageError = null">
+      <button class="app-icon-button" type="button" @click="pageError = null">
         <X class="factory-master-icon-sm" />
       </button>
     </div>
 
-    <div class="factory-master-stats-grid">
-      <div class="factory-master-stat-card">
-        <div class="factory-master-stat-icon factory-master-stat-icon-primary">
-          <Factory class="factory-master-icon-md" />
-        </div>
+    <div class="app-news-grid">
+      <div class="app-news-card">
         <div>
-          <p class="factory-master-stat-label">등록 공장</p>
-          <p class="factory-master-stat-value">{{ stats.factories }} 개</p>
+          <p class="app-news-label">등록 공장</p>
+          <p class="app-news-value">{{ stats.factories }} 개</p>
+        </div>
+        <div class="app-news-icon app-bg-primary-soft app-accent">
+          <Factory />
         </div>
       </div>
-      <div class="factory-master-stat-card">
-        <div class="factory-master-stat-icon factory-master-stat-icon-success">
-          <GitBranch class="factory-master-icon-md" />
-        </div>
+      <div class="app-news-card">
         <div>
-          <p class="factory-master-stat-label">생산 라인</p>
-          <p class="factory-master-stat-value">{{ stats.lines }} 개</p>
+          <p class="app-news-label">생산 라인</p>
+          <p class="app-news-value app-text-success">{{ stats.lines }} 개</p>
+        </div>
+        <div class="app-news-icon app-bg-success-soft app-text-success">
+          <GitBranch />
         </div>
       </div>
-      <div class="factory-master-stat-card">
-        <div class="factory-master-stat-icon factory-master-stat-icon-neutral">
-          <Route class="factory-master-icon-md" />
-        </div>
+      <div class="app-news-card">
         <div>
-          <p class="factory-master-stat-label">세부 공정</p>
-          <p class="factory-master-stat-value">{{ stats.operations }} 건</p>
-          <p class="factory-master-stat-label">비활성 {{ stats.inactive }} 건</p>
+          <p class="app-news-label">세부 공정</p>
+          <p class="app-news-value app-text-strong">{{ stats.operations }} 건</p>
+          <p class="app-news-label">비활성 {{ stats.inactive }} 건</p>
+        </div>
+        <div class="app-news-icon">
+          <Route />
         </div>
       </div>
     </div>
 
-    <section class="factory-master-panel">
-      <div class="factory-master-panel-heading">
-        <span class="factory-master-panel-title">
-          <Search class="factory-master-icon-sm" />
+    <section class="app-search-panel">
+      <div class="app-panel-head -mx-5 -mt-5 mb-5 rounded-t-[var(--radius-panel)]">
+        <span class="app-panel-title">
+          <Search class="app-panel-icon" />
           조회 검색 조건
         </span>
-        <button class="factory-master-icon-button" type="button" @click="isSearchExpanded = !isSearchExpanded">
-          <ChevronDown class="factory-master-icon-sm factory-master-chevron" :class="{ 'factory-master-chevron-collapsed': !isSearchExpanded }" />
+        <button class="app-icon-button" type="button" @click="isSearchExpanded = !isSearchExpanded">
+          <ChevronDown class="h-4 w-4" :class="{ 'factory-master-chevron-collapsed': !isSearchExpanded }" />
         </button>
       </div>
 
-      <div v-show="isSearchExpanded" class="factory-master-search-grid">
-        <div class="factory-master-field">
-          <label class="factory-master-label" for="factory-filter">공장</label>
-          <select id="factory-filter" v-model="filterFactoryName" class="factory-master-input">
+      <div v-show="isSearchExpanded" class="app-filter-grid">
+        <div class="app-field">
+          <label class="app-label" for="factory-filter">공장</label>
+          <select id="factory-filter" v-model="filterFactoryName" class="app-control app-control-lg">
             <option value="">전체 공장</option>
             <option v-for="factory in factoryRoutingStore.factories" :key="factory" :value="factory">
               {{ factory }}
             </option>
           </select>
         </div>
-        <div class="factory-master-field">
-          <label class="factory-master-label" for="line-filter">생산 라인</label>
-          <select id="line-filter" v-model="filterLineName" class="factory-master-input" :disabled="!filterFactoryName">
+        <div class="app-field">
+          <label class="app-label" for="line-filter">생산 라인</label>
+          <select id="line-filter" v-model="filterLineName" class="app-control app-control-lg" :disabled="!filterFactoryName">
             <option value="">전체 라인</option>
             <option v-for="line in factoryRoutingStore.lines" :key="line" :value="line">
               {{ line }}
             </option>
           </select>
         </div>
-        <div class="factory-master-field">
-          <label class="factory-master-label" for="status-filter">상태</label>
-          <select id="status-filter" v-model="filterRoutingStatus" class="factory-master-input">
+        <div class="app-field">
+          <label class="app-label" for="status-filter">상태</label>
+          <select id="status-filter" v-model="filterRoutingStatus" class="app-control app-control-lg">
             <option value="">전체 상태</option>
             <option value="ACTIVE">활성</option>
             <option value="INACTIVE">비활성</option>
           </select>
         </div>
-        <div class="factory-master-search-actions">
-          <button class="factory-master-secondary-button" type="button" @click="resetFilters">초기화</button>
-          <button class="factory-master-primary-button" type="button" @click="handleSearch">조회</button>
+        <div class="app-search-actions items-end">
+          <button class="app-button app-button-lg app-button-muted" type="button" @click="resetFilters">초기화</button>
+          <button class="app-button app-button-lg app-button-primary" type="button" @click="handleSearch">조회</button>
         </div>
       </div>
     </section>
 
     <div class="factory-master-content-grid">
-      <section class="factory-master-panel factory-master-tree-panel">
-        <div class="factory-master-panel-heading">
-          <span class="factory-master-panel-title">
+      <section class="app-panel factory-master-tree-panel">
+        <div class="app-panel-head">
+          <span class="app-panel-title">
             <Layers3 class="factory-master-icon-sm" />
             공장 / 라인 / 공정 구조
           </span>
@@ -451,67 +451,66 @@ function showToast(message: string) {
         </div>
       </section>
 
-      <section class="factory-master-panel factory-master-list-panel">
-        <div class="factory-master-toolbar">
+      <section class="app-panel factory-master-list-panel">
+        <div class="app-panel-head">
           <div class="factory-master-toolbar-copy">
-            <span>공장명 + 라인명 + 공정 순서 조합은 중복 등록할 수 없습니다.</span>
-            <span>수정, 비활성화, 삭제는 상세 화면에서만 처리할 수 있습니다.</span>
+            <span class="app-list-title">공장 및 생산라인 목록</span>
           </div>
-          <div class="factory-master-toolbar-actions">
-            <button class="factory-master-secondary-button" type="button" @click="handleRefresh">
+          <div class="app-actions">
+            <button class="app-button app-button-muted" type="button" @click="handleRefresh">
               <RefreshCw class="factory-master-icon-sm" />
               새로고침
             </button>
-            <button v-if="canManageMasterData" class="factory-master-primary-button" type="button" @click="openCreateForm">
+            <button v-if="canManageMasterData" class="app-button app-button-primary" type="button" @click="openCreateForm">
               <Plus class="factory-master-icon-sm" />
               신규 라우팅 등록
             </button>
           </div>
         </div>
 
-        <div class="factory-master-table-wrap">
-          <table class="factory-master-table">
+        <div class="app-table-wrap">
+          <table class="app-table">
             <thead>
               <tr>
-                <th class="factory-master-cell-center">No</th>
-                <th class="factory-master-sortable-header" @click="changeSort('factoryName')">공장명 <span>{{ getSortMark('factoryName') }}</span></th>
-                <th class="factory-master-sortable-header" @click="changeSort('lineName')">생산 라인 <span>{{ getSortMark('lineName') }}</span></th>
-                <th class="factory-master-cell-center factory-master-sortable-header" @click="changeSort('operationSeq')">공정 순서 <span>{{ getSortMark('operationSeq') }}</span></th>
-                <th class="factory-master-sortable-header" @click="changeSort('operationName')">세부 공정명 <span>{{ getSortMark('operationName') }}</span></th>
-                <th class="factory-master-cell-center factory-master-sortable-header" @click="changeSort('routingStatus')">상태 <span>{{ getSortMark('routingStatus') }}</span></th>
-                <th class="factory-master-cell-center factory-master-sortable-header" @click="changeSort('createdAt')">등록일시 <span>{{ getSortMark('createdAt') }}</span></th>
-                <th class="factory-master-cell-center factory-master-sortable-header" @click="changeSort('lastExecutionAt')">최근 생산 실적 일시 <span>{{ getSortMark('lastExecutionAt') }}</span></th>
+                <th class="text-center">No</th>
+                <th class="app-sortable-header" @click="changeSort('factoryName')">공장명 <span class="app-sort-mark">{{ getSortMark('factoryName') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('lineName')">생산 라인 <span class="app-sort-mark">{{ getSortMark('lineName') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeSort('operationSeq')">공정 순서 <span class="app-sort-mark">{{ getSortMark('operationSeq') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('operationName')">세부 공정명 <span class="app-sort-mark">{{ getSortMark('operationName') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeSort('routingStatus')">상태 <span class="app-sort-mark">{{ getSortMark('routingStatus') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeSort('createdAt')">등록일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeSort('lastExecutionAt')">최근 생산 실적 일시 <span class="app-sort-mark">{{ getSortMark('lastExecutionAt') }}</span></th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="factoryRoutingStore.isLoading">
-                <td colspan="8" class="factory-master-empty-cell">
+                <td colspan="8" class="app-empty">
                   <Loader2 class="factory-master-spinner" />
                   라우팅 기준정보를 가져오고 있습니다...
                 </td>
               </tr>
               <tr v-else-if="sortedRoutings.length === 0">
-                <td colspan="8" class="factory-master-empty-cell">조회된 공장/생산라인 기준정보가 없습니다.</td>
+                <td colspan="8" class="app-empty">조회된 공장/생산라인 기준정보가 없습니다.</td>
               </tr>
               <tr
                 v-for="(routing, index) in pagedRoutings"
                 v-else
                 :key="routing.routingId"
-                class="factory-master-table-row"
+                class="app-table-row"
                 @click="selectRow(routing)"
               >
-                <td class="factory-master-cell-center">{{ currentPage * pageSize + index + 1 }}</td>
-                <td class="factory-master-name">{{ routing.factoryName }}</td>
-                <td class="factory-master-code">{{ routing.lineName }}</td>
-                <td class="factory-master-cell-center">
-                  <span class="factory-master-seq-badge">{{ routing.operationSeq }}</span>
+                <td class="text-center app-table-id">{{ currentPage * pageSize + index + 1 }}</td>
+                <td class="app-table-main">{{ routing.factoryName }}</td>
+                <td class="app-table-strong">{{ routing.lineName }}</td>
+                <td class="text-center">
+                  <span class="app-status app-status-neutral">{{ routing.operationSeq }}</span>
                 </td>
-                <td class="factory-master-name">{{ routing.operationName }}</td>
-                <td class="factory-master-cell-center">
-                  <span class="factory-master-seq-badge">{{ getRoutingStatusLabel(routing.routingStatus) }}</span>
+                <td class="app-table-main">{{ routing.operationName }}</td>
+                <td class="text-center">
+                  <span class="app-status" :class="routing.routingStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">{{ getRoutingStatusLabel(routing.routingStatus) }}</span>
                 </td>
-                <td class="factory-master-cell-center factory-master-date">{{ formatDateTime(routing.createdAt) }}</td>
-                <td class="factory-master-cell-center factory-master-date">{{ formatDateTime(routing.lastExecutionAt) }}</td>
+                <td class="text-center app-table-id">{{ formatDateTime(routing.createdAt) }}</td>
+                <td class="text-center app-table-id">{{ formatDateTime(routing.lastExecutionAt) }}</td>
               </tr>
             </tbody>
             <tfoot>
@@ -522,12 +521,13 @@ function showToast(message: string) {
             </tfoot>
           </table>
         </div>
-        <div class="factory-master-pagination">
+        <div class="app-pagination">
           <p>총 {{ sortedRoutings.length }}건 · {{ currentPage + 1 }} / {{ totalPages }} 페이지</p>
-          <div class="factory-master-pagination-actions">
-            <button class="factory-master-secondary-button" type="button" :disabled="currentPage === 0" @click="fetchPage(0)">처음</button>
-            <button class="factory-master-secondary-button" type="button" :disabled="currentPage === 0" @click="fetchPage(currentPage - 1)">이전</button>
-            <button class="factory-master-secondary-button" type="button" :disabled="currentPage >= totalPages - 1" @click="fetchPage(currentPage + 1)">다음</button>
+          <div class="app-pagination-actions">
+            <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="fetchPage(0)">처음</button>
+            <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="fetchPage(currentPage - 1)">이전</button>
+            <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="fetchPage(currentPage + 1)">다음</button>
+            <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="fetchPage(totalPages - 1)">마지막</button>
           </div>
         </div>
       </section>
@@ -539,7 +539,7 @@ function showToast(message: string) {
         <div class="factory-master-modal-card">
           <div class="factory-master-modal-heading">
             <h2>{{ formMode === 'create' ? '신규 공장/생산라인 라우팅 등록' : '공장/생산라인 라우팅 수정' }}</h2>
-            <button class="factory-master-icon-button" type="button" @click="closeForm">
+            <button class="app-icon-button" type="button" @click="closeForm">
               <X class="factory-master-icon-sm" />
             </button>
           </div>
@@ -549,23 +549,23 @@ function showToast(message: string) {
 
             <div class="factory-master-field">
               <label class="factory-master-label" for="factory-name">공장명 *</label>
-              <input id="factory-name" v-model="form.factoryName" class="factory-master-input" maxlength="50" placeholder="예: 창원제1공장" required>
+              <input id="factory-name" v-model="form.factoryName" class="app-control app-control-lg" maxlength="50" placeholder="예: 창원제1공장" required>
             </div>
 
             <div class="factory-master-form-grid">
               <div class="factory-master-field">
                 <label class="factory-master-label" for="line-name">생산 라인명 *</label>
-                <input id="line-name" v-model="form.lineName" class="factory-master-input" maxlength="50" placeholder="예: A라인" required>
+                <input id="line-name" v-model="form.lineName" class="app-control app-control-lg" maxlength="50" placeholder="예: A라인" required>
               </div>
               <div class="factory-master-field">
                 <label class="factory-master-label" for="operation-seq">공정 순서 *</label>
-                <input id="operation-seq" v-model.number="form.operationSeq" class="factory-master-input" type="number" min="1" required>
+                <input id="operation-seq" v-model.number="form.operationSeq" class="app-control app-control-lg" type="number" min="1" required>
               </div>
             </div>
 
             <div class="factory-master-field">
               <label class="factory-master-label" for="operation-name">세부 공정명 *</label>
-              <input id="operation-name" v-model="form.operationName" class="factory-master-input" maxlength="50" placeholder="예: SMD 표면실장 공정" required>
+              <input id="operation-name" v-model="form.operationName" class="app-control app-control-lg" maxlength="50" placeholder="예: SMD 표면실장 공정" required>
             </div>
 
             <div class="factory-master-form-notice">
@@ -574,8 +574,8 @@ function showToast(message: string) {
             </div>
 
             <div class="factory-master-modal-actions">
-              <button class="factory-master-secondary-button" type="button" @click="closeForm">취소</button>
-              <button class="factory-master-primary-button" type="submit" :disabled="factoryRoutingStore.isSaving">
+              <button class="app-button app-button-lg app-button-muted" type="button" @click="closeForm">취소</button>
+              <button class="app-button app-button-lg app-button-primary" type="submit" :disabled="factoryRoutingStore.isSaving">
                 <Loader2 v-if="factoryRoutingStore.isSaving" class="factory-master-spinner-inline" />
                 {{ formMode === 'create' ? '라우팅 등록' : '수정 저장' }}
               </button>
@@ -829,22 +829,26 @@ function showToast(message: string) {
   @apply grid grid-cols-1 gap-6;
 }
 
+.factory-master-tree-panel {
+  @apply flex min-h-[28rem] min-w-0 flex-col;
+}
+
 .factory-master-tree-body {
-    @apply flex gap-5 overflow-x-auto overflow-y-hidden p-5;
+  @apply grid min-h-0 flex-1 grid-flow-col auto-cols-[minmax(18rem,20rem)] gap-5 overflow-x-auto overflow-y-hidden p-5;
   font-size: var(--app-font-size-xs);
   line-height: var(--app-line-height-xs);
   scroll-snap-type: x proximity;
 }
 
 .factory-master-tree-factory {
-  @apply flex min-w-[320px] max-w-[360px] shrink-0 flex-col space-y-3 rounded-xl border p-3;
+  @apply flex min-w-0 shrink-0 flex-col space-y-3 rounded-xl border p-3;
   background-color: var(--factory-color-surface);
   border-color: var(--factory-color-border);
   scroll-snap-align: start;
 }
 
 .factory-master-tree-factory-name {
-  @apply flex items-center gap-2 rounded-lg border px-3 py-2;
+  @apply flex min-h-10 items-center gap-2 truncate rounded-lg border px-3 py-2;
   background-color: var(--factory-color-primary-soft);
   border-color: var(--factory-color-primary-border);
   color: var(--factory-color-primary);
@@ -852,7 +856,7 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-lines {
-  @apply max-h-[360px] space-y-4 overflow-y-auto overflow-x-hidden pr-2 pl-4;
+  @apply max-h-[360px] space-y-4 overflow-y-auto overflow-x-hidden pl-4 pr-2;
 }
 
 .factory-master-tree-line {
@@ -861,7 +865,7 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-line-name {
-    @apply mb-2;
+  @apply mb-2 truncate;
   font-size: var(--app-font-size-11);
   line-height: var(--app-line-height-11);
   color: var(--factory-color-text-primary);
@@ -869,7 +873,7 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-operation {
-  @apply mb-1.5 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors;
+  @apply mb-1.5 flex min-h-10 w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors;
   background-color: var(--factory-color-surface);
   border-color: var(--factory-color-border);
   color: var(--factory-color-text-secondary);
@@ -882,7 +886,7 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-operation span {
-    @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full;
+  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full;
   font-size: var(--app-font-size-2xs);
   line-height: var(--app-line-height-2xs);
   background-color: var(--factory-color-primary);
@@ -891,6 +895,9 @@ function showToast(message: string) {
 }
 
 .factory-master-tree-operation strong {
+  @apply block min-w-0 truncate;
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-xs);
   font-weight: var(--factory-font-weight-muted);
 }
 

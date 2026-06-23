@@ -33,6 +33,8 @@ const filterParent = ref('')
 const filterChild = ref('')
 const filterVersion = ref('')
 const page = ref(0)
+const sortField = ref('parentItemCode')
+const sortDirection = ref<'asc' | 'desc'>('asc')
 const isFilterParentPickerOpen = ref(false)
 const isFilterChildPickerOpen = ref(false)
 
@@ -90,6 +92,10 @@ const bomParentGroups = computed<BomParentGroup[]>(() => {
   }))
 })
 
+const sortedBomParentGroups = computed(() => {
+  return [...bomParentGroups.value].sort((a, b) => compareValues(a[sortField.value as keyof BomParentGroup], b[sortField.value as keyof BomParentGroup]))
+})
+
 const stats = computed(() => {
   const groups = bomStore.bomGroupStats
   const parents = new Set(groups.map((bom) => bom.parentItemId)).size
@@ -110,6 +116,34 @@ const selectedParent = computed(() => {
 const selectedChild = computed(() => {
   return bomStore.childItems.find((item) => item.itemId === form.value.childItemId) || null
 })
+
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
 
 const filteredDownwardItems = computed(() => {
   return filterItemCandidates(bomStore.parentItems, downwardKeyword.value)
@@ -681,34 +715,34 @@ function formatDateTime(value: string) {
       <button type="button" class="bom-alert-close" @click="pageError = null">×</button>
     </div>
 
-    <div class="bom-stats-grid">
-      <article class="bom-stat-card">
-        <div class="bom-stat-icon"><Boxes /></div>
+    <div class="app-news-grid md:grid-cols-4">
+      <article class="app-news-card">
         <div>
-          <p class="bom-stat-label">전체 BOM</p>
-          <p class="bom-stat-value">{{ stats.total }} 건</p>
+          <p class="app-news-label">전체 BOM</p>
+          <p class="app-news-value">{{ stats.total }} 건</p>
         </div>
+        <div class="app-news-icon"><Boxes /></div>
       </article>
-      <article class="bom-stat-card">
-        <div class="bom-stat-icon bom-stat-icon-primary"><Layers3 /></div>
+      <article class="app-news-card">
         <div>
-          <p class="bom-stat-label">상위 품목</p>
-          <p class="bom-stat-value">{{ stats.parents }} 개</p>
+          <p class="app-news-label">상위 품목</p>
+          <p class="app-news-value">{{ stats.parents }} 개</p>
         </div>
+        <div class="app-news-icon app-bg-primary-soft app-accent"><Layers3 /></div>
       </article>
-      <article class="bom-stat-card">
-        <div class="bom-stat-icon bom-stat-icon-success"><GitBranch /></div>
+      <article class="app-news-card">
         <div>
-          <p class="bom-stat-label">구성 품목</p>
-          <p class="bom-stat-value">{{ stats.children }} 개</p>
+          <p class="app-news-label">구성 품목</p>
+          <p class="app-news-value app-text-success">{{ stats.children }} 개</p>
         </div>
+        <div class="app-news-icon app-bg-success-soft app-text-success"><GitBranch /></div>
       </article>
-      <article class="bom-stat-card">
-        <div class="bom-stat-icon bom-stat-icon-warning"><RefreshCw /></div>
+      <article class="app-news-card">
         <div>
-          <p class="bom-stat-label">BOM 버전</p>
-          <p class="bom-stat-value">{{ stats.versions }} 개</p>
+          <p class="app-news-label">BOM 버전</p>
+          <p class="app-news-value app-text-warning">{{ stats.versions }} 개</p>
         </div>
+        <div class="app-news-icon app-bg-warning-soft app-text-warning"><RefreshCw /></div>
       </article>
     </div>
 
@@ -719,19 +753,19 @@ function formatDateTime(value: string) {
     </div>
 
     <section v-if="activeTab === 'list'" class="bom-section">
-      <div class="bom-panel bom-query-panel">
-        <div class="bom-panel-header">
-          <span class="bom-panel-title"><Search /> 조회 검색 조건</span>
-          <button type="button" class="bom-icon-button" @click="isSearchExpanded = !isSearchExpanded">
+      <div class="app-search-panel">
+        <div class="app-panel-head -mx-5 -mt-5 mb-5 rounded-t-[var(--radius-panel)]">
+          <span class="app-panel-title"><Search class="app-panel-icon" /> 조회 검색 조건</span>
+          <button type="button" class="app-icon-button" @click="isSearchExpanded = !isSearchExpanded">
             <ChevronDown :class="{ 'is-folded': !isSearchExpanded }" />
           </button>
         </div>
-        <div v-show="isSearchExpanded" class="bom-filter-grid">
-          <label class="bom-field bom-picker">
-            <span class="bom-label">상위 품목</span>
+        <div v-show="isSearchExpanded" class="app-filter-grid">
+          <label class="app-field bom-picker">
+            <span class="app-label">상위 품목</span>
             <input
               v-model="filterParent"
-              class="bom-input"
+              class="app-control app-control-lg"
               placeholder="품목 ID, 코드, 이름"
               @focus="isFilterParentPickerOpen = filterParent.trim().length > 0"
               @input="handleFilterParentInput"
@@ -752,11 +786,11 @@ function formatDateTime(value: string) {
               <div v-if="filteredParentFilterItems.length === 0" class="bom-picker-empty">검색된 상위 품목이 없습니다.</div>
             </div>
           </label>
-          <label class="bom-field bom-picker">
-            <span class="bom-label">구성 품목</span>
+          <label class="app-field bom-picker">
+            <span class="app-label">구성 품목</span>
             <input
               v-model="filterChild"
-              class="bom-input"
+              class="app-control app-control-lg"
               placeholder="품목 ID, 코드, 이름"
               @focus="isFilterChildPickerOpen = filterChild.trim().length > 0"
               @input="handleFilterChildInput"
@@ -777,98 +811,98 @@ function formatDateTime(value: string) {
               <div v-if="filteredChildFilterItems.length === 0" class="bom-picker-empty">검색된 구성 품목이 없습니다.</div>
             </div>
           </label>
-          <label class="bom-field">
-            <span class="bom-label">BOM 버전</span>
-            <input v-model="filterVersion" class="bom-input" placeholder="v1.0" @keyup.enter="fetchPageData">
+          <label class="app-field">
+            <span class="app-label">BOM 버전</span>
+            <input v-model="filterVersion" class="app-control app-control-lg" placeholder="v1.0" @keyup.enter="fetchPageData">
           </label>
-          <div class="bom-filter-actions">
-            <button type="button" class="bom-button bom-button-muted" @click="resetFilters">초기화</button>
-            <button type="button" class="bom-button bom-button-primary" @click="fetchPageData">조회</button>
+          <div class="app-search-actions items-end">
+            <button type="button" class="app-button app-button-lg app-button-muted" @click="resetFilters">초기화</button>
+            <button type="button" class="app-button app-button-lg app-button-primary" @click="fetchPageData">조회</button>
           </div>
         </div>
       </div>
 
-      <div class="bom-panel">
-        <div class="bom-toolbar">
-          <div class="bom-toolbar-meta">조회 결과 <span>{{ bomStore.bomGroups.totalElements }}</span>개 BOM</div>
-          <div class="bom-toolbar-actions">
-            <button type="button" class="bom-button bom-button-muted" @click="fetchPageData">
+      <div class="app-panel">
+        <div class="app-panel-head">
+          <div class="app-panel-title">BOM 목록</div>
+          <div class="app-actions">
+            <button type="button" class="app-button app-button-muted" @click="fetchPageData">
               <RefreshCw /> 새로고침
             </button>
-            <button v-if="canWrite" type="button" class="bom-button bom-button-primary" @click="openCreateForm">
+            <button v-if="canWrite" type="button" class="app-button app-button-primary" @click="openCreateForm">
               <Plus /> BOM 등록
             </button>
           </div>
         </div>
 
-        <div class="bom-table-wrap">
-          <table class="bom-table">
+        <div class="app-table-wrap">
+          <table class="app-table">
             <thead>
               <tr>
-                <th>No</th>
-                <th>상위 품목</th>
-                <th>유형</th>
-                <th class="bom-center">구성 품목 수</th>
-                <th>버전</th>
-                <th>상태</th>
-                <th>등록일</th>
+                <th class="app-sortable-header" @click="changeSort('parentItemId')">No <span class="app-sort-mark">{{ getSortMark('parentItemId') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('parentItemCode')">상위 품목 <span class="app-sort-mark">{{ getSortMark('parentItemCode') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('parentItemType')">유형 <span class="app-sort-mark">{{ getSortMark('parentItemType') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeSort('childCount')">구성 품목 수 <span class="app-sort-mark">{{ getSortMark('childCount') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('bomVersion')">버전 <span class="app-sort-mark">{{ getSortMark('bomVersion') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('bomStatus')">상태 <span class="app-sort-mark">{{ getSortMark('bomStatus') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('createdAt')">등록일 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="bomStore.isLoading">
-                <td colspan="7" class="bom-empty"><Loader2 class="bom-spin" /> 데이터를 가져오고 있습니다...</td>
+                <td colspan="7" class="app-empty"><Loader2 class="mx-auto mb-2 h-5 w-5 app-spin" /> 데이터를 가져오고 있습니다...</td>
               </tr>
               <tr v-else-if="bomParentGroups.length === 0">
-                <td colspan="7" class="bom-empty">조회된 BOM 데이터가 없습니다.</td>
+                <td colspan="7" class="app-empty">조회된 BOM 데이터가 없습니다.</td>
               </tr>
               <tr
-                v-for="(group, index) in bomParentGroups"
+                v-for="(group, index) in sortedBomParentGroups"
                 v-else
                 :key="group.key"
-                class="bom-row"
+                class="app-table-row"
                 @click="selectGroup(group)"
               >
-                <td>{{ bomStore.bomGroups.page * bomStore.bomGroups.size + index + 1 }}</td>
+                <td class="app-table-id">{{ bomStore.bomGroups.page * bomStore.bomGroups.size + index + 1 }}</td>
                 <td>
-                  <div class="bom-item-main">{{ group.parentItemCode }}</div>
-                  <div class="bom-item-sub">{{ group.parentItemName }}</div>
+                  <div class="app-table-main">{{ group.parentItemCode }}</div>
+                  <div class="app-table-muted">{{ group.parentItemName }}</div>
                 </td>
-                <td><span class="bom-badge">{{ group.parentItemType }}</span></td>
-                <td class="bom-center">{{ group.childCount }} 개</td>
-                <td><span class="bom-version">{{ group.bomVersion }}</span></td>
+                <td><span class="app-status app-status-neutral">{{ group.parentItemType }}</span></td>
+                <td class="text-center app-table-strong">{{ group.childCount }} 개</td>
+                <td><span class="app-status app-status-neutral">{{ group.bomVersion }}</span></td>
                 <td>
-                  <span class="bom-status" :class="group.bomStatus === 'ACTIVE' ? 'is-active' : 'is-inactive'">
+                  <span class="app-status" :class="group.bomStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
                     {{ group.bomStatus === 'ACTIVE' ? '활성' : '비활성' }}
                   </span>
                 </td>
-                <td>{{ formatDateTime(group.createdAt) }}</td>
+                <td class="app-table-id">{{ formatDateTime(group.createdAt) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p class="app-type-sm app-font-strong app-text-muted">
+        <div class="app-pagination">
+          <p>
             총 {{ bomStore.bomGroups.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ bomStore.bomGroups.size }}건씩 · {{ bomStore.bomGroups.page + 1 }} / {{ Math.max(bomStore.bomGroups.totalPages, 1) }} 페이지
           </p>
-          <div class="flex gap-2">
-            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(0)">처음</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(bomStore.bomGroups.page - 1)">이전</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.page + 1)">다음</button>
-            <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.totalPages - 1)">마지막</button>
+          <div class="app-pagination-actions">
+            <button class="app-page-button" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(0)">처음</button>
+            <button class="app-page-button" type="button" :disabled="bomStore.bomGroups.page === 0" @click="changePage(bomStore.bomGroups.page - 1)">이전</button>
+            <button class="app-page-button" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.page + 1)">다음</button>
+            <button class="app-page-button" type="button" :disabled="bomStore.bomGroups.page >= bomStore.bomGroups.totalPages - 1" @click="changePage(bomStore.bomGroups.totalPages - 1)">마지막</button>
           </div>
         </div>
       </div>
     </section>
 
     <section v-else-if="activeTab === 'downward'" class="bom-section">
-      <div class="bom-panel bom-query-panel">
+      <div class="app-panel bom-query-panel">
         <div class="bom-query-row">
           <div class="bom-field bom-query-field bom-picker">
             <span class="bom-label">상위 품목 검색</span>
             <div class="bom-picker-control">
               <input
                 v-model="downwardKeyword"
-                class="bom-input"
+                class="app-control app-control-lg"
                 placeholder="완제품/반제품 코드 또는 이름 검색"
                 @focus="isDownwardPickerOpen = downwardKeyword.trim().length > 0"
                 @input="handleDownwardKeywordInput"
@@ -896,22 +930,22 @@ function formatDateTime(value: string) {
           </div>
           <label class="bom-field">
             <span class="bom-label">버전</span>
-            <select v-model="downwardVersion" class="bom-input" :disabled="!selectedDownwardItem" @focus="loadDownwardVersions">
+            <select v-model="downwardVersion" class="app-control app-control-lg" :disabled="!selectedDownwardItem" @focus="loadDownwardVersions">
               <option value="">전체 버전</option>
               <option v-for="version in bomStore.parentVersions" :key="version" :value="version">{{ version }}</option>
             </select>
           </label>
           <label class="bom-field">
             <span class="bom-label">기준 수량</span>
-            <input v-model.number="downwardBaseQuantity" type="number" min="1" step="1" class="bom-input">
+            <input v-model.number="downwardBaseQuantity" type="number" min="1" step="1" class="app-control app-control-lg">
           </label>
           <div class="bom-query-actions">
-            <button type="button" class="bom-button bom-button-muted" @click="clearDownwardItem">초기화</button>
-            <button type="button" class="bom-button bom-button-primary" :disabled="!selectedDownwardItem" @click="searchDownwardTree">정전개 조회</button>
+            <button type="button" class="app-button app-button-lg app-button-muted" @click="clearDownwardItem">초기화</button>
+            <button type="button" class="app-button app-button-lg app-button-primary" :disabled="!selectedDownwardItem" @click="searchDownwardTree">정전개 조회</button>
           </div>
         </div>
       </div>
-      <div class="bom-panel bom-tree-panel">
+      <div class="app-panel bom-tree-panel">
         <BomTreeList
           :nodes="displayedDownwardTree"
           relation-key="children"
@@ -923,14 +957,14 @@ function formatDateTime(value: string) {
     </section>
 
     <section v-else class="bom-section">
-      <div class="bom-panel bom-query-panel">
+      <div class="app-panel bom-query-panel">
         <div class="bom-query-row">
           <div class="bom-field bom-query-field bom-picker">
             <span class="bom-label">구성 품목 검색</span>
             <div class="bom-picker-control">
               <input
                 v-model="reverseKeyword"
-                class="bom-input"
+                class="app-control app-control-lg"
                 placeholder="원자재/반제품 코드 또는 이름 검색"
                 @focus="isReversePickerOpen = reverseKeyword.trim().length > 0"
                 @input="handleReverseKeywordInput"
@@ -958,19 +992,19 @@ function formatDateTime(value: string) {
           </div>
           <label class="bom-field">
             <span class="bom-label">버전</span>
-            <select v-model="reverseVersion" class="bom-input" :disabled="!selectedReverseItem" @focus="loadReverseVersions">
+            <select v-model="reverseVersion" class="app-control app-control-lg" :disabled="!selectedReverseItem" @focus="loadReverseVersions">
               <option value="">전체 버전</option>
               <option v-for="version in bomStore.childVersions" :key="version" :value="version">{{ version }}</option>
             </select>
           </label>
           <div class="bom-query-actions">
-            <button type="button" class="bom-button bom-button-muted" @click="clearReverseItem">초기화</button>
-            <button type="button" class="bom-button bom-button-primary" :disabled="!selectedReverseItem" @click="searchReverse">역전개 조회</button>
+            <button type="button" class="app-button app-button-lg app-button-muted" @click="clearReverseItem">초기화</button>
+            <button type="button" class="app-button app-button-lg app-button-primary" :disabled="!selectedReverseItem" @click="searchReverse">역전개 조회</button>
           </div>
         </div>
       </div>
 
-      <div class="bom-panel bom-tree-panel">
+      <div class="app-panel bom-tree-panel">
         <BomTreeList
           :nodes="hasSearchedReverse ? bomStore.childParentTree : []"
           relation-key="parents"
@@ -978,13 +1012,13 @@ function formatDateTime(value: string) {
         />
       </div>
 
-      <div v-if="hasSearchedReverse" class="bom-panel">
-        <div class="bom-panel-header">
-          <span class="bom-panel-title">상위 사용처 목록</span>
+      <div v-if="hasSearchedReverse" class="app-panel">
+        <div class="app-panel-header">
+          <span class="app-panel-title">상위 사용처 목록</span>
           <span class="bom-toolbar-meta">{{ bomStore.childParents.length }}건</span>
         </div>
-        <div class="bom-table-wrap">
-          <table class="bom-table bom-detail-table">
+        <div class="app-table-wrap">
+          <table class="app-table bom-detail-table">
             <thead>
               <tr>
                 <th>상위 품목</th>
@@ -1029,7 +1063,7 @@ function formatDateTime(value: string) {
           <div class="bom-picker-control">
             <input
               v-model="formParentKeyword"
-              class="bom-input"
+              class="app-control app-control-lg"
               placeholder="완제품/반제품 코드 또는 이름 검색"
               @focus="isFormParentPickerOpen = formParentKeyword.trim().length > 0"
               @input="handleFormParentKeywordInput"
@@ -1060,7 +1094,7 @@ function formatDateTime(value: string) {
           <div class="bom-picker-control">
             <input
               v-model="formChildKeyword"
-              class="bom-input"
+              class="app-control app-control-lg"
               placeholder="원자재/반제품 코드 또는 이름 검색"
               @focus="isFormChildPickerOpen = formChildKeyword.trim().length > 0"
               @input="handleFormChildKeywordInput"
@@ -1087,11 +1121,15 @@ function formatDateTime(value: string) {
         </div>
 
         <div v-if="!editingBomId" class="bom-form-lines">
-          <button type="button" class="bom-button bom-button-muted" @click="addFormLine">
+          <button type="button" class="app-button app-button-muted" @click="addFormLine">
             <Plus /> 구성 품목 추가
           </button>
-          <div v-if="formLines.length > 0" class="bom-table-wrap">
-            <table class="bom-table bom-detail-table">
+          <div v-if="formLines.length > 0" class="app-table-wrap">
+            <div class="app-list-head">
+              <span class="app-list-title">등록 예정 구성 품목</span>
+              <span class="app-list-meta">총 {{ formLines.length.toLocaleString() }}건</span>
+            </div>
+            <table class="app-table bom-detail-table">
               <thead>
                 <tr>
                   <th>구성 품목</th>
@@ -1122,17 +1160,17 @@ function formatDateTime(value: string) {
         <div class="bom-form-grid">
           <label class="bom-field">
             <span class="bom-label">소요량</span>
-            <input v-model.number="form.quantity" type="number" min="1" step="1" class="bom-input" @blur="form.quantity = normalizeQuantity(form.quantity)">
+            <input v-model.number="form.quantity" type="number" min="1" step="1" class="app-control" @blur="form.quantity = normalizeQuantity(form.quantity)">
           </label>
           <label class="bom-field">
             <span class="bom-label">BOM 버전</span>
-            <input v-model="form.bomVersion" maxlength="20" class="bom-input" placeholder="v1.0">
+            <input v-model="form.bomVersion" maxlength="20" class="app-control" placeholder="v1.0">
           </label>
         </div>
 
         <div class="bom-modal-actions">
-          <button type="button" class="bom-button bom-button-muted" @click="closeForm">취소</button>
-          <button type="submit" class="bom-button bom-button-primary" :disabled="bomStore.isSaving">
+          <button type="button" class="app-button app-button-muted" @click="closeForm">취소</button>
+          <button type="submit" class="app-button app-button-primary" :disabled="bomStore.isSaving">
             <Loader2 v-if="bomStore.isSaving" class="bom-spin" />
             저장
           </button>

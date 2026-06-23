@@ -5,7 +5,9 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
+  Gauge,
   Loader2,
+  Lock,
   Package,
   RefreshCw,
   Search,
@@ -52,6 +54,8 @@ const executionSortOrder = ref<ExecutionSortOrder>('latest')
 const executionOperationFilter = ref<number | 'ALL'>('ALL')
 const executionWorkerFilter = ref<string>('ALL')
 const executionQtyFilter = ref<ExecutionQtyFilter>('ALL')
+const orderSortField = ref<keyof WorkOrderResponse>('planDate')
+const orderSortDirection = ref<'asc' | 'desc'>('desc')
 
 const form = reactive<Omit<ProductionExecutionCreateRequest, 'orderKey'>>({
   routingId: 0,
@@ -222,6 +226,13 @@ function getStatusLabel(status: WorkOrderStatus) {
   return labels[status]
 }
 
+function getStatusClass(status: WorkOrderStatus) {
+  if (status === 'READY') return 'app-status-warning'
+  if (status === 'RUN') return 'app-status-progress'
+  if (status === 'CLOSE') return 'app-status-success'
+  return 'app-status-neutral'
+}
+
 function formatNumber(value: number | null | undefined) {
   return Number(value ?? 0).toLocaleString()
 }
@@ -283,7 +294,7 @@ function buildOrderSearchParams(page = 0): WorkOrderSearchParams {
   return {
     page,
     size: 10,
-    sort: 'planDate,desc',
+    sort: `${String(orderSortField.value)},${orderSortDirection.value}`,
     status: appliedStatus.value === 'ALL' ? '' : appliedStatus.value,
     keyword,
     factoryName: appliedFactory.value,
@@ -300,6 +311,21 @@ async function loadExecutionOrders(page = 0) {
     pageError.value = err instanceof Error ? err.message : '작업 지시 목록 조회에 실패했습니다.'
     throw err
   }
+}
+
+async function changeOrderSort(field: keyof WorkOrderResponse) {
+  if (orderSortField.value === field) {
+    orderSortDirection.value = orderSortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    orderSortField.value = field
+    orderSortDirection.value = 'asc'
+  }
+  await loadExecutionOrders(0)
+}
+
+function getOrderSortMark(field: keyof WorkOrderResponse) {
+  if (orderSortField.value !== field) return ''
+  return orderSortDirection.value === 'asc' ? '▲' : '▼'
 }
 
 async function refreshData() {
@@ -433,10 +459,10 @@ function selectKeywordSuggestion(orderNo: string) {
 
     <header class="wo-header">
       <div>
-        <h1 class="wo-title">공정 실적 및 원부자재</h1>
+        <h1 class="wo-title">공정 실적 관리</h1>
         <p class="wo-subtitle">진행 중인 작업 지시를 기준으로 공정별 생산 실적을 입력하고 BOM 투입량 변화를 확인합니다.</p>
       </div>
-      <button class="wo-button wo-button-subtle" :disabled="workOrderStore.isLoading" @click="refreshData">
+      <button class="app-button app-button-muted" :disabled="workOrderStore.isLoading" @click="refreshData">
         <RefreshCw class="wo-button-icon" />
         새로고침
       </button>
@@ -445,27 +471,39 @@ function selectKeywordSuggestion(orderNo: string) {
     <div v-if="hasNoRoutings" class="wo-alert wo-alert-danger">
       <AlertTriangle class="wo-icon" />
       <span>등록된 공장/생산 라우팅 기준정보가 없어 공정 실적을 등록할 수 없습니다.</span>
-      <RouterLink v-if="authStore.canManageMasterData" class="wo-button wo-button-subtle" to="/master/factory-lines">
+      <RouterLink v-if="authStore.canManageMasterData" class="app-button app-button-muted" to="/master/factory-lines">
         기준정보 등록
       </RouterLink>
     </div>
 
-    <section class="wo-metric-grid wo-panel pe-summary-panel">
-      <div class="wo-metric">
-        <span>전체 작업 지시</span>
-        <strong>{{ formatNumber(workOrderStore.workOrders.length) }}</strong>
+    <section class="app-news-grid md:grid-cols-4">
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">전체 작업 지시</p>
+          <strong class="app-news-value">{{ formatNumber(workOrderStore.workOrders.length) }}</strong>
+        </div>
+        <div class="app-news-icon"><FileText /></div>
       </div>
-      <div class="wo-metric">
-        <span>실적 등록 가능</span>
-        <strong>{{ formatNumber(runnableOrders) }}</strong>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label app-text-success">실적 등록 가능</p>
+          <strong class="app-news-value app-text-success">{{ formatNumber(runnableOrders) }}</strong>
+        </div>
+        <div class="app-news-icon app-bg-success-soft app-text-success"><ClipboardCheck /></div>
       </div>
-      <div class="wo-metric">
-        <span>마감 작업</span>
-        <strong>{{ formatNumber(closeLockedOrders) }}</strong>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label app-text-warning">마감 작업</p>
+          <strong class="app-news-value app-text-warning">{{ formatNumber(closeLockedOrders) }}</strong>
+        </div>
+        <div class="app-news-icon app-bg-warning-soft app-text-warning"><Lock /></div>
       </div>
-      <div class="wo-metric">
-        <span>선택 작업 불량률</span>
-        <strong>{{ totalDefectRate }}%</strong>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">선택 작업 불량률</p>
+          <strong class="app-news-value app-text-strong">{{ totalDefectRate }}%</strong>
+        </div>
+        <div class="app-news-icon"><Gauge /></div>
       </div>
     </section>
 
@@ -475,23 +513,23 @@ function selectKeywordSuggestion(orderNo: string) {
     </nav>
 
     <section class="pe-layout">
-      <section class="wo-panel pe-order-panel">
-        <div class="wo-panel-head">
-          <div class="wo-head-inline">
-            <FileText class="wo-icon" />
-            <h2 class="wo-section-title">작업 지시 선택</h2>
+      <section class="app-panel pe-order-panel">
+        <div class="app-panel-head">
+          <div class="app-panel-title">
+            <FileText class="app-panel-icon" />
+            <h2>작업 지시 선택</h2>
           </div>
-          <button class="wo-button wo-button-subtle" @click="selectRunnableFilter">RUN 보기</button>
+          <button class="app-button app-button-muted" @click="selectRunnableFilter">RUN 보기</button>
         </div>
-        <div class="pe-filter-box">
+        <div class="app-filter-body">
           <div class="pe-filter-row pe-filter-row-main">
-            <label class="wo-field wo-autocomplete">
-              <span class="wo-label">검색어</span>
-              <div class="wo-search-box">
-                <Search class="wo-search-icon" />
+            <label class="app-field wo-autocomplete">
+              <span class="app-label">검색어</span>
+              <div class="app-search-box">
+                <Search class="app-search-icon" />
                 <input
                   v-model="keywordInput"
-                  class="wo-control wo-control-search"
+                  class="app-control app-control-search"
                   placeholder="작업지시번호, 품목, 공정 검색"
                   @focus="isKeywordSuggestOpen = true"
                   @input="isKeywordSuggestOpen = true"
@@ -511,9 +549,9 @@ function selectKeywordSuggestion(orderNo: string) {
                 </button>
               </div>
             </label>
-            <label class="wo-field">
-              <span class="wo-label">상태</span>
-              <select v-model="statusInput" class="wo-control">
+            <label class="app-field">
+              <span class="app-label">상태</span>
+              <select v-model="statusInput" class="app-control">
                 <option value="ALL">전체</option>
                 <option value="RUN">진행</option>
                 <option value="HOLD">보류</option>
@@ -523,23 +561,23 @@ function selectKeywordSuggestion(orderNo: string) {
             </label>
           </div>
           <div class="pe-filter-row pe-filter-row-routing">
-            <label class="wo-field">
-              <span class="wo-label">공장</span>
-              <select v-model="factoryInput" class="wo-control">
+            <label class="app-field">
+              <span class="app-label">공장</span>
+              <select v-model="factoryInput" class="app-control">
                 <option value="">전체 공장</option>
                 <option v-for="factory in factoryOptions" :key="factory" :value="factory">{{ factory }}</option>
               </select>
             </label>
-            <label class="wo-field">
-              <span class="wo-label">라인</span>
-              <select v-model="lineInput" class="wo-control" :disabled="!factoryInput">
+            <label class="app-field">
+              <span class="app-label">라인</span>
+              <select v-model="lineInput" class="app-control" :disabled="!factoryInput">
                 <option value="">전체 라인</option>
                 <option v-for="line in lineOptions" :key="line" :value="line">{{ line }}</option>
               </select>
             </label>
-            <label class="wo-field">
-              <span class="wo-label">공정</span>
-              <select v-model.number="routingInput" class="wo-control">
+            <label class="app-field">
+              <span class="app-label">공정</span>
+              <select v-model.number="routingInput" class="app-control">
                 <option value="">전체 공정</option>
                 <option v-for="routing in operationOptions" :key="routing.routingId" :value="routing.routingId">
                   {{ routing.operationSeq }}. {{ routing.operationName }}
@@ -547,38 +585,41 @@ function selectKeywordSuggestion(orderNo: string) {
               </select>
             </label>
           </div>
-          <div class="wo-toolbar wo-toolbar-end pe-filter-actions">
-            <button class="wo-button wo-button-subtle" type="button" @click="resetOrderSearch">초기화</button>
-            <button class="wo-button wo-button-primary" type="button" @click="applyOrderSearch">
+          <div class="app-actions-end pe-filter-actions">
+            <button class="app-button app-button-muted" type="button" @click="resetOrderSearch">초기화</button>
+            <button class="app-button app-button-primary" type="button" @click="applyOrderSearch">
               <Search class="wo-button-icon" />
               조회
             </button>
           </div>
         </div>
-        <div class="pe-order-list wo-table-wrap">
-          <table class="wo-table pe-order-table">
+        <div class="pe-order-list app-table-wrap">
+          <div class="app-list-head">
+            <span class="app-list-title">작업 지시 목록</span>
+          </div>
+          <table class="app-table pe-order-table">
             <thead>
               <tr>
-                <th class="wo-status-cell">No</th>
-                <th>작업지시번호</th>
-                <th>품목</th>
-                <th>공장</th>
-                <th>라인</th>
-                <th>공정</th>
-                <th class="wo-status-cell">상태</th>
-                <th>진행률</th>
+                <th class="app-sortable-header text-center" @click="changeOrderSort('orderId')">No <span class="app-sort-mark">{{ getOrderSortMark('orderId') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('orderNo')">작업지시번호 <span class="app-sort-mark">{{ getOrderSortMark('orderNo') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('itemName')">품목 <span class="app-sort-mark">{{ getOrderSortMark('itemName') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('factoryName')">공장 <span class="app-sort-mark">{{ getOrderSortMark('factoryName') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('lineName')">라인 <span class="app-sort-mark">{{ getOrderSortMark('lineName') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('operationSeq')">공정 <span class="app-sort-mark">{{ getOrderSortMark('operationSeq') }}</span></th>
+                <th class="app-sortable-header text-center" @click="changeOrderSort('status')">상태 <span class="app-sort-mark">{{ getOrderSortMark('status') }}</span></th>
+                <th class="app-sortable-header" @click="changeOrderSort('progressRate')">진행률 <span class="app-sort-mark">{{ getOrderSortMark('progressRate') }}</span></th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="workOrderStore.isLoading">
-                <td colspan="8" class="wo-empty">
-                  <Loader2 class="wo-empty-icon wo-spin" />
+                <td colspan="8" class="app-empty">
+                  <Loader2 class="mx-auto mb-2 h-5 w-5 app-spin" />
                   작업 지시를 불러오고 있습니다.
                 </td>
               </tr>
               <tr v-else-if="filteredOrders.length === 0">
-                <td colspan="8" class="wo-empty">
-                  <FileText class="wo-empty-icon" />
+                <td colspan="8" class="app-empty">
+                  <FileText class="mx-auto mb-2 h-7 w-7" />
                   조건에 맞는 작업 지시가 없습니다.
                 </td>
               </tr>
@@ -586,18 +627,18 @@ function selectKeywordSuggestion(orderNo: string) {
                 <tr
                   v-for="(order, idx) in filteredOrders"
                   :key="order.orderId"
-                  class="pe-order-table-row"
-                  :class="{ 'wo-row-selected': selectedOrder?.orderId === order.orderId }"
+                  class="app-table-row"
+                  :class="{ 'app-table-row-selected': selectedOrder?.orderId === order.orderId }"
                   @click="selectOrder(order.orderNo)"
                 >
-                  <td class="wo-mono wo-status-cell">{{ workOrderStore.page * workOrderStore.size + idx + 1 }}</td>
-                  <td><strong class="wo-mono">{{ order.orderNo }}</strong></td>
-                  <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
+                  <td class="text-center app-table-id">{{ workOrderStore.page * workOrderStore.size + idx + 1 }}</td>
+                  <td><strong class="app-table-id">{{ order.orderNo }}</strong></td>
+                  <td><strong class="app-table-main">{{ order.itemName }}</strong><span class="app-table-muted">{{ order.itemCode }}</span></td>
                   <td>{{ order.factoryName }}</td>
                   <td>{{ order.lineName }}</td>
-                  <td><strong>{{ getOrderOperationLabel(order) }}</strong></td>
-                  <td class="wo-status-cell">
-                    <span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span>
+                  <td><strong class="app-table-main">{{ getOrderOperationLabel(order) }}</strong></td>
+                  <td class="text-center">
+                    <span class="app-status" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
                   </td>
                   <td>
                     <div class="pe-order-progress-cell">
@@ -610,37 +651,37 @@ function selectKeywordSuggestion(orderNo: string) {
             </tbody>
           </table>
         </div>
-        <div class="wo-toolbar wo-toolbar-between pe-order-pagination">
-          <span class="wo-count">
+        <div class="app-pagination">
+          <span>
             총 {{ formatNumber(workOrderStore.totalElements) }}건
             · {{ workOrderStore.totalElements === 0 ? 0 : workOrderStore.page * workOrderStore.size + 1 }}-{{ Math.min((workOrderStore.page + 1) * workOrderStore.size, workOrderStore.totalElements) }} 표시
             · 10건씩
             · {{ workOrderStore.page + 1 }} / {{ Math.max(workOrderStore.totalPages, 1) }} 페이지
           </span>
-          <div class="wo-head-inline">
+          <div class="app-pagination-actions">
             <button
-              class="wo-button wo-button-subtle"
+              class="app-page-button"
               :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
               @click="loadExecutionOrders(0)"
             >
               처음
             </button>
             <button
-              class="wo-button wo-button-subtle"
+              class="app-page-button"
               :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
               @click="loadExecutionOrders(workOrderStore.page - 1)"
             >
               이전
             </button>
             <button
-              class="wo-button wo-button-subtle"
+              class="app-page-button"
               :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
               @click="loadExecutionOrders(workOrderStore.page + 1)"
             >
               다음
             </button>
             <button
-              class="wo-button wo-button-subtle"
+              class="app-page-button"
               :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
               @click="loadExecutionOrders(workOrderStore.totalPages - 1)"
             >
@@ -651,11 +692,11 @@ function selectKeywordSuggestion(orderNo: string) {
       </section>
 
       <section class="pe-main">
-        <section v-if="selectedOrder" class="wo-panel">
+        <section v-if="selectedOrder" class="app-panel">
           <div class="wo-detail-head">
             <div>
               <p class="wo-kicker">SELECTED WORK ORDER</p>
-              <h2 class="wo-section-title">{{ selectedOrder.orderNo }}</h2>
+              <h2 class="app-panel-title">{{ selectedOrder.orderNo }}</h2>
             </div>
             <span class="wo-status" :data-status="selectedOrder.status">{{ getStatusLabel(selectedOrder.status) }}</span>
           </div>
@@ -673,23 +714,23 @@ function selectKeywordSuggestion(orderNo: string) {
           </div>
         </section>
 
-        <section v-else class="wo-panel wo-empty-panel">
+        <section v-else class="app-panel wo-empty-panel">
           <ClipboardCheck class="wo-empty-icon" />
           <strong>작업 지시를 선택해주세요.</strong>
           <span>실적 등록과 투입량 확인은 작업 지시 상세 조회 후 가능합니다.</span>
         </section>
 
         <section v-if="selectedOrder && activeTab === 'register'" class="wo-tab-section">
-          <div class="wo-panel">
-            <div class="wo-panel-head">
+          <div class="app-panel">
+            <div class="app-panel-head">
               <div class="wo-head-inline">
                 <ClipboardCheck class="wo-icon" />
-                <h2 class="wo-section-title">실제 생산실적 등록</h2>
+                <h2 class="app-panel-title">실제 생산실적 등록</h2>
               </div>
               <span v-if="!canSubmitExecution" class="wo-badge-danger">RUN 상태 필요</span>
             </div>
             <div class="wo-table-wrap">
-              <table class="wo-table wo-table-compact">
+              <table class="app-table wo-table-compact">
                 <thead>
                   <tr>
                     <th>공정</th>
@@ -720,7 +761,7 @@ function selectKeywordSuggestion(orderNo: string) {
             <div class="wo-form-grid wo-form-grid-execution">
               <label class="wo-field">
                 <span class="wo-label">실제 수행 공정</span>
-                <select v-model.number="form.routingId" class="wo-control" :disabled="!canSubmitExecution">
+                <select v-model.number="form.routingId" class="app-control" :disabled="!canSubmitExecution">
                   <option :value="0">공정 선택</option>
                   <option v-for="progress in executionRoutingOptions" :key="progress.routingId" :value="progress.routingId">
                     {{ progress.operationSeq }}. {{ progress.operationName }} · 잔여 {{ formatNumber(getRemainingOperationQty(progress)) }} · {{ getOperationProgressStatusLabel(progress) }}
@@ -730,30 +771,30 @@ function selectKeywordSuggestion(orderNo: string) {
               </label>
               <label class="wo-field">
                 <span class="wo-label">양품 수량</span>
-                <input v-model.number="form.goodQty" class="wo-control" type="number" min="0" :disabled="!canSubmitExecution" />
+                <input v-model.number="form.goodQty" class="app-control" type="number" min="0" :disabled="!canSubmitExecution" />
               </label>
               <label class="wo-field">
                 <span class="wo-label">불량 수량</span>
-                <input v-model.number="form.defectQty" class="wo-control" type="number" min="0" :disabled="!canSubmitExecution" />
+                <input v-model.number="form.defectQty" class="app-control" type="number" min="0" :disabled="!canSubmitExecution" />
               </label>
               <label class="wo-field">
                 <span class="wo-label">불량 유형</span>
-                <input v-model="form.defectType" class="wo-control" placeholder="예) 치수, 외관, 조립" :disabled="!canSubmitExecution || form.defectQty <= 0" />
+                <input v-model="form.defectType" class="app-control" placeholder="예) 치수, 외관, 조립" :disabled="!canSubmitExecution || form.defectQty <= 0" />
               </label>
               <label class="wo-field">
                 <span class="wo-label">불량 사유</span>
-                <input v-model="form.defectReason" class="wo-control" placeholder="불량 원인 입력" :disabled="!canSubmitExecution || form.defectQty <= 0" />
+                <input v-model="form.defectReason" class="app-control" placeholder="불량 원인 입력" :disabled="!canSubmitExecution || form.defectQty <= 0" />
               </label>
               <label class="wo-field">
                 <span class="wo-label">재작업 여부</span>
-                <select v-model="form.reworkable" class="wo-control" :disabled="!canSubmitExecution || form.defectQty <= 0">
+                <select v-model="form.reworkable" class="app-control" :disabled="!canSubmitExecution || form.defectQty <= 0">
                   <option :value="false">재작업 불가</option>
                   <option :value="true">재작업 가능</option>
                 </select>
               </label>
               <label class="wo-field">
                 <span class="wo-label">생산 입고 로케이션</span>
-                <select v-model="form.receiptLocationCode" class="wo-control" :disabled="!canSubmitExecution || form.goodQty <= 0">
+                <select v-model="form.receiptLocationCode" class="app-control" :disabled="!canSubmitExecution || form.goodQty <= 0">
                   <option value="">기본 로케이션</option>
                   <option v-for="location in locations" :key="location.locationId" :value="location.locationCode">
                     {{ location.locationCode }} · {{ location.warehouseName }}{{ location.productionReceiptDefault ? ' · 기본' : '' }}
@@ -762,7 +803,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </label>
               <label class="wo-field">
                 <span class="wo-label">총 소요 시간(분)</span>
-                <input v-model.number="form.manHoursMinutes" class="wo-control" type="number" min="1" :disabled="!canSubmitExecution" />
+                <input v-model.number="form.manHoursMinutes" class="app-control" type="number" min="1" :disabled="!canSubmitExecution" />
               </label>
             </div>
             <div class="wo-preview pe-preview-note">
@@ -787,7 +828,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </div>
             </div>
             <div class="wo-toolbar wo-toolbar-end">
-              <button class="wo-button wo-button-primary" :disabled="hasExecutionValidationError || workOrderStore.isSaving" @click="submitExecution">
+              <button class="app-button app-button-primary" :disabled="hasExecutionValidationError || workOrderStore.isSaving" @click="submitExecution">
                 <Loader2 v-if="workOrderStore.isSaving" class="wo-button-icon wo-spin" />
                 <CheckCircle2 v-else class="wo-button-icon" />
                 실적 등록
@@ -797,12 +838,12 @@ function selectKeywordSuggestion(orderNo: string) {
         </section>
 
         <section v-if="selectedOrder && activeTab === 'lookup'" class="wo-tab-section">
-          <div class="wo-panel wo-execution-list-panel">
-            <div class="wo-panel-head">
-              <h2 class="wo-section-title">생산 실적 이력</h2>
+          <div class="app-panel wo-execution-list-panel">
+            <div class="app-panel-head">
+              <h2 class="app-panel-title">생산 실적 이력</h2>
               <div class="wo-head-inline">
                 <span class="wo-count">총 {{ filteredExecutions.length }}건</span>
-                <button class="wo-button wo-button-subtle" type="button" @click="isExecutionHistoryOpen = !isExecutionHistoryOpen">
+                <button class="app-button app-button-muted" type="button" @click="isExecutionHistoryOpen = !isExecutionHistoryOpen">
                   {{ isExecutionHistoryOpen ? '접기' : '펼치기' }}
                 </button>
               </div>
@@ -810,14 +851,14 @@ function selectKeywordSuggestion(orderNo: string) {
             <div v-show="isExecutionHistoryOpen" class="pe-lookup-filter-box">
               <label class="wo-field">
                 <span class="wo-label">등록일시 정렬</span>
-                <select v-model="executionSortOrder" class="wo-control">
+                <select v-model="executionSortOrder" class="app-control">
                   <option value="latest">최신순</option>
                   <option value="oldest">오래된순</option>
                 </select>
               </label>
               <label class="wo-field">
                 <span class="wo-label">공정</span>
-                <select v-model.number="executionOperationFilter" class="wo-control">
+                <select v-model.number="executionOperationFilter" class="app-control">
                   <option value="ALL">전체 공정</option>
                   <option v-for="operation in executionOperationOptions" :key="operation.routingId" :value="operation.routingId">
                     {{ operation.label }}
@@ -826,7 +867,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </label>
               <label class="wo-field">
                 <span class="wo-label">작업자</span>
-                <select v-model="executionWorkerFilter" class="wo-control">
+                <select v-model="executionWorkerFilter" class="app-control">
                   <option value="ALL">전체 작업자</option>
                   <option v-for="worker in executionWorkerOptions" :key="worker.key" :value="worker.key">
                     {{ worker.label }}
@@ -835,7 +876,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </label>
               <label class="wo-field">
                 <span class="wo-label">양품/불량</span>
-                <select v-model="executionQtyFilter" class="wo-control">
+                <select v-model="executionQtyFilter" class="app-control">
                   <option value="ALL">전체</option>
                   <option value="GOOD">양품 수량 있음</option>
                   <option value="DEFECT">불량 수량 있음</option>
@@ -843,7 +884,7 @@ function selectKeywordSuggestion(orderNo: string) {
               </label>
             </div>
             <div v-show="isExecutionHistoryOpen" class="wo-table-wrap">
-              <table class="wo-table">
+              <table class="app-table">
                 <thead>
                   <tr>
                     <th>등록일시</th>
@@ -877,21 +918,21 @@ function selectKeywordSuggestion(orderNo: string) {
             </div>
           </div>
 
-          <div class="wo-panel">
-            <div class="wo-panel-head">
+          <div class="app-panel">
+            <div class="app-panel-head">
               <div class="wo-head-inline">
                 <Package class="wo-icon" />
-                <h2 class="wo-section-title">BOM 투입량 확인</h2>
+                <h2 class="app-panel-title">BOM 투입량 확인</h2>
               </div>
               <div class="wo-head-inline">
                 <span v-if="hasStockShortage" class="wo-badge-danger">재고 부족</span>
-                <button class="wo-button wo-button-subtle" type="button" @click="isMaterialRequirementOpen = !isMaterialRequirementOpen">
+                <button class="app-button app-button-muted" type="button" @click="isMaterialRequirementOpen = !isMaterialRequirementOpen">
                   {{ isMaterialRequirementOpen ? '접기' : '펼치기' }}
                 </button>
               </div>
             </div>
             <div v-show="isMaterialRequirementOpen" class="wo-table-wrap">
-              <table class="wo-table wo-table-compact">
+              <table class="app-table wo-table-compact">
                 <thead>
                   <tr><th>자재</th><th>단위</th><th>필요</th><th>불출</th><th>잔여</th><th>가용</th></tr>
                 </thead>

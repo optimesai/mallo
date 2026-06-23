@@ -26,6 +26,78 @@
 
   </details>
 
+### 주요 리스트 컬럼 정렬 기능 보강 (Codex)
+- **User Intent**: BOM 목록, 입고 예정 목록, 창고 적재 대기 목록, 생산 작업지시 목록, 작업지시 목록, 현재고 목록, 수불 이력, 공정 실적 작업지시 목록, 출하 지시 목록, 피킹/상차 작업 목록에 품목 리스트처럼 컬럼 헤더 클릭 정렬 기능 추가 요청
+- **Agent Context**: 백엔드 변경 없이 화면별 기존 조회/필터 흐름을 유지하면서, 프론트 표시 배열 정렬 또는 기존 API sort 파라미터 연결 방식으로 각 목록에 정렬 상태와 정렬 마크를 추가
+- **Key Decisions**:
+  - `app-sortable-header`, `app-sort-mark` 공통 클래스를 모든 대상 목록 헤더에 적용
+  - 서버 sort 파라미터가 이미 있는 작업지시/공정실적 목록은 헤더 클릭 시 정렬 조건을 바꿔 재조회
+  - 그 외 목록은 현재 화면에 표시되는 필터 결과 배열을 프론트에서 정렬하여 백엔드 계약을 변경하지 않음
+- **Affected Files**: <details><summary>11개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/BomMasterView.vue` — BOM 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/InboundReceiptView.vue` — 입고 예정 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/InboundStackView.vue` — 창고 적재 대기 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/MaterialIssueView.vue` — 생산 작업지시 목록 컬럼 헤더 정렬 및 페이지네이션 표시 기준 정렬 배열 연결
+    - `frontend/src/views/WorkOrderView.vue` — 작업지시 목록 API sort 파라미터를 컬럼 헤더 클릭과 연결
+    - `frontend/src/views/InventoryStatusView.vue` — 현재고 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/InventoryHistoryView.vue` — 수불 이력 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/ProductionExecutionView.vue` — 공정 실적 작업지시 목록 API sort 파라미터를 컬럼 헤더 클릭과 연결
+    - `frontend/src/views/ShippingOrderView.vue` — 출하 지시 목록 컬럼 헤더 정렬 추가
+    - `frontend/src/views/PickingView.vue` — 피킹/상차 작업 목록 컬럼 헤더 정렬 추가
+    - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 사용자 권한 화면 배경 정합성 보정 (Codex)
+- **User Intent**: 사용자 권한 페이지 전체가 회색 배경으로 칠해진 것처럼 보여 다른 페이지와 같은 레이아웃으로 수정 요청
+- **Agent Context**: 사용자 권한 화면 루트가 `app-bg-muted p-6`을 직접 사용하고 있어 다른 마스터 화면의 `app-page` 컨테이너와 배경 계층이 달랐고, 목록 패널도 자체 `rounded-3xl` 구조를 사용하고 있었음
+- **Key Decisions**:
+  - 화면 루트를 `app-page`로 변경 — 다른 페이지와 동일한 페이지 여백/배경 계층을 사용
+  - 사용자 목록 패널을 `app-panel`과 `app-list-head` 구조로 변경 — 앞선 리스트 제목 공통화 기준과 같은 레이아웃 적용
+- **Affected Files**: <details><summary>2개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/UserManagementView.vue` — 루트 배경 제거 및 사용자 목록 패널을 공통 레이아웃으로 변경
+    - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 리스트 제목 공통화 보강 (Codex)
+- **User Intent**: 리스트가 존재하는 페이지에서 목록 타이틀이 있는 경우와 없는 경우가 섞여 있으므로, 리스트가 있으면 무조건 타이틀을 표시하도록 수정 요청
+- **Agent Context**: 기존에 `수불(변동) 타임라인 이력`, `실시간 현재고 목록`처럼 제목이 있는 목록은 유지하고, 단순 액션 툴바 또는 탭 내부 테이블만 있는 화면에 공통 `app-list-*` 제목 영역을 추가
+- **Key Decisions**:
+  - 전역 `app-list-head`, `app-list-title`, `app-list-meta` 클래스를 기준으로 목록 제목/건수 표기를 통일
+  - 이미 패널 제목이 목록명을 명확히 담고 있는 화면은 중복 제목을 만들지 않고 유지
+  - 상세 탭 내부 테이블도 실제 리스트 역할을 하는 경우 제목을 추가하여 목록 영역의 의미를 명확히 함
+- **Affected Files**: <details><summary>11개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/main.css` — 목록 제목 공통 클래스 `app-list-head`, `app-list-title`, `app-list-meta` 추가
+    - `frontend/src/views/ItemMasterView.vue` — 품목 목록 제목/건수 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 거래처 목록 제목/건수 추가
+    - `frontend/src/views/InboundReceiptView.vue` — 입고 예정 목록 제목/건수 추가
+    - `frontend/src/views/InboundStackView.vue` — 창고 적재 대기 목록 제목/건수 추가
+    - `frontend/src/views/FactoryLineMasterView.vue` — 공장 및 생산라인 목록 제목 추가
+    - `frontend/src/views/ProductionExecutionView.vue` — 작업 지시 목록 제목/건수 추가
+    - `frontend/src/views/PartnerMasterDetailView.vue` — 거래 품목 이력 제목/건수 추가
+    - `frontend/src/views/BomMasterDetailView.vue`, `frontend/src/views/BomMasterView.vue`, `frontend/src/views/MaterialIssueView.vue` — 구성 품목/BOM 소요 자재 목록 제목/건수 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### AI SQL 해석력 범용 보강 (Codex)
 - **User Intent**: BOM 소요량 질의를 특정 도메인 직접 실행으로 고정하지 않고, 프롬프팅, few-shot 예시, SQL 검토 AI 계층을 통해 BOM뿐 아니라 재고, 거래처, 입고, 출고, 생산 등 전체 데이터 질의의 해석력을 높이도록 요청.
 - **Agent Context**: BOM 질의 실패 원인은 질의 해석 자체보다 해석 슬롯이 SQL 생성 단계에서 충분히 강제되지 않고, 생성 SQL을 실행 전 의미 기준으로 재검토하는 계층이 없다는 점으로 진단. BOM 전용 직접 실행 경로는 배제하고, 해석 결과를 classification context에 포함한 뒤 SQL 생성 직후 검토 AI가 누락 조건을 판정하고 재생성 지시를 주는 흐름으로 전환했다.
@@ -138,6 +210,128 @@
     - `backend/src/main/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImpl.java` — 해석 직후 BOM 직접 실행 경로 추가
     - `backend/src/main/java/com/ssafy/demo_app/domain/bom/repository/BomStructureRepository.java` — 상위 품목 기준 활성 BOM 버전 조회 메서드 추가
     - `backend/src/test/java/com/ssafy/demo_app/domain/ai/service/AiQueryServiceImplTest.java` — 직접 실행 시 LLM/SQL 경로를 건너뛰는 테스트 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+### 프론트 리스트 UI 통일 (Codex)
+- **User Intent**: 사용자 및 권한 목록을 10개 단위로 페이지네이션하고, 사용자 및 권한/품목 마스터/거래처 마스터/공장 및 생산 라인/BOM/입고/재고/생산/출고 화면의 페이지네이션, 카드뉴스, 검색 탭, 리스트 정렬, 폰트 계층을 프론트에서만 통일 요청
+- **Agent Context**: 백엔드 API 계약은 변경하지 않고, 기존 Vue 3 Composition API 화면 구조와 Tailwind 기반 `app-*` 전역 토큰을 확장하여 공통 UI 클래스를 만들고 주요 목록 화면이 해당 클래스를 사용하도록 정리
+- **Key Decisions**:
+  - `frontend/src/main.css`의 전역 `app-*` 컴포넌트 클래스를 확장 — `agent/project/frontend.md`의 Tailwind CSS 4 및 실제 코드 우선 규칙에 맞춰 화면별 하드코딩보다 기존 전역 스타일 체계를 재사용
+  - 사용자 및 권한 페이지네이션은 클라이언트 computed slice로 구현 — 백엔드를 건드리지 말라는 요청을 준수하고 기존 `userStore.loadUsers()` 전체 목록 조회 흐름을 유지
+  - 대표 디자인 기준은 거래처 마스터/품목 마스터로 유지 — 페이지네이션·카드뉴스는 거래처 마스터 형태, 검색·테이블·정렬은 품목 마스터 형태를 공통 클래스에 반영
+- **Affected Files**: <details><summary>15개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/main.css` (+109/-19) — 검색 패널, 카드뉴스, 정렬 헤더, 페이지네이션 공통 클래스 추가 및 페이지 버튼 스타일 통일
+    - `frontend/src/ui/DataTable.vue` (+5/-9) — 공통 테이블 페이지네이션 버튼을 처음/이전/다음/마지막 텍스트 양식으로 변경
+    - `frontend/src/ui/StatsCard.vue` (+6/-2) — 통계 카드를 공통 카드뉴스 클래스 기반으로 변경
+    - `frontend/src/views/UserManagementView.vue` (+73/-25) — 사용자 목록 10건 단위 클라이언트 페이지네이션 추가 및 카드/검색/표/페이지네이션 스타일 통일
+    - `frontend/src/views/ItemMasterView.vue` (+52/-42) — 품목 마스터 카드/검색/정렬 테이블/페이지네이션을 공통 클래스 기반으로 정리
+    - `frontend/src/views/PartnerMasterView.vue` (+71/-71) — 거래처 마스터 카드/검색/정렬 테이블/페이지네이션을 공통 클래스 기반으로 정리
+    - `frontend/src/views/BomMasterView.vue` (+7/-7) — BOM 목록 페이지네이션 버튼 양식 통일
+    - `frontend/src/views/FactoryLineMasterView.vue` (+7/-4) — 공장 및 생산 라인 페이지네이션 버튼 양식 통일 및 마지막 버튼 추가
+    - `frontend/src/views/WorkOrderView.vue` (+22/-4) — 작업 지시 목록 페이지네이션 버튼 양식 통일 및 처음/마지막 버튼 추가
+    - `frontend/src/views/InboundReceiptView.vue` (+4/-4) — 입고 등록 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+    - `frontend/src/views/InboundStackView.vue` (+4/-4) — 창고 적재 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+    - `frontend/src/views/InventoryStatusView.vue` (+5/-5) — 현재고 현황 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+    - `frontend/src/views/InventoryHistoryView.vue` (+5/-5) — 수불 이력 조회 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+    - `frontend/src/views/ShippingOrderView.vue` (+5/-5) — 출하 지시 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+    - `frontend/src/views/PickingView.vue` (+5/-5) — 피킹 상차 페이지네이션 기호 버튼을 텍스트 버튼으로 변경
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 프론트 공통 UI 클래스 적용 확대 (Codex)
+- **User Intent**: 이전 변경이 각 화면별 클래스를 유지한 채 값만 맞춘 것처럼 보여 통일감이 부족하므로, 모든 페이지가 `main.css`의 공통 `app-*` 클래스를 실제로 가져다 쓰는 방향으로 계속 작업 요청
+- **Agent Context**: BOM, 공장/생산라인, 작업지시, 공정 실적 화면에 남아 있던 `bom-*`, `factory-master-*`, `wo-*` 기반 검색/표/버튼/입력 클래스를 공통 `app-*` 클래스로 치환하고, 모든 뷰 테이블이 `app-table`을 사용하도록 정리
+- **Key Decisions**:
+  - 화면별 CSS 값을 맞추는 방식 대신 템플릿 마크업에서 `app-panel`, `app-search-panel`, `app-control`, `app-button`, `app-table`, `app-status`를 직접 사용 — 같은 디자인은 같은 공통 클래스를 참조해야 한다는 사용자 의도 반영
+  - 업무 고유 구조 클래스는 일부 유지 — 진행률, 트리, 모달 레이아웃처럼 화면 고유 동작/배치에 필요한 클래스까지 제거하면 범위 초과 리팩토링이 되므로 공통 UI 요소 위주로 치환
+  - scoped CSS 안의 `app-*` 선택자 오염을 제거 — 전역 공통 클래스는 `frontend/src/main.css`에서만 디자인 값을 갖도록 유지
+- **Affected Files**: <details><summary>12개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/main.css` — 기존 `app-stat-*` 카드도 카드뉴스 공통 디자인과 같은 크기/폰트/간격을 사용하도록 조정
+    - `frontend/src/views/BomMasterView.vue` — 카드뉴스, 조회 조건, 목록/상세 테이블, 정전개/역전개 입력·버튼을 공통 `app-*` 클래스 기반으로 변경
+    - `frontend/src/views/FactoryLineMasterView.vue` — 통계 카드, 조회 조건, 목록 테이블, 모달 입력·버튼을 공통 `app-*` 클래스 기반으로 변경
+    - `frontend/src/views/WorkOrderView.vue` — 등록/목록 탭의 패널, 버튼, 입력, 테이블, 상태 배지를 공통 `app-*` 클래스 기반으로 변경
+    - `frontend/src/views/ProductionExecutionView.vue` — 작업 지시 선택/실적 조회의 검색, 입력, 표, 페이지네이션을 공통 `app-*` 클래스 기반으로 변경
+    - `frontend/src/views/WorkOrderDetailView.vue` — 상세 테이블과 버튼/패널 계열을 공통 `app-*` 클래스 기반으로 변경
+    - `frontend/src/views/BomMasterDetailView.vue` — 상세 테이블을 공통 `app-table` 기반으로 변경
+    - `frontend/src/views/PartnerMasterDetailView.vue` — 상세 테이블을 공통 `app-table` 기반으로 변경
+    - `frontend/src/views/InboundReceiptView.vue` — 입고 등록 테이블을 공통 `app-table` 기반으로 변경
+    - `frontend/src/views/InboundStackView.vue` — 창고 적재 테이블을 공통 `app-table` 기반으로 변경
+    - `frontend/src/views/InventoryStatusView.vue`, `frontend/src/views/InventoryHistoryView.vue`, `frontend/src/views/MaterialIssueView.vue`, `frontend/src/views/ShippingOrderView.vue`, `frontend/src/views/PickingView.vue` — 재고/생산/출고 목록 테이블을 공통 `app-table` 기반으로 변경
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 카드뉴스와 리스트 시각 정합성 보정 (Codex)
+- **User Intent**: 카드뉴스의 디자인, 폰트 크기, 내부 요소 크기, 아이콘 사용 여부와 크기가 화면마다 다르고, 공장 및 생산라인 구조도 겹침, 동일 컴포넌트 폰트 차이, 상태 태그 줄바꿈, 작업 지시 등록 줄 겹침 문제를 첨부 이미지 기준으로 수정 요청
+- **Agent Context**: 첨부 이미지에서 거래처 카드뉴스를 기준으로 삼고, BOM/품목/사용자/공장 카드뉴스 마크업과 전역 카드 스타일을 보정. 상태 태그와 테이블 기본 텍스트 계층은 `main.css` 공통 클래스에서 해결하고, 공장 구조도 및 작업지시 등록은 해당 화면 CSS에서 레이아웃 안정성을 보정
+- **Key Decisions**:
+  - 상태 태그 줄바꿈은 `app-status` 전역 클래스에서 `whitespace-nowrap`와 최소 폭으로 처리 — 각 화면별 태그를 개별 수정하지 않고 같은 컴포넌트 역할의 공통 클래스로 해결
+  - 카드뉴스는 `app-news-card` 내부 구조를 텍스트 왼쪽, 아이콘 오른쪽으로 통일 — 거래처 마스터 기준 디자인을 모든 대표 카드뉴스에 적용
+  - 공장 구조도는 업무 고유 트리 클래스는 유지하되 grid auto-column, truncate, min-height로 겹침 방지 — 공통 카드/표 클래스와 달리 구조도는 고유 레이아웃이 필요하기 때문
+  - 작업지시 등록 줄 겹침은 `wo-form-panel`이 공통 `app-panel-head`를 사용할 때의 여백과 입력 높이를 보정 — 공통 클래스 적용 후 깨진 보조 레이아웃을 정합성 있게 재조정
+- **Affected Files**: <details><summary>6개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/main.css` — 카드뉴스 최소 높이, 상태 태그 nowrap/min-width, 테이블 내부 텍스트 기본 계층, 작업지시 폼 간격/입력 높이 보정
+    - `frontend/src/views/BomMasterView.vue` — BOM 카드뉴스를 텍스트 왼쪽/아이콘 오른쪽 구조로 통일
+    - `frontend/src/views/FactoryLineMasterView.vue` — 공장 카드뉴스 구조 통일 및 구조도 카드/공정 버튼 겹침 방지 CSS 적용
+    - `frontend/src/views/ItemMasterView.vue` — 품목 카드뉴스에 공통 아이콘 박스 추가
+    - `frontend/src/views/UserManagementView.vue` — 사용자 권한 카드뉴스에 공통 아이콘 박스 추가
+    - `frontend/src/views/PartnerMasterView.vue` — 거래처 구분 셀 줄바꿈 방지
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 대시보드 빈 라우트 보정 (Codex)
+- **User Intent**: 대시보드 화면에서 사이드바와 헤더만 보이고 본문 내용이 사라진 문제 확인 및 복구 요청
+- **Agent Context**: 라우터에서 실제 대시보드는 `/` 자식 라우트에만 연결되어 있고 `/dashboard`, `/home` 또는 잘못된 하위 경로는 `DefaultLayout`만 렌더링한 채 자식 `RouterView`가 비는 구조로 확인. 대시보드 연결이 끊긴 것이 아니라 라우트 별칭/리다이렉트 부재로 판단
+- **Key Decisions**:
+  - `/dashboard`와 `/home`을 `home` 라우트로 redirect — 사용자가 대시보드 의미로 접근하는 경로가 빈 화면이 되지 않도록 처리
+  - 레이아웃 내부 catch-all을 `home`으로 redirect — 인증 레이아웃은 유지되지만 본문이 비는 라우터 상태를 방지
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/router/index.ts` — 대시보드 별칭 경로와 레이아웃 내부 fallback redirect 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 자재 출고 페이징 및 구조도 보정 (Codex)
+- **User Intent**: 공정 실적 및 원부자재 카드뉴스를 현재고 현황/입고 등록과 같은 형태로 맞추고, 공장/라인/공정 구조 타이틀이 레이아웃에 잡아먹히는 문제와 BOM 기반 자재 출고 목록의 페이지네이션 부재 및 리스트 디자인 불일치를 수정 요청
+- **Agent Context**: 공정 실적 카드는 기존 `wo-metric` 요약 패널을 사용해 카드뉴스 기준과 달랐고, 공장 구조도는 존재하지 않는 `app-panel-heading` 클래스 때문에 헤더 스타일이 적용되지 않았으며, 자재 출고 화면은 필터 결과 전체를 렌더링해 페이지네이션이 없었다.
+- **Key Decisions**:
+  - 공정 실적 요약을 `app-news-card` 기반으로 교체 — 카드뉴스 공통 디자인을 실제 마크업에서 사용하도록 통일
+  - 공장 구조도 헤더를 `app-panel-head`로 수정하고 구조도 패널을 flex column/min-height로 보강 — 타이틀 영역이 스크롤 콘텐츠에 밀리지 않도록 처리
+  - 자재 출고 목록은 클라이언트 페이지네이션 적용 — 백엔드를 건드리지 않고 기존 `workOrderStore.loadWorkOrders()` 결과를 10건 단위로 표시
+  - 자재 출고 테이블은 `app-table`, `app-status`, `app-pagination`을 사용 — 다른 탭의 리스팅과 동일한 표/상태/페이징 양식으로 맞춤
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/ProductionExecutionView.vue` — 공정 실적 및 원부자재 요약 카드를 `app-news-card` 기반 카드뉴스로 변경
+    - `frontend/src/views/FactoryLineMasterView.vue` — 구조도 헤더 클래스 오류 수정 및 구조도 패널 높이/스크롤 레이아웃 보강
+    - `frontend/src/views/MaterialIssueView.vue` — 작업 지시 목록 10건 단위 페이지네이션 추가, 테이블/상태/버튼 스타일을 공통 `app-*` 클래스 기반으로 정리
+    - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
   - **Deleted**:
     - 없음
 

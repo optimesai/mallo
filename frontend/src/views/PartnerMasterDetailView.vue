@@ -348,8 +348,15 @@ function showToast(message: string) {
         </section>
       </div>
 
-      <div v-else class="overflow-x-auto p-5">
-        <table class="w-full min-w-[760px] text-left app-type-sm">
+      <div v-else>
+        <div class="app-list-head">
+          <span class="app-list-title">거래 품목 이력</span>
+          <span class="app-list-meta">
+            총 {{ partner.partnerType === 'SUPPLIER' ? partnerMasterStore.suppliedItems.length.toLocaleString() : partnerMasterStore.shippedItems.length.toLocaleString() }}건
+          </span>
+        </div>
+        <div class="overflow-x-auto p-5">
+        <table class="app-table min-w-[760px]">
           <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
             <tr>
               <th class="px-4 py-3">품목 코드</th>
@@ -383,6 +390,7 @@ function showToast(message: string) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 

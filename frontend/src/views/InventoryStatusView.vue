@@ -29,6 +29,8 @@ const isSearchExpanded = ref(true)
 const filterWarehouse = ref('')
 const filterItem = ref('')
 const filterWarningOnly = ref(false)
+const sortField = ref('itemCode')
+const sortDirection = ref<'asc' | 'desc'>('asc')
 
 // Master-detail state
 const selectedInventory = ref<any>(null)
@@ -77,6 +79,34 @@ function resetFilters() {
   filterWarningOnly.value = false
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // Map inventory items with safety stock from item master
 const inventoryItemsWithSafety = computed(() => {
   return inventoryStore.inventories.map(inv => {
@@ -110,6 +140,10 @@ const filteredInventories = computed(() => {
     }
     return true
   })
+})
+
+const sortedInventories = computed(() => {
+  return [...filteredInventories.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 // Statistics calculations
@@ -193,7 +227,7 @@ async function selectRow(item: any) {
     <!-- 상단 대시보드 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">실시간 현재고 현황 모니터링</h1>
+        <h1 class="app-page-title">현재고 모니터링</h1>
         <p class="app-page-subtitle">창고 및 세부 로케이션별 실시간 재고량과 안전 재고 도달 상태를 감시합니다.</p>
       </div>
       <div class="flex items-center gap-2">
@@ -327,11 +361,11 @@ async function selectRow(item: any) {
     <!-- 메인 그리드 테이블 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">실시간 현재고 목록 (총 {{ filteredInventories.length }}건)</span>
+        <span class="app-panel-title">현재고 목록</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -345,20 +379,20 @@ async function selectRow(item: any) {
           </colgroup>
           <thead>
             <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">ID</th>
-              <th class="px-5 py-3">품목 코드</th>
-              <th class="px-5 py-3">품목명</th>
-              <th class="px-5 py-3">적재 창고</th>
-              <th class="px-5 py-3">로케이션 코드</th>
-              <th class="px-5 py-3 text-right">현재고 수량</th>
-              <th class="px-5 py-3 text-right">안전 재고량</th>
-              <th class="px-5 py-3 text-center">안전재고 상태</th>
-              <th class="px-5 py-3">최종 수정일시</th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('inventoryId')">ID <span class="app-sort-mark">{{ getSortMark('inventoryId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemCode')">품목 코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('warehouseName')">적재 창고 <span class="app-sort-mark">{{ getSortMark('warehouseName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('locationCode')">로케이션 코드 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('currentQty')">현재고 수량 <span class="app-sort-mark">{{ getSortMark('currentQty') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('safetyStock')">안전 재고량 <span class="app-sort-mark">{{ getSortMark('safetyStock') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-center" @click="changeSort('isUnderSafety')">안전재고 상태 <span class="app-sort-mark">{{ getSortMark('isUnderSafety') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('updatedAt')">최종 수정일시 <span class="app-sort-mark">{{ getSortMark('updatedAt') }}</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="item in filteredInventories"
+              v-for="item in sortedInventories"
               :key="item.itemCode"
               @click="selectRow(item)"
               class="app-hover-muted cursor-pointer transition select-none"
@@ -429,15 +463,15 @@ async function selectRow(item: any) {
           총 <span class="app-count-strong">{{ inventoryStore.invTotalElements.toLocaleString() }}</span>건
           ({{ inventoryStore.invPage + 1 }} / {{ inventoryStore.invTotalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="inventoryStore.invPage === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(inventoryStore.invPage - 1)" :disabled="inventoryStore.invPage === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(inventoryStore.invPage + 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(inventoryStore.invTotalPages - 1)" :disabled="inventoryStore.invPage >= inventoryStore.invTotalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>
