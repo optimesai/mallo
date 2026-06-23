@@ -413,3 +413,23 @@
     - 없음
 
   </details>
+
+### 수불 이력 표시 수량 보정 (Codex)
+- **User Intent**: 수불 이력의 변동 수량 정렬에서 음수 값이 제대로 계산되지 않고, 출고성 이력이 모두 생산불출로 표시되는 문제 수정 요청
+- **Agent Context**: 출고/피킹/생산불출 일부 이력은 DB 저장 수량이 양수지만 재고 영향은 음수이고, 프론트가 `INBOUND` 외 모든 유형을 `생산불출`로 표시하고 있었음. 표시 수량과 서버 정렬 수량을 같은 재고 증감 기준으로 보정.
+- **Key Decisions**:
+  - `PRODUCTION_ISSUE`, `OUTBOUND`, `RESERVATION`은 표시 수량을 `-abs(quantity)`로 계산 — 저장 방식과 재고 영향 방향의 불일치 보정
+  - 수불 유형 라벨을 enum별 매핑 함수로 분리 — 생산 이슈는 `생산불출`, 정상 출고/피킹성 이력은 `출고적재`로 표시
+  - 서버 `quantity` 정렬도 표시 수량 계산식으로 정렬 — 페이지네이션 전체 목록 정렬과 화면 표시 순서 일치
+- **Affected Files**: <details><summary>3개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceImpl.java` — 수불 이력 수량 정렬을 표시 수량 기준으로 보정
+    - `frontend/src/views/InventoryHistoryView.vue` — 수불 유형 라벨, 배지 색상, 표시 수량 및 현재 페이지 보조 정렬 보정
+    - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
+  - **Deleted**:
+    - 없음
+
+  </details>

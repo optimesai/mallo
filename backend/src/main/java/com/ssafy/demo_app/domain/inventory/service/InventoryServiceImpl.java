@@ -30,6 +30,7 @@ import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.PageResponse;
 
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
@@ -427,7 +428,7 @@ public class InventoryServiceImpl implements InventoryService {
         if (pageable == null || pageable.isUnpaged()) {
             return Pageable.unpaged();
         }
-        if (hasSortProperty(pageable, "transactionType")) {
+        if (hasSortProperty(pageable, "transactionType") || hasSortProperty(pageable, "quantity")) {
             return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         }
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mapSort(pageable.getSort(), historySortProperties()));
@@ -464,9 +465,9 @@ public class InventoryServiceImpl implements InventoryService {
             if (!isCountQuery(query) && hasSortProperty(pageable, "transactionType")) {
                 var typeOrder = cb.selectCase()
                         .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_ISSUE), 1)
-                        .when(cb.equal(root.get("transactionType"), TransactionType.INBOUND), 2)
-                        .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_RECEIPT), 3)
-                        .when(cb.equal(root.get("transactionType"), TransactionType.OUTBOUND), 4)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.OUTBOUND), 2)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.INBOUND), 3)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_RECEIPT), 4)
                         .otherwise(99);
                 Sort.Order order = firstOrder(pageable, "transactionType");
                 if (order.getDirection().isDescending()) {
@@ -475,9 +476,29 @@ public class InventoryServiceImpl implements InventoryService {
                     query.orderBy(cb.asc(typeOrder), cb.desc(root.get("createdAt")));
                 }
             }
+            if (!isCountQuery(query) && hasSortProperty(pageable, "quantity")) {
+                Expression<Integer> displayQuantity = displayQuantityExpression(root, cb);
+                Sort.Order order = firstOrder(pageable, "quantity");
+                if (order.getDirection().isDescending()) {
+                    query.orderBy(cb.desc(displayQuantity), cb.desc(root.get("createdAt")));
+                } else {
+                    query.orderBy(cb.asc(displayQuantity), cb.desc(root.get("createdAt")));
+                }
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private Expression<Integer> displayQuantityExpression(
+            jakarta.persistence.criteria.Root<InventoryTransactionHistory> root,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
+        return cb.<Integer>selectCase()
+                .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_ISSUE), cb.neg(root.get("quantity")))
+                .when(cb.equal(root.get("transactionType"), TransactionType.OUTBOUND), cb.neg(root.get("quantity")))
+                .when(cb.equal(root.get("transactionType"), TransactionType.RESERVATION), cb.neg(root.get("quantity")))
+                .otherwise(root.get("quantity"));
     }
 
     private boolean isCountQuery(jakarta.persistence.criteria.CriteriaQuery<?> query) {
@@ -521,7 +542,6 @@ public class InventoryServiceImpl implements InventoryService {
                 Map.entry("itemCode", "item.itemCode"),
                 Map.entry("itemName", "item.itemName"),
                 Map.entry("locationCode", "location.locationCode"),
-                Map.entry("quantity", "quantity"),
                 Map.entry("reasonDesc", "reasonDesc"),
                 Map.entry("workerName", "worker.userName"),
                 Map.entry("createdAt", "createdAt")
