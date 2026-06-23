@@ -35,6 +35,7 @@ const filterVersion = ref('')
 const page = ref(0)
 const sortField = ref('parentItemCode')
 const sortDirection = ref<'asc' | 'desc'>('asc')
+const BOM_GROUP_PAGE_SIZE = 10
 const isFilterParentPickerOpen = ref(false)
 const isFilterChildPickerOpen = ref(false)
 
@@ -131,13 +132,15 @@ function compareValues(aValue: unknown, bValue: unknown) {
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  page.value = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {
@@ -194,7 +197,8 @@ async function fetchPageData() {
     await Promise.all([
       bomStore.loadBomGroups({
         page: page.value,
-        size: 10,
+        size: BOM_GROUP_PAGE_SIZE,
+        sort: `${sortField.value},${sortDirection.value}`,
         ...searchParams
       }),
       bomStore.loadBomGroupStats(searchParams),

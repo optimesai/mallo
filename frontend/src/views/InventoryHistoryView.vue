@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import {
+  AlertTriangle,
   Clock,
   Search,
   RefreshCw,
@@ -39,6 +40,7 @@ async function fetchPageData() {
     await inventoryStore.loadHistories({
       page: inventoryStore.histPage,
       size: 20,
+      sort: `${sortField.value},${sortDirection.value}`,
       transactionType: filterType.value !== 'ALL' ? filterType.value : undefined,
       startDate: filterDateStart.value || undefined,
       endDate: filterDateEnd.value || undefined,
@@ -80,19 +82,29 @@ function compareValues(aValue: unknown, bValue: unknown) {
   let result = 0
   if (typeof aValue === 'number' && typeof bValue === 'number') {
     result = aValue - bValue
+  } else if (sortField.value === 'transactionType') {
+    result = getTransactionTypeLabel(String(aValue)).localeCompare(getTransactionTypeLabel(String(bValue)), 'ko', { numeric: true })
   } else {
     result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
   }
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+function getTransactionTypeLabel(transactionType: string) {
+  if (transactionType === 'INBOUND') return '입고적재'
+  if (transactionType === 'PRODUCTION_ISSUE') return '생산불출'
+  return transactionType
+}
+
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  inventoryStore.histPage = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {
@@ -341,8 +353,8 @@ const stats = computed(() => {
               <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionType')">수불 유형 <span class="app-sort-mark">{{ getSortMark('transactionType') }}</span></th>
               <th class="app-sortable-header px-5 py-3" @click="changeSort('locationCode')">적재 위치 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
               <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('quantity')">변동 수량 <span class="app-sort-mark">{{ getSortMark('quantity') }}</span></th>
-              <th class="app-sortable-header px-5 py-3" @click="changeSort('reason')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reason') }}</span></th>
-              <th class="app-sortable-header px-5 py-3" @click="changeSort('createdBy')">작업자 <span class="app-sort-mark">{{ getSortMark('createdBy') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('reasonDesc')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reasonDesc') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('workerName')">작업자 <span class="app-sort-mark">{{ getSortMark('workerName') }}</span></th>
               <th class="app-sortable-header px-5 py-3" @click="changeSort('createdAt')">발생 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
             </tr>
           </thead>

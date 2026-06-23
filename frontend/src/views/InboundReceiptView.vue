@@ -110,6 +110,7 @@ async function fetchPageData() {
       inboundStore.loadInbounds({
         page: inboundStore.page,
         size: 20,
+        sort: `${sortField.value},${sortDirection.value}`,
         status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
         keyword: filterItem.value || filterPartner.value || undefined,
         startDate: filterDateStart.value || undefined,
@@ -152,13 +153,15 @@ function compareValues(aValue: unknown, bValue: unknown) {
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  inboundStore.page = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {
@@ -257,7 +260,7 @@ async function handleBatchComplete() {
     }
     showToast(`${successCount}건이 검수 완료 처리되었습니다.`)
     selectedIds.value = []
-    await inboundStore.loadInbounds()
+    await fetchPageData()
     if (selectedInbound.value) {
       const updated = inboundStore.inbounds.find(i => i.inboundId === selectedInbound.value.inboundId)
       if (updated) selectedInbound.value = updated

@@ -111,6 +111,7 @@ async function fetchPageData() {
       inboundStore.loadInbounds({
         page: inboundStore.page,
         size: 20,
+        sort: `${sortField.value},${sortDirection.value}`,
         status: 'COMPLETED',
       }),
       inboundStore.loadLocations()
@@ -145,13 +146,15 @@ function compareValues(aValue: unknown, bValue: unknown) {
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  inboundStore.page = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {
@@ -226,7 +229,7 @@ async function handleStack() {
     // 리스트 및 세부정보 상태 업데이트
     selectedInbound.value = null
     selectedIds.value = selectedIds.value.filter(id => id !== inboundId)
-    await inboundStore.loadInbounds()
+    await fetchPageData()
   } catch (err) {
     stackError.value = err instanceof Error ? err.message : '로케이션 적재 처리에 실패했습니다.'
   } finally {
@@ -277,7 +280,7 @@ async function handleBatchStack() {
     // 상태 초기화
     selectedIds.value = []
     selectedInbound.value = null
-    await inboundStore.loadInbounds()
+    await fetchPageData()
   } catch (err) {
     batchStackError.value = err instanceof Error ? err.message : '일괄 적재 처리에 실패했습니다.'
   } finally {

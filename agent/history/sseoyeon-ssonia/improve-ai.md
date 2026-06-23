@@ -26,6 +26,33 @@
 
   </details>
 
+### 리스트 정렬 동작 재점검 및 서버 정렬 연결 보정 (Codex)
+- **User Intent**: 추가한 정렬 기능이 제대로 동작하지 않고, 특히 BOM 등 버전 컬럼이 있는 목록에서 버전 정렬이 안 되는 문제 재점검 및 수정 요청
+- **Agent Context**: BOM, 입고, 재고, 출하처럼 서버 페이지네이션을 사용하는 화면에서 현재 페이지 배열만 프론트 정렬하고 있어 전체 목록 기준 정렬이 되지 않았고, 일부 컬럼은 화면 표시 필드와 정렬 키가 불일치했음
+- **Key Decisions**:
+  - 서버 페이지네이션 목록은 기존 API `sort` 파라미터에 정렬 컬럼/방향을 연결하고, 헤더 클릭 시 1페이지부터 재조회하도록 보정
+  - BOM 목록의 `bomVersion` 정렬도 `sort=bomVersion,asc|desc`로 조회되도록 수정
+  - 수불 이력의 `변동 사유`, `작업자` 정렬 키를 실제 응답 필드인 `reasonDesc`, `workerName`으로 수정
+  - 입고/창고 적재 처리 후 목록 재조회도 화면의 정렬 상태를 유지하는 `fetchPageData()` 경로로 통일
+- **Affected Files**: <details><summary>9개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `frontend/src/views/BomMasterView.vue` — BOM 목록 정렬을 서버 `sort` 파라미터와 연결, 버전 정렬 보정
+    - `frontend/src/views/InboundReceiptView.vue` — 입고 예정 목록 정렬을 서버 `sort` 파라미터와 연결, 작업 후 정렬 상태 유지
+    - `frontend/src/views/InboundStackView.vue` — 창고 적재 대기 목록 정렬을 서버 `sort` 파라미터와 연결, 작업 후 정렬 상태 유지
+    - `frontend/src/views/InventoryStatusView.vue` — 현재고 목록 정렬을 서버 `sort` 파라미터와 연결
+    - `frontend/src/views/InventoryHistoryView.vue` — 수불 이력 목록 정렬을 서버 `sort` 파라미터와 연결, 잘못된 정렬 키 보정
+    - `frontend/src/views/ShippingOrderView.vue` — 출하 지시 목록 정렬을 서버 `sort` 파라미터와 연결
+    - `frontend/src/views/PickingView.vue` — 피킹/상차 작업 목록 정렬을 서버 `sort` 파라미터와 연결
+    - `frontend/src/views/WorkOrderView.vue` — 초기 작업지시 목록 조회에도 현재 정렬 상태 반영
+    - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### 주요 리스트 컬럼 정렬 기능 보강 (Codex)
 - **User Intent**: BOM 목록, 입고 예정 목록, 창고 적재 대기 목록, 생산 작업지시 목록, 작업지시 목록, 현재고 목록, 수불 이력, 공정 실적 작업지시 목록, 출하 지시 목록, 피킹/상차 작업 목록에 품목 리스트처럼 컬럼 헤더 클릭 정렬 기능 추가 요청
 - **Agent Context**: 백엔드 변경 없이 화면별 기존 조회/필터 흐름을 유지하면서, 프론트 표시 배열 정렬 또는 기존 API sort 파라미터 연결 방식으로 각 목록에 정렬 상태와 정렬 마크를 추가
@@ -332,6 +359,56 @@
     - `frontend/src/views/FactoryLineMasterView.vue` — 구조도 헤더 클래스 오류 수정 및 구조도 패널 높이/스크롤 레이아웃 보강
     - `frontend/src/views/MaterialIssueView.vue` — 작업 지시 목록 10건 단위 페이지네이션 추가, 테이블/상태/버튼 스타일을 공통 `app-*` 클래스 기반으로 정리
     - `agent/history/sseoyeon-ssonia/improve-ai.md` — 작업 히스토리 append-only 기록
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 정렬 서버 오류 수정 (Codex)
+- **User Intent**: BOM master, 입고 등록 및 검수 관리, 창고 적재 및 로케이션 배치, 재고 수불 이력 추적, 작업 지시 관리 화면에서 정렬 클릭 시 서버 500 오류가 발생하여 해결 요청
+- **Agent Context**: 화면 DTO 필드 정렬 키가 서버 `Pageable.sort`로 전달되며 JPA 엔티티에 없는 필드 또는 집계 필드 정렬로 해석되는 것이 원인으로 진단. 서버 요청 정렬은 안전한 고정값으로 제한하고 화면 정렬은 클라이언트 computed 정렬로 처리.
+- **Key Decisions**:
+  - 프론트엔드 View 계층에서 정렬 요청 파라미터를 제어 — `agent/project/frontend.md`의 View → Store → Service → API 흐름을 유지하면서 사용자 인터랙션 범위에서 최소 변경
+  - DTO 전용 정렬 키를 서버로 보내지 않도록 고정 정렬값 사용 — JPA 엔티티 경로와 응답 DTO 필드 간 불일치로 인한 500 오류 차단
+  - 작업 지시 목록에 클라이언트 정렬 computed 추가 — 기존 다른 화면의 computed 정렬 패턴과 일관성 유지
+  - 누락된 `AlertTriangle` import 추가 — Lucide Vue 아이콘 사용 컨벤션 유지
+- **Affected Files**: <details><summary>7개 파일</summary>
+
+  - **Created**:
+    - `agent/implementation-plan-sort-500.md` — 정렬 서버 오류 수정 구현 계획서
+  - **Modified**:
+    - `frontend/src/views/BomMasterView.vue` (+5/-2) — BOM 그룹 조회 시 DTO 정렬 키 서버 전달 제거
+    - `frontend/src/views/InboundReceiptView.vue` (+6/-2) — 입고 목록 서버 정렬 고정값 적용
+    - `frontend/src/views/InboundStackView.vue` (+7/-3) — 적재 대기 입고 목록 서버 정렬 고정값 적용
+    - `frontend/src/views/InventoryHistoryView.vue` (+8/-3) — 수불 이력 서버 정렬 고정값 및 `AlertTriangle` import 적용
+    - `frontend/src/views/WorkOrderView.vue` (+21/-3) — 작업 지시 서버 정렬 고정값 및 클라이언트 정렬 computed 추가
+  - **Deleted**:
+    - 없음
+
+  </details>
+
+### 전체 목록 정렬 개선 (Codex)
+- **User Intent**: 정렬이 현재 페이지 내부에서만 적용되어 전체 목록 기준으로 재정렬되지 않는 문제와, BOM 버전 및 수불 유형 배지 값이 화면 표시 기준으로 제대로 정렬되지 않는 문제 해결 요청
+- **Agent Context**: 이전 서버 500 회피 과정에서 프론트가 정렬 파라미터를 고정값으로 보내고 있었고, 일부 화면은 현재 페이지 배열만 computed 정렬하고 있었음. DTO 표시 필드와 JPA 엔티티 필드가 불일치하는 항목은 백엔드 서비스에서 안전한 정렬 매핑 또는 DTO 전체 정렬 후 페이지 분할로 처리.
+- **Key Decisions**:
+  - 프론트엔드는 클릭한 정렬 키와 방향을 다시 서버에 전달 — `agent/project/frontend.md`의 View → Store → Service → API 흐름 유지
+  - BOM 그룹과 작업지시는 DTO 계산/집계 필드가 있어 서비스에서 전체 DTO 목록을 정렬한 뒤 페이지를 구성 — JPA 엔티티 경로에 없는 필드 정렬로 인한 500 오류 방지
+  - 입고 목록은 DTO 정렬 키를 엔티티 경로로 매핑한 `Pageable`로 변환 — 서버 페이지네이션과 전체 목록 정렬 동시 유지
+  - 수불 유형 정렬은 화면 배지 라벨인 `생산불출`, `입고적재` 기준으로 처리 — enum 문자열 순서와 사용자 표시 순서의 불일치 제거
+- **Affected Files**: <details><summary>10개 파일</summary>
+
+  - **Created**:
+    - `agent/implementation-plan-global-sort.md` — 전체 목록 정렬 개선 구현 계획서
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/bom/service/BomServiceImpl.java` — BOM 그룹 DTO 전체 정렬 및 자연 버전 정렬 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/service/InboundServiceImpl.java` — 입고 DTO 정렬 키를 엔티티 경로로 매핑
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/service/InventoryServiceImpl.java` — 입고/수불 이력 정렬 매핑 및 수불 유형 라벨 순서 정렬 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/service/WorkOrderServiceImpl.java` — 작업지시 DTO 전체 정렬 및 계산 필드 정렬 추가
+    - `frontend/src/views/BomMasterView.vue` — BOM 목록 정렬 파라미터 서버 전달 복구
+    - `frontend/src/views/InboundReceiptView.vue` — 입고 목록 정렬 파라미터 서버 전달 복구
+    - `frontend/src/views/InboundStackView.vue` — 적재 목록 정렬 파라미터 서버 전달 복구
+    - `frontend/src/views/InventoryHistoryView.vue` — 수불 이력 정렬 파라미터 서버 전달 및 배지 라벨 비교 보정
+    - `frontend/src/views/WorkOrderView.vue` — 작업지시 목록 서버 정렬 사용 복구
   - **Deleted**:
     - 없음
 
