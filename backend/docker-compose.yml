@@ -25,7 +25,7 @@ services:
       start_period: 5s
 
   app:
-    image: ghcr.io/wsssafy/ssafy-pjt-backend:latest
+    image: ghcr.io/optimesai/mallo-backend:latest
     container_name: backend-app
     restart: always
     env_file:
