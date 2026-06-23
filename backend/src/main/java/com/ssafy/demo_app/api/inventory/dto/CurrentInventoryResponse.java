@@ -1,6 +1,7 @@
 package com.ssafy.demo_app.api.inventory.dto;
 
 import com.ssafy.demo_app.domain.inventory.entity.CurrentInventory;
+import com.ssafy.demo_app.domain.inventory.repository.InventorySummaryProjection;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,6 +26,18 @@ public class CurrentInventoryResponse {
         response.setItemName(inventory.getItem().getItemName());
         response.setLocationCode(inventory.getLocation().getLocationCode());
         response.setWarehouseName(inventory.getLocation().getWarehouseName());
+        response.setCurrentQty(inventory.getCurrentQty());
+        response.setUpdatedAt(inventory.getUpdatedAt());
+        return response;
+    }
+
+    public static CurrentInventoryResponse from(InventorySummaryProjection inventory) {
+        CurrentInventoryResponse response = new CurrentInventoryResponse();
+        response.setInventoryId(inventory.getInventoryId());
+        response.setItemCode(inventory.getItemCode());
+        response.setItemName(inventory.getItemName());
+        response.setLocationCode(inventory.getLocationCode());
+        response.setWarehouseName(inventory.getWarehouseName());
         response.setCurrentQty(inventory.getCurrentQty());
         response.setUpdatedAt(inventory.getUpdatedAt());
         return response;

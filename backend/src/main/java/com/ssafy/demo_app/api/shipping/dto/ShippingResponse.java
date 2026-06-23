@@ -1,6 +1,7 @@
 package com.ssafy.demo_app.api.shipping.dto;
 
 import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
+import com.ssafy.demo_app.domain.shipping.repository.ShippingListProjection;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -91,6 +92,30 @@ public class ShippingResponse {
                 .cancelReason(shipping.getCancelReason())
                 .status(shipping.getStatus() != null ? shipping.getStatus().name() : null)
                 .workerName(shipping.getWorker() != null ? shipping.getWorker().getUserName() : null)
+                .shippedAt(shipping.getShippedAt())
+                .build();
+    }
+
+    public static ShippingResponse from(ShippingListProjection shipping) {
+        if (shipping == null) return null;
+        return ShippingResponse.builder()
+                .shippingId(shipping.getShippingId())
+                .shippingNo(shipping.getShippingNo())
+                .partnerCode(shipping.getPartnerCode())
+                .partnerName(shipping.getPartnerName())
+                .itemCode(shipping.getItemCode())
+                .itemName(shipping.getItemName())
+                .requestQty(shipping.getRequestQty())
+                .shippedQty(shipping.getShippedQty())
+                .shippingType(shipping.getShippingType())
+                .pickingLocationCode(shipping.getPickingLocationCode())
+                .vehicleNo(shipping.getVehicleNo())
+                .carrier(shipping.getCarrier())
+                .trackingNo(shipping.getTrackingNo())
+                .estimatedDelivery(shipping.getEstimatedDelivery())
+                .cancelReason(shipping.getCancelReason())
+                .status(shipping.getStatus())
+                .workerName(shipping.getWorkerName())
                 .shippedAt(shipping.getShippedAt())
                 .build();
     }

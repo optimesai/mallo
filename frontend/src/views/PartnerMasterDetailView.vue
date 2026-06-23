@@ -248,65 +248,65 @@ function showToast(message: string) {
   <div class="space-y-6 pb-12">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 text-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="router.push({ name: 'partner-master' })">
+        <button class="mb-5 inline-flex items-center gap-2 rounded-xl border app-border px-4 py-2 app-type-sm app-font-emphasis app-text-soft transition app-hover-muted" type="button" @click="router.push({ name: 'partner-master' })">
           <ArrowLeft class="h-4 w-4" />
           목록으로
         </button>
-        <h1 class="text-2xl app-font-emphasis tracking-tight app-text-strong">{{ partner?.partnerName || '거래처 상세' }}</h1>
-        <p class="mt-1 font-mono text-sm app-font-strong app-text-muted">{{ partner?.partnerCode || '-' }}</p>
+        <h1 class="app-type-2xl app-font-emphasis tracking-tight app-text-strong">{{ partner?.partnerName || '거래처 상세' }}</h1>
+        <p class="mt-1 font-mono app-type-sm app-font-strong app-text-muted">{{ partner?.partnerCode || '-' }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 text-sm app-font-strong app-text-success">{{ toast }}</div>
-        <button v-if="canWrite && partner" class="rounded-xl app-bg-strong px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="openEditForm">수정</button>
-        <button v-if="canWrite && partner" class="rounded-xl app-bg-warning px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="updateStatus(partner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')">
+        <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 app-type-sm app-font-strong app-text-success">{{ toast }}</div>
+        <button v-if="canWrite && partner" class="rounded-xl app-bg-strong px-4 py-2 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="openEditForm">수정</button>
+        <button v-if="canWrite && partner" class="rounded-xl app-bg-warning px-4 py-2 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="updateStatus(partner.partnerStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')">
           {{ partner.partnerStatus === 'ACTIVE' ? '비활성화' : '활성화' }}
         </button>
-        <button v-if="isAdmin && partner" class="rounded-xl app-bg-danger px-4 py-2 text-sm app-font-emphasis app-text-inverse" type="button" @click="requestDelete">삭제</button>
+        <button v-if="isAdmin && partner" class="rounded-xl app-bg-danger px-4 py-2 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="requestDelete">삭제</button>
       </div>
     </div>
 
-    <div v-if="pageError" class="rounded-2xl border app-border app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">{{ pageError }}</div>
+    <div v-if="pageError" class="rounded-2xl border app-border app-bg-danger-soft p-4 app-type-sm app-font-strong app-text-danger">{{ pageError }}</div>
 
     <div v-if="partner" class="grid grid-cols-1 gap-4 md:grid-cols-4">
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">거래처 구분</p>
-        <strong class="mt-2 block text-xl app-text-strong">{{ getPartnerTypeLabel(partner.partnerType) }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">거래처 구분</p>
+        <strong class="mt-2 block app-type-xl app-text-strong">{{ getPartnerTypeLabel(partner.partnerType) }}</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">상태</p>
-        <strong class="mt-2 block text-xl" :class="partner.partnerStatus === 'ACTIVE' ? 'app-text-success' : 'app-text-warning'">{{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">상태</p>
+        <strong class="mt-2 block app-type-xl" :class="partner.partnerStatus === 'ACTIVE' ? 'app-text-success' : 'app-text-warning'">{{ partner.partnerStatus === 'ACTIVE' ? '활성' : '비활성' }}</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">사용 건수</p>
-        <strong class="mt-2 block text-xl app-text-strong">{{ partner.usageCount.toLocaleString() }}건</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">사용 건수</p>
+        <strong class="mt-2 block app-type-xl app-text-strong">{{ partner.usageCount.toLocaleString() }}건</strong>
       </div>
       <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="text-xs app-font-emphasis uppercase tracking-widest app-text-muted">최근 거래</p>
-        <strong class="mt-2 block text-sm app-text-strong">{{ formatDateTime(partner.lastUsedAt) }}</strong>
+        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">최근 거래</p>
+        <strong class="mt-2 block app-type-sm app-text-strong">{{ formatDateTime(partner.lastUsedAt) }}</strong>
       </div>
     </div>
 
     <div v-if="partner" class="rounded-3xl border app-border app-bg-surface shadow-sm">
       <div class="flex flex-wrap gap-2 border-b app-border-muted p-4">
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'profile' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'profile'">기본 정보</button>
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'system' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'system'">사용 현황</button>
-        <button class="rounded-2xl px-4 py-2 text-sm app-font-emphasis" :class="activeTab === 'history' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'history'">
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'profile' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'profile'">기본 정보</button>
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'system' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'system'">사용 현황</button>
+        <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'history' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'history'">
           {{ partner.partnerType === 'SUPPLIER' ? '공급 이력' : '출하 이력' }}
         </button>
       </div>
 
       <div v-if="activeTab === 'profile'" class="grid gap-4 p-5 lg:grid-cols-3">
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">기본 식별 정보</h2>
-          <dl class="mt-4 space-y-3 text-sm">
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">기본 식별 정보</h2>
+          <dl class="mt-4 space-y-3 app-type-sm">
             <div><dt class="app-text-muted">거래처 코드</dt><dd class="mt-1 font-mono app-font-emphasis app-text-strong">{{ partner.partnerCode }}</dd></div>
             <div><dt class="app-text-muted">거래처명</dt><dd class="mt-1 app-font-strong app-text-strong">{{ partner.partnerName }}</dd></div>
             <div><dt class="app-text-muted">거래처 구분</dt><dd class="mt-1 app-text-soft">{{ getPartnerTypeLabel(partner.partnerType) }}</dd></div>
           </dl>
         </section>
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">사업자 및 연락처</h2>
-          <dl class="mt-4 space-y-3 text-sm">
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">사업자 및 연락처</h2>
+          <dl class="mt-4 space-y-3 app-type-sm">
             <div><dt class="app-text-muted">사업자등록번호</dt><dd class="mt-1 font-mono app-text-soft">{{ partner.businessNo || '미등록' }}</dd></div>
             <div><dt class="app-text-muted">대표자</dt><dd class="mt-1 app-text-soft">{{ partner.representative || '-' }}</dd></div>
             <div>
@@ -326,15 +326,15 @@ function showToast(message: string) {
           </dl>
         </section>
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">비고</h2>
-          <p class="mt-4 whitespace-pre-line text-sm app-text-muted">{{ partner.note || '등록된 비고가 없습니다.' }}</p>
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">비고</h2>
+          <p class="mt-4 whitespace-pre-line app-type-sm app-text-muted">{{ partner.note || '등록된 비고가 없습니다.' }}</p>
         </section>
       </div>
 
       <div v-else-if="activeTab === 'system'" class="grid gap-4 p-5 lg:grid-cols-2">
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">사용 현황</h2>
-          <dl class="mt-4 space-y-3 text-sm">
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">사용 현황</h2>
+          <dl class="mt-4 space-y-3 app-type-sm">
             <div><dt class="app-text-muted">입고 참조</dt><dd class="mt-1 app-font-strong app-text-strong">{{ usage?.inboundCount ?? partner.inboundCount }}건</dd></div>
             <div><dt class="app-text-muted">출하 참조</dt><dd class="mt-1 app-font-strong app-text-strong">{{ usage?.shippingCount ?? partner.shippingCount }}건</dd></div>
             <div><dt class="app-text-muted">최근 거래 일시</dt><dd class="mt-1 app-text-soft">{{ formatDateTime(usage?.lastUsedAt || partner.lastUsedAt) }}</dd></div>
@@ -342,15 +342,22 @@ function showToast(message: string) {
           </dl>
         </section>
         <section class="rounded-2xl border app-border-muted p-4">
-          <h2 class="text-sm app-font-emphasis app-text-strong">업무 연계</h2>
-          <p class="mt-4 text-sm app-text-muted">{{ getPartnerTypeDescription(partner.partnerType) }}</p>
-          <p class="mt-2 text-sm app-text-muted">{{ partner.partnerType === 'SUPPLIER' ? '입고 등록 화면의 공급사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' : '출하 지시 화면의 고객사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' }}</p>
+          <h2 class="app-type-sm app-font-emphasis app-text-strong">업무 연계</h2>
+          <p class="mt-4 app-type-sm app-text-muted">{{ getPartnerTypeDescription(partner.partnerType) }}</p>
+          <p class="mt-2 app-type-sm app-text-muted">{{ partner.partnerType === 'SUPPLIER' ? '입고 등록 화면의 공급사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' : '출하 지시 화면의 고객사 선택 목록에서 활성 거래처만 사용할 수 있습니다.' }}</p>
         </section>
       </div>
 
-      <div v-else class="overflow-x-auto p-5">
-        <table class="w-full min-w-[760px] text-left text-sm">
-          <thead class="app-bg-muted text-xs uppercase tracking-widest app-text-muted">
+      <div v-else>
+        <div class="app-list-head">
+          <span class="app-list-title">거래 품목 이력</span>
+          <span class="app-list-meta">
+            총 {{ partner.partnerType === 'SUPPLIER' ? partnerMasterStore.suppliedItems.length.toLocaleString() : partnerMasterStore.shippedItems.length.toLocaleString() }}건
+          </span>
+        </div>
+        <div class="overflow-x-auto p-5">
+        <table class="app-table min-w-[760px]">
+          <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
             <tr>
               <th class="px-4 py-3">품목 코드</th>
               <th class="px-4 py-3">품목명</th>
@@ -383,6 +390,7 @@ function showToast(message: string) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -390,51 +398,51 @@ function showToast(message: string) {
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl app-bg-surface p-6 shadow-2xl">
         <div class="mb-5 flex items-start justify-between gap-4 border-b app-border-muted pb-4">
           <div>
-            <h2 class="text-lg app-font-emphasis app-text-strong">거래처 수정</h2>
-            <p class="mt-1 text-sm app-font-label app-text-muted">거래처 구분, 거래처 코드, 사업자등록번호는 수정할 수 없습니다.</p>
+            <h2 class="app-type-lg app-font-emphasis app-text-strong">거래처 수정</h2>
+            <p class="mt-1 app-type-sm app-font-label app-text-muted">거래처 구분, 거래처 코드, 사업자등록번호는 수정할 수 없습니다.</p>
           </div>
           <button class="rounded-full p-2 app-hover-muted" type="button" @click="closeForm"><X class="h-5 w-5" /></button>
         </div>
 
         <form class="grid gap-4 md:grid-cols-2" @submit.prevent="submitForm">
-          <div v-if="formError" class="md:col-span-2 rounded-2xl border app-border app-bg-danger-soft p-3 text-sm app-font-strong app-text-danger">{{ formError }}</div>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <div v-if="formError" class="md:col-span-2 rounded-2xl border app-border app-bg-danger-soft p-3 app-type-sm app-font-strong app-text-danger">{{ formError }}</div>
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             거래처 구분
-            <select v-model="form.partnerType" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 text-sm outline-none">
+            <select v-model="form.partnerType" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 app-type-sm outline-none">
               <option v-for="option in partnerTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
           </label>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             거래처 코드
-            <input v-model="form.partnerCode" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 font-mono text-sm outline-none">
+            <input v-model="form.partnerCode" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 font-mono app-type-sm outline-none">
           </label>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             거래처명
-            <input v-model="form.partnerName" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <input v-model="form.partnerName" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 app-type-sm outline-none">
           </label>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             사업자등록번호
-            <input v-model="form.businessNo" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 text-sm outline-none">
+            <input v-model="form.businessNo" disabled class="mt-1 h-11 w-full rounded-2xl border app-border app-bg-disabled px-4 app-type-sm outline-none">
           </label>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             대표자명
-            <input v-model="form.representative" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <input v-model="form.representative" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 app-type-sm outline-none">
           </label>
-          <label class="block text-sm app-font-emphasis app-text-soft">
+          <label class="block app-type-sm app-font-emphasis app-text-soft">
             담당자 연락처
-            <input v-model="form.contactPhone" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <input v-model="form.contactPhone" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 app-type-sm outline-none">
           </label>
-          <label class="md:col-span-2 block text-sm app-font-emphasis app-text-soft">
+          <label class="md:col-span-2 block app-type-sm app-font-emphasis app-text-soft">
             담당자 이메일
-            <input v-model="form.contactEmail" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 text-sm outline-none">
+            <input v-model="form.contactEmail" class="mt-1 h-11 w-full rounded-2xl border app-border px-4 app-type-sm outline-none">
           </label>
-          <label class="md:col-span-2 block text-sm app-font-emphasis app-text-soft">
+          <label class="md:col-span-2 block app-type-sm app-font-emphasis app-text-soft">
             비고
-            <textarea v-model="form.note" rows="4" class="mt-1 w-full resize-none rounded-2xl border app-border px-4 py-3 text-sm outline-none"></textarea>
+            <textarea v-model="form.note" rows="4" class="mt-1 w-full resize-none rounded-2xl border app-border px-4 py-3 app-type-sm outline-none"></textarea>
           </label>
           <div class="md:col-span-2 flex justify-end gap-2 border-t app-border-muted pt-4">
-            <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="closeForm">취소</button>
-            <button class="rounded-2xl app-accent-bg px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="submit" :disabled="partnerMasterStore.isSaving">저장</button>
+            <button class="rounded-2xl app-bg-muted px-5 py-2.5 app-type-sm app-font-emphasis" type="button" @click="closeForm">취소</button>
+            <button class="rounded-2xl app-accent-bg px-5 py-2.5 app-type-sm app-font-emphasis app-text-inverse" type="submit" :disabled="partnerMasterStore.isSaving">저장</button>
           </div>
         </form>
       </div>
@@ -442,32 +450,32 @@ function showToast(message: string) {
 
     <div v-if="isDeleteOpen" class="fixed inset-0 z-[60] flex items-center justify-center app-backdrop p-4">
       <div class="w-full max-w-xl rounded-3xl app-bg-surface p-6 shadow-2xl">
-        <h2 class="text-lg app-font-emphasis app-text-strong">거래처 삭제 확인</h2>
+        <h2 class="app-type-lg app-font-emphasis app-text-strong">거래처 삭제 확인</h2>
         <div class="mt-4 rounded-2xl border app-border-muted p-4">
-          <p class="mb-2 text-sm app-font-emphasis app-text-strong">참조 항목</p>
-          <ul v-if="referenceItems.length > 0" class="space-y-1 text-sm app-font-strong app-text-soft">
+          <p class="mb-2 app-type-sm app-font-emphasis app-text-strong">참조 항목</p>
+          <ul v-if="referenceItems.length > 0" class="space-y-1 app-type-sm app-font-strong app-text-soft">
             <li v-for="refItem in referenceItems" :key="refItem.label">- {{ refItem.label }} {{ refItem.count.toLocaleString() }}건</li>
           </ul>
-          <p v-else class="text-sm app-font-strong app-text-muted">참조 중인 항목이 없습니다.</p>
+          <p v-else class="app-type-sm app-font-strong app-text-muted">참조 중인 항목이 없습니다.</p>
         </div>
-        <p v-if="usage && !usage.canDelete" class="mt-4 rounded-2xl app-bg-warning-soft p-4 text-sm app-font-strong app-text-warning">
+        <p v-if="usage && !usage.canDelete" class="mt-4 rounded-2xl app-bg-warning-soft p-4 app-type-sm app-font-strong app-text-warning">
           참조 중인 거래처는 삭제할 수 없습니다. 더 이상 사용하지 않는 거래처는 비활성화로 전환하세요.
         </p>
-        <p v-else class="mt-4 rounded-2xl app-bg-danger-soft p-4 text-sm app-font-strong app-text-danger">
+        <p v-else class="mt-4 rounded-2xl app-bg-danger-soft p-4 app-type-sm app-font-strong app-text-danger">
           참조 데이터가 없습니다. 삭제 후 복구할 수 없습니다.
         </p>
         <div class="mt-5 flex justify-end gap-2">
-          <button class="rounded-2xl app-bg-muted px-5 py-2.5 text-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
+          <button class="rounded-2xl app-bg-muted px-5 py-2.5 app-type-sm app-font-emphasis" type="button" @click="isDeleteOpen = false">닫기</button>
           <button
             v-if="usage && !usage.canDelete"
-            class="rounded-2xl app-bg-warning px-5 py-2.5 text-sm app-font-emphasis app-text-inverse disabled:opacity-50"
+            class="rounded-2xl app-bg-warning px-5 py-2.5 app-type-sm app-font-emphasis app-text-inverse disabled:opacity-50"
             type="button"
             :disabled="partnerMasterStore.isSaving || partner?.partnerStatus === 'INACTIVE'"
             @click="deactivateFromDeleteModal"
           >
             {{ partner?.partnerStatus === 'INACTIVE' ? '이미 비활성화됨' : '비활성화' }}
           </button>
-          <button v-else class="rounded-2xl app-bg-danger px-5 py-2.5 text-sm app-font-emphasis app-text-inverse" type="button" @click="deletePartner">삭제</button>
+          <button v-else class="rounded-2xl app-bg-danger px-5 py-2.5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="deletePartner">삭제</button>
         </div>
       </div>
     </div>

@@ -34,6 +34,14 @@ const router = createRouter({
           component: HomeView
         },
         {
+          path: 'dashboard',
+          redirect: { name: 'home' }
+        },
+        {
+          path: 'home',
+          redirect: { name: 'home' }
+        },
+        {
           path: 'me',
           name: 'my-info',
           component: () => import('../views/MyInfoView.vue')
@@ -137,6 +145,10 @@ const router = createRouter({
           path: 'ai/queries',
           name: 'ai-queries',
           component: () => import('../views/AiDataChatbotView.vue')
+        },
+        {
+          path: ':pathMatch(.*)*',
+          redirect: { name: 'home' }
         }
       ]
     }

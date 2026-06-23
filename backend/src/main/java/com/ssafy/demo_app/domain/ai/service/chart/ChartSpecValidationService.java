@@ -52,7 +52,8 @@ public class ChartSpecValidationService {
         return switch (chart.getType()) {
             case TABLE -> ChartSpecValidationResult.valid(normalizeTable(chart));
             case STAT -> validateStat(chart,rows);
-            case BAR, LINE -> validateAxisChart(chart, rows);
+            case BAR, LINE, HORIZONTAL_BAR, AREA, COMBO, PARETO -> validateAxisChart(chart, rows, 2);
+            case STACKED_BAR -> validateAxisChart(chart, rows, Integer.MAX_VALUE);
             case DONUT -> validateDonut(chart, rows);
             case NONE -> ChartSpecValidationResult.valid(normalizeNone(chart, chart.getReason()));
         };
@@ -71,12 +72,12 @@ public class ChartSpecValidationService {
         return ChartSpecValidationResult.valid(chart);
     }
 
-    private ChartSpecValidationResult validateAxisChart(AiChartResponse chart, List<Map<String, Object>> rows) {
+    private ChartSpecValidationResult validateAxisChart(AiChartResponse chart, List<Map<String, Object>> rows, int maxYKeyCount) {
         if (!hasColumn(chart.getXKey(), rows)) {
             return ChartSpecValidationResult.invalid("x축 컬럼이 실제 결과에 존재해야 합니다.");
         }
-        if (chart.getYKeys().size() > 2) {
-            return ChartSpecValidationResult.invalid("BAR/LINE 차트는 최대 두 개의 y축 컬럼만 사용할 수 있습니다.");
+        if (chart.getYKeys().size() > maxYKeyCount) {
+            return ChartSpecValidationResult.invalid("선택한 차트에서 허용하는 y축 컬럼 수를 초과했습니다.");
         }
 
         chart.setEnabled(true);
@@ -137,6 +138,7 @@ public class ChartSpecValidationService {
         chart.setType(AiChartResponse.ChartType.TABLE);
         chart.setXKey(null);
         chart.setYKeys(List.of());
+        chart.setYLabels(Map.of());
         if (chart.getTitle() == null || chart.getTitle().isBlank()) {
             chart.setTitle("표 형식 조회");
         }
@@ -151,6 +153,7 @@ public class ChartSpecValidationService {
         chart.setType(AiChartResponse.ChartType.NONE);
         chart.setXKey(null);
         chart.setYKeys(List.of());
+        chart.setYLabels(Map.of());
         chart.setTitle(null);
         chart.setReason(reason == null || reason.isBlank() ? NO_CHART : reason);
         return chart;

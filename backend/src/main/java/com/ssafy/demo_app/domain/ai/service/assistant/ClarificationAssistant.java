@@ -22,6 +22,10 @@ public interface ClarificationAssistant {
 
         Clarification Policy:
         - Ask clarification only when SQL would be misleading without a missing metric, dimension, time range, or filter.
+        - If the question contains pending clarification context with original question, AI clarification question, and user follow-up answer, evaluate the internally resolved question.
+        - If pending clarification context is present and the current input is a short condition/filter, treat it as a condition for the pending original question.
+        - Never attach a short follow-up condition to older completed questions.
+        - If no pending clarification context is present and the input is only a condition/filter, ask what question or metric the condition should apply to.
         - Do not ask clarification if a safe default aggregation exists.
         - For "재고 현황", default to item-level current stock.
         - For "현재고", default to SUM(current_inventory.current_qty) by item unless another dimension is requested.

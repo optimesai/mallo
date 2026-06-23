@@ -28,6 +28,10 @@ const isSubmitting = ref(false)
 // Filter states
 const filterOrderNo = ref('')
 const filterStatus = ref<'ALL' | 'READY' | 'RUN' | 'HOLD'>('ALL')
+const currentPage = ref(0)
+const pageSize = 10
+const sortField = ref<keyof WorkOrderResponse>('orderNo')
+const sortDirection = ref<'asc' | 'desc'>('asc')
 
 // Selected work order (Master-detail)
 const selectedOrder = ref<WorkOrderResponse | null>(null)
@@ -61,6 +65,7 @@ async function handleRefresh() {
 function resetFilters() {
   filterOrderNo.value = ''
   filterStatus.value = 'ALL'
+  currentPage.value = 0
 }
 
 // Filtered work orders list
@@ -78,6 +83,58 @@ const filteredOrders = computed(() => {
     return true
   })
 })
+
+const sortedOrders = computed(() => {
+  return [...filteredOrders.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
+})
+
+const totalPages = computed(() => Math.max(Math.ceil(sortedOrders.value.length / pageSize), 1))
+const pageStart = computed(() => {
+  if (sortedOrders.value.length === 0) return 0
+  return currentPage.value * pageSize + 1
+})
+const pageEnd = computed(() => Math.min((currentPage.value + 1) * pageSize, sortedOrders.value.length))
+const pagedOrders = computed(() => {
+  const start = currentPage.value * pageSize
+  return sortedOrders.value.slice(start, start + pageSize)
+})
+
+function goToPage(page: number) {
+  currentPage.value = Math.max(0, Math.min(page, totalPages.value - 1))
+}
+
+function handleFilterChange() {
+  currentPage.value = 0
+}
+
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: keyof WorkOrderResponse) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  currentPage.value = 0
+}
+
+function getSortMark(field: keyof WorkOrderResponse) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
 
 // Calculate BOM requirements & available stock comparison for selected work order
 const selectedOrderBOMStatus = computed(() => {
@@ -153,7 +210,7 @@ async function selectRow(order: WorkOrderResponse) {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -172,13 +229,13 @@ async function selectRow(order: WorkOrderResponse) {
     <!-- 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">BOM 기반 생산 자재 출고(불출)</h1>
+        <h1 class="app-page-title">BOM 기반 생산 자재 출고</h1>
         <p class="app-page-subtitle">대기(READY) 중인 생산 작업 지시의 BOM 구성 소요량을 연산하고 자재 창고 재고를 차감합니다.</p>
       </div>
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="app-button app-button-muted"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -212,6 +269,7 @@ async function selectRow(order: WorkOrderResponse) {
                 type="text"
                 placeholder="지시번호 또는 완제품명 입력"
                 class="app-control app-control-search"
+                @input="handleFilterChange"
               />
               <Search class="app-search-icon" />
             </div>
@@ -223,6 +281,7 @@ async function selectRow(order: WorkOrderResponse) {
             <select
               v-model="filterStatus"
               class="app-control"
+              @change="handleFilterChange"
             >
               <option value="ALL">전체 상태</option>
               <option value="READY">지시 대기 (READY)</option>
@@ -247,11 +306,11 @@ async function selectRow(order: WorkOrderResponse) {
     <!-- 마스터 테이블: 작업 지시 목록 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">생산 작업 지시 목록 (총 {{ filteredOrders.length }}건)</span>
+        <span class="app-panel-title">생산 작업 지시 목록</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -262,70 +321,67 @@ async function selectRow(order: WorkOrderResponse) {
             <col class="w-[180px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">ID</th>
-              <th class="px-5 py-3">작업 지시 번호</th>
-              <th class="px-5 py-3">생산 품목코드</th>
-              <th class="px-5 py-3">생산 품목명</th>
-              <th class="px-5 py-3 text-right">목표 생산 수량</th>
-              <th class="px-5 py-3 text-center">지시 상태</th>
-              <th class="px-5 py-3">계획 일자</th>
+            <tr>
+              <th class="app-sortable-header" @click="changeSort('orderId')">ID <span class="app-sort-mark">{{ getSortMark('orderId') }}</span></th>
+              <th class="app-sortable-header" @click="changeSort('orderNo')">작업 지시 번호 <span class="app-sort-mark">{{ getSortMark('orderNo') }}</span></th>
+              <th class="app-sortable-header" @click="changeSort('itemCode')">생산 품목코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header" @click="changeSort('itemName')">생산 품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header text-right" @click="changeSort('targetQty')">목표 생산 수량 <span class="app-sort-mark">{{ getSortMark('targetQty') }}</span></th>
+              <th class="app-sortable-header text-center" @click="changeSort('status')">지시 상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header" @click="changeSort('planDate')">계획 일자 <span class="app-sort-mark">{{ getSortMark('planDate') }}</span></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody>
             <tr
-              v-for="order in filteredOrders"
+              v-for="order in pagedOrders"
               :key="order.orderId"
               @click="selectRow(order)"
-              class="app-hover-muted cursor-pointer transition select-none"
-              :class="{ 'app-bg-primary-soft': selectedOrder?.orderId === order.orderId }"
+              class="app-table-row"
+              :class="{ 'app-table-row-selected': selectedOrder?.orderId === order.orderId }"
             >
-              <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ order.orderId }}</td>
-              <!-- 작업 지시 번호 -->
-              <td class="px-5 py-4 app-font-strong app-text-strong">{{ order.orderNo }}</td>
-              <!-- 생산 품목코드 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ order.itemCode }}</td>
-              <!-- 생산 품목명 -->
-              <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="order.itemName">
+              <td class="app-table-id">#{{ order.orderId }}</td>
+              <td class="app-table-main">{{ order.orderNo }}</td>
+              <td class="app-table-id">{{ order.itemCode }}</td>
+              <td class="app-table-strong truncate" :title="order.itemName">
                 {{ order.itemName }}
               </td>
-              <!-- 목표 생산 수량 -->
-              <td class="px-5 py-4 text-right app-font-emphasis app-text-strong">
+              <td class="app-table-number">
                 {{ order.targetQty.toLocaleString() }}
               </td>
-              <!-- 지시 상태 -->
-              <td class="px-5 py-4 text-center">
+              <td class="text-center">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="app-status"
                   :class="{
-                    'app-bg-warning-soft app-border app-text-warning': order.status === 'READY',
-                    'app-bg-primary-soft app-border app-accent': order.status === 'RUN',
-                    'app-bg-muted app-border app-muted': order.status === 'CLOSE'
+                    'app-status-warning': order.status === 'READY',
+                    'app-status-progress': order.status === 'RUN',
+                    'app-status-neutral': order.status === 'HOLD',
+                    'app-status-success': order.status === 'CLOSE'
                   }"
                 >
-                  <span
-                    class="w-1.5 h-1.5 rounded-full"
-                    :class="{
-                      'app-bg-warning': order.status === 'READY',
-                      'app-accent-bg': order.status === 'RUN',
-                      'app-bg-success': order.status === 'CLOSE'
-                    }"
-                  ></span>
-                  {{ order.status === 'READY' ? '지시대기' : order.status === 'RUN' ? '진행중' : '마감' }}
+                  {{ order.status === 'READY' ? '지시대기' : order.status === 'RUN' ? '진행중' : order.status === 'HOLD' ? '보류' : '마감' }}
                 </span>
               </td>
-              <!-- 계획 일자 -->
-              <td class="px-5 py-4 app-muted font-mono">{{ order.planDate }}</td>
+              <td class="app-table-id">{{ order.planDate }}</td>
             </tr>
             <tr v-if="filteredOrders.length === 0">
-              <td colspan="7" class="px-5 py-12 text-center app-text-muted">
+              <td colspan="7" class="app-empty">
                 <FileText class="w-8 h-8 app-text-subtle mx-auto mb-2" />
                 조건에 맞는 작업 지시가 존재하지 않습니다.
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div class="app-pagination">
+        <p>
+          총 {{ filteredOrders.length.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ pageSize }}건씩 · {{ currentPage + 1 }} / {{ totalPages }} 페이지
+        </p>
+        <div class="app-pagination-actions">
+          <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="goToPage(0)">처음</button>
+          <button class="app-page-button" type="button" :disabled="currentPage === 0" @click="goToPage(currentPage - 1)">이전</button>
+          <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="goToPage(currentPage + 1)">다음</button>
+          <button class="app-page-button" type="button" :disabled="currentPage >= totalPages - 1" @click="goToPage(totalPages - 1)">마지막</button>
+        </div>
       </div>
     </div>
 
@@ -337,11 +393,11 @@ async function selectRow(order: WorkOrderResponse) {
       <div class="px-5 py-4 app-bg-strong app-text-inverse flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Package class="w-5 h-5 app-accent" />
-          <h3 class="app-font-emphasis text-sm">BOM 부품명세 및 가용재고 대조 검증 (작업 지시: {{ selectedOrder.orderNo }})</h3>
+          <h3 class="app-font-emphasis app-type-sm">BOM 부품명세 및 가용재고 대조 검증 (작업 지시: {{ selectedOrder.orderNo }})</h3>
         </div>
         <button
           @click="selectedOrder = null"
-          class="app-text-muted text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
+          class="app-text-muted app-type-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -349,17 +405,17 @@ async function selectRow(order: WorkOrderResponse) {
 
       <div class="p-6 space-y-6">
         <!-- 메타 요약 정보 -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 app-bg-muted border app-border-muted rounded-xl text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 app-bg-muted border app-border-muted rounded-xl app-type-sm">
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">생산 품목</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">생산 품목</span>
             <span class="app-font-strong app-text-strong mt-1 block">{{ selectedOrder.itemName }} ({{ selectedOrder.itemCode }})</span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">목표 생산량</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">목표 생산량</span>
             <span class="app-font-emphasis app-text-strong mt-1 block">{{ selectedOrder.targetQty.toLocaleString() }} EA</span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">출고 적합 여부</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출고 적합 여부</span>
             <span class="mt-1 block">
               <span
                 v-if="isStockSufficient"
@@ -373,14 +429,18 @@ async function selectRow(order: WorkOrderResponse) {
             </span>
           </div>
           <div>
-            <span class="text-xs app-text-muted app-font-strong block">지시 처리 상태</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">지시 처리 상태</span>
             <span class="app-font-strong app-accent mt-1 block uppercase">{{ selectedOrder.status }}</span>
           </div>
         </div>
 
         <!-- BOM 대조 테이블 -->
         <div class="border app-border rounded-lg overflow-hidden">
-          <table class="w-full text-left border-collapse table-fixed">
+          <div class="app-list-head">
+            <span class="app-list-title">BOM 소요 자재 목록</span>
+            <span class="app-list-meta">총 {{ selectedOrderBOMStatus.length.toLocaleString() }}건</span>
+          </div>
+          <table class="app-table table-fixed">
             <colgroup>
               <col class="w-[180px]" />
               <col class="w-[280px]" />
@@ -391,7 +451,7 @@ async function selectRow(order: WorkOrderResponse) {
               <col class="w-[160px]" />
             </colgroup>
             <thead>
-              <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
+              <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
                 <th class="px-5 py-3">자재 코드</th>
                 <th class="px-5 py-3">자재명</th>
                 <th class="px-5 py-3">단위</th>
@@ -401,7 +461,7 @@ async function selectRow(order: WorkOrderResponse) {
                 <th class="px-5 py-3 text-center">충족 상태</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 text-sm">
+            <tbody class="divide-y divide-slate-100 app-type-sm">
               <tr
                 v-for="mat in selectedOrderBOMStatus"
                 :key="mat.itemCode"
@@ -409,7 +469,7 @@ async function selectRow(order: WorkOrderResponse) {
                 :class="{ 'app-bg-danger-soft/10': !mat.isSufficient }"
               >
                 <!-- 자재 코드 -->
-                <td class="px-5 py-4 font-mono text-xs app-font-strong app-text-strong">{{ mat.itemCode }}</td>
+                <td class="px-5 py-4 font-mono app-type-xs app-font-strong app-text-strong">{{ mat.itemCode }}</td>
                 <!-- 자재명 -->
                 <td class="px-5 py-4 app-font-label app-text-soft truncate" :title="mat.itemName">
                   {{ mat.itemName }}
@@ -432,13 +492,13 @@ async function selectRow(order: WorkOrderResponse) {
                 <td class="px-5 py-4 text-center">
                   <span
                     v-if="mat.isSufficient"
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs app-font-strong app-bg-success-soft app-text-success border app-border"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full app-type-xs app-font-strong app-bg-success-soft app-text-success border app-border"
                   >
                     충족
                   </span>
                   <span
                     v-else
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs app-font-strong app-bg-danger-soft app-text-danger border app-border"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full app-type-xs app-font-strong app-bg-danger-soft app-text-danger border app-border"
                   >
                     부족
                   </span>
@@ -450,7 +510,7 @@ async function selectRow(order: WorkOrderResponse) {
 
         <!-- 실행 액션 툴바 -->
         <div class="flex items-center justify-between pt-4 border-t app-border-muted">
-          <div class="text-xs app-muted">
+          <div class="app-type-xs app-muted">
             <span v-if="selectedOrder.status !== 'READY'">
               이미 불출 처리되었거나 마감된 작업 지시 건입니다. (불출 실행 비활성화)
             </span>
@@ -466,7 +526,7 @@ async function selectRow(order: WorkOrderResponse) {
             <button
               :disabled="selectedOrder.status !== 'READY' || !isStockSufficient || isSubmitting"
               @click="handleIssueMaterials"
-              class="h-10 px-5 text-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md flex items-center gap-2 transition"
+              class="h-10 px-5 app-type-xs app-font-strong app-text-inverse app-accent-bg app-hover-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md flex items-center gap-2 transition"
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               <Play v-else class="w-4 h-4 fill-current" />

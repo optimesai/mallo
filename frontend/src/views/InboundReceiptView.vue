@@ -35,6 +35,8 @@ const filterPartner = ref('')
 const filterStatus = ref<'ALL' | 'READY' | 'COMPLETED' | 'STACKED'>('ALL')
 const filterDateStart = ref('')
 const filterDateEnd = ref('')
+const sortField = ref('inboundDate')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 // 2. 체크박스 다중 선택 상태
 const selectedIds = ref<number[]>([])
@@ -83,6 +85,10 @@ const filteredInbounds = computed(() => {
   return inboundStore.inbounds
 })
 
+const sortedInbounds = computed(() => {
+  return [...filteredInbounds.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
+})
+
 // 합계 계산 (필터링된 수량 총합)
 const totalInboundQty = computed(() => {
   return filteredInbounds.value.reduce((acc, curr) => acc + (curr.inboundQty || 0), 0)
@@ -104,6 +110,7 @@ async function fetchPageData() {
       inboundStore.loadInbounds({
         page: inboundStore.page,
         size: 20,
+        sort: `${sortField.value},${sortDirection.value}`,
         status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
         keyword: filterItem.value || filterPartner.value || undefined,
         startDate: filterDateStart.value || undefined,
@@ -130,6 +137,36 @@ function resetFilters() {
   filterStatus.value = 'ALL'
   filterDateStart.value = ''
   filterDateEnd.value = ''
+}
+
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+async function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  inboundStore.page = 0
+  await fetchPageData()
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
 }
 
 // 다중 선택 관리
@@ -223,7 +260,7 @@ async function handleBatchComplete() {
     }
     showToast(`${successCount}건이 검수 완료 처리되었습니다.`)
     selectedIds.value = []
-    await inboundStore.loadInbounds()
+    await fetchPageData()
     if (selectedInbound.value) {
       const updated = inboundStore.inbounds.find(i => i.inboundId === selectedInbound.value.inboundId)
       if (updated) selectedInbound.value = updated
@@ -361,7 +398,7 @@ function formatDateTime(dateTimeStr: string) {
     </div>
 
     <!-- 에러 배너 -->
-    <div v-if="pageError" class="app-alert app-alert-danger items-center justify-between text-xs">
+    <div v-if="pageError" class="app-alert app-alert-danger items-center justify-between app-type-xs">
       <span>{{ pageError }}</span>
       <button @click="pageError = null" class="app-icon-button">×</button>
     </div>
@@ -409,7 +446,7 @@ function formatDateTime(dateTimeStr: string) {
     <!-- 접이식 검색 조건 패널 (Hansol WMS 스타일) -->
     <div class="app-panel">
       <div class="app-panel-head py-3.5">
-        <span class="app-panel-title text-xs">
+        <span class="app-panel-title app-type-xs">
           <Search class="app-panel-icon" />
           조회 검색 조건
         </span>
@@ -425,7 +462,7 @@ function formatDateTime(dateTimeStr: string) {
       </div>
 
       <!-- 확장 시 필터 폼 (반응형 Grid로 크래시 방지) -->
-      <div v-show="isSearchExpanded" class="app-filter-body app-filter-grid text-xs">
+      <div v-show="isSearchExpanded" class="app-filter-body app-filter-grid app-type-xs">
         <div class="app-field">
           <label class="app-label">원자재 품목</label>
           <input
@@ -460,13 +497,13 @@ function formatDateTime(dateTimeStr: string) {
             <input
               type="date"
               v-model="filterDateStart"
-              class="app-control h-9 px-2 text-[11px]"
+              class="app-control h-9 px-2 app-type-11"
             >
             <span class="app-text-muted">~</span>
             <input
               type="date"
               v-model="filterDateEnd"
-              class="app-control h-9 px-2 text-[11px]"
+              class="app-control h-9 px-2 app-type-11"
             >
           </div>
         </div>
@@ -490,6 +527,10 @@ function formatDateTime(dateTimeStr: string) {
 
     <!-- 메인 그리드 및 액션 툴바 -->
     <div class="app-panel">
+      <div class="app-list-head">
+        <span class="app-list-title">입고 예정 목록</span>
+      </div>
+
       <!-- 액션 버튼 툴바 (패딩 및 마진 강화) -->
       <div class="px-5 py-4 app-bg-muted border-b app-border flex flex-wrap items-center justify-between gap-3">
         <!-- 다중 선택 액션 -->
@@ -510,7 +551,7 @@ function formatDateTime(dateTimeStr: string) {
             <Trash2 class="w-4 h-4" />
             선택 삭제
           </button>
-          <span class="text-xs app-text-muted ml-2 app-font-strong app-bg-muted px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
+          <span class="app-type-xs app-text-muted ml-2 app-font-strong app-bg-muted px-2 py-1 rounded-md" v-if="selectedIds.length > 0">
             선택: <span class="app-accent">{{ selectedIds.length }}</span>개
           </span>
         </div>
@@ -535,7 +576,7 @@ function formatDateTime(dateTimeStr: string) {
 
       <!-- 고밀도 데이터 테이블 영역 (Spacious border & alignment) -->
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1200px] text-left text-xs app-text-soft border-collapse">
+        <table class="app-table min-w-[1200px]">
           <thead class="app-bg-muted app-text-soft app-font-strong uppercase border-b app-border">
             <tr class="whitespace-nowrap">
               <th class="px-4 py-3 text-center w-12 border-r app-border app-bg-muted">
@@ -546,16 +587,16 @@ function formatDateTime(dateTimeStr: string) {
                   class="app-checkbox"
                 >
               </th>
-              <th class="px-4 py-3 text-center w-12 border-r app-border">No</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">상태</th>
-              <th class="px-4 py-3 w-32 border-r app-border app-font-strong">품목코드</th>
-              <th class="px-4 py-3 w-64 border-r app-border">품목명</th>
-              <th class="px-4 py-3 w-56 border-r app-border">공급처명</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">예정 로케이션</th>
-              <th class="px-4 py-3 text-right w-24 border-r app-border">예정 수량</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">입고 예정일</th>
-              <th class="px-4 py-3 text-center w-36 border-r app-border">등록 일시</th>
-              <th class="px-4 py-3 text-center w-20 border-r app-border">작업자</th>
+              <th class="app-sortable-header px-4 py-3 text-center w-12 border-r app-border" @click="changeSort('inboundId')">No <span class="app-sort-mark">{{ getSortMark('inboundId') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('status')">상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-32 border-r app-border app-font-strong" @click="changeSort('itemCode')">품목코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-64 border-r app-border" @click="changeSort('itemName')">품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-56 border-r app-border" @click="changeSort('partnerName')">공급처명 <span class="app-sort-mark">{{ getSortMark('partnerName') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('locationCode')">예정 로케이션 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-right w-24 border-r app-border" @click="changeSort('inboundQty')">예정 수량 <span class="app-sort-mark">{{ getSortMark('inboundQty') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('inboundDate')">입고 예정일 <span class="app-sort-mark">{{ getSortMark('inboundDate') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-36 border-r app-border" @click="changeSort('createdAt')">등록 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-20 border-r app-border" @click="changeSort('workerName')">작업자 <span class="app-sort-mark">{{ getSortMark('workerName') }}</span></th>
               <th class="px-4 py-3 text-center w-36">액션</th>
             </tr>
           </thead>
@@ -574,7 +615,7 @@ function formatDateTime(dateTimeStr: string) {
               </td>
             </tr>
             <tr
-              v-for="(item, idx) in filteredInbounds"
+              v-for="(item, idx) in sortedInbounds"
               :key="item.inboundId"
               @click="selectRow(item)"
               class="app-hover-muted/80 cursor-pointer transition-colors whitespace-nowrap"
@@ -595,20 +636,20 @@ function formatDateTime(dateTimeStr: string) {
               <td class="px-4 py-3 text-center border-r app-border-muted">
                 <span
                   v-if="item.status === 'READY'"
-                  class="app-status app-status-ready text-[10px]"
+                  class="app-status app-status-ready app-type-2xs"
                 >
                   <span class="w-1.5 h-1.5 mr-1 rounded-full app-bg-primary-soft0 animate-ping"></span>
                   대기 (READY)
                 </span>
                 <span
                   v-else-if="item.status === 'STACKED'"
-                  class="app-status app-status-stacked text-[10px]"
+                  class="app-status app-status-stacked app-type-2xs"
                 >
                   적재 완료 (STACKED)
                 </span>
                 <span
                   v-else
-                  class="app-status app-status-completed text-[10px]"
+                  class="app-status app-status-completed app-type-2xs"
                 >
                   완료 (COMPLETED)
                 </span>
@@ -619,20 +660,20 @@ function formatDateTime(dateTimeStr: string) {
               <td class="px-4 py-3 text-center border-r app-border-muted font-mono app-text-soft">{{ item.locationCode }}</td>
               <td class="px-4 py-3 text-right border-r app-border-muted app-font-emphasis app-text-strong">{{ item.inboundQty.toLocaleString() }}</td>
               <td class="px-4 py-3 text-center border-r app-border-muted app-text-muted app-font-label">{{ formatDate(item.inboundDate) }}</td>
-              <td class="px-4 py-3 text-center border-r app-border-muted app-text-muted font-mono text-[11px]">{{ formatDateTime(item.createdAt) }}</td>
+              <td class="px-4 py-3 text-center border-r app-border-muted app-text-muted font-mono app-type-11">{{ formatDateTime(item.createdAt) }}</td>
               <td class="px-4 py-3 text-center border-r app-border-muted app-font-label app-text-soft">{{ item.workerName || '-' }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <div class="flex items-center justify-center gap-1.5">
                   <template v-if="item.status === 'READY'">
                     <button
                       @click="handleComplete(item.inboundId)"
-                      class="app-button app-button-primary h-8 text-[10px]"
+                      class="app-button app-button-primary h-8 app-type-2xs"
                     >
                       검수 완료
                     </button>
                     <button
                       @click="handleDelete(item.inboundId)"
-                      class="app-button app-button-muted h-8 text-[10px]"
+                      class="app-button app-button-muted h-8 app-type-2xs"
                     >
                       삭제
                     </button>
@@ -640,14 +681,14 @@ function formatDateTime(dateTimeStr: string) {
                   <template v-else-if="item.status === 'COMPLETED'">
                     <button
                       @click="navigateToStack"
-                      class="app-button app-button-muted h-8 text-[10px]"
+                      class="app-button app-button-muted h-8 app-type-2xs"
                     >
                       창고 적재
                       <ArrowRight class="w-3 h-3" />
                     </button>
                   </template>
                   <template v-else>
-                    <span class="text-[10px] app-text-subtle app-font-label">처리 완료</span>
+                    <span class="app-type-2xs app-text-subtle app-font-label">처리 완료</span>
                   </template>
                 </div>
               </td>
@@ -661,7 +702,7 @@ function formatDateTime(dateTimeStr: string) {
               <td colspan="5" class="px-4 py-3 border-r app-border-muted text-left app-text-muted font-normal">
                 현재 검색 목록: 총 <span class="app-font-strong app-text-strong">{{ filteredInbounds.length }}</span>건의 입고
               </td>
-              <td class="px-4 py-3 text-right border-r app-border-muted app-accent app-font-emphasis text-sm">
+              <td class="px-4 py-3 text-right border-r app-border-muted app-accent app-font-emphasis app-type-sm">
                 {{ totalInboundQty.toLocaleString() }}
               </td>
               <td colspan="4" class="px-4 py-3"></td>
@@ -684,12 +725,12 @@ function formatDateTime(dateTimeStr: string) {
             @click="goToPage(0)"
             :disabled="inboundStore.page === 0"
             class="app-page-button"
-          >««</button>
+          >처음</button>
           <button
             @click="goToPage(inboundStore.page - 1)"
             :disabled="inboundStore.page === 0"
             class="app-page-button"
-          >«</button>
+          >이전</button>
           <button
             v-for="p in Math.min(inboundStore.totalPages, 5)"
             :key="p"
@@ -705,12 +746,12 @@ function formatDateTime(dateTimeStr: string) {
             @click="goToPage(inboundStore.page + 1)"
             :disabled="inboundStore.page >= inboundStore.totalPages - 1"
             class="app-page-button"
-          >»</button>
+          >다음</button>
           <button
             @click="goToPage(inboundStore.totalPages - 1)"
             :disabled="inboundStore.page >= inboundStore.totalPages - 1"
             class="app-page-button"
-          >»»</button>
+          >마지막</button>
         </div>
       </div>
     </div>
@@ -719,7 +760,7 @@ function formatDateTime(dateTimeStr: string) {
     <div class="app-panel">
       <!-- 상세 탭 헤더 -->
       <div class="px-5 py-3 app-bg-muted border-b app-border flex items-center justify-between">
-        <div class="flex items-center gap-4 text-xs app-font-strong app-text-soft">
+        <div class="flex items-center gap-4 app-type-xs app-font-strong app-text-soft">
           <span class="flex items-center gap-1.5 app-accent uppercase tracking-wider">
             <FileSpreadsheet class="w-4.5 h-4.5" />
             선택 오더 세부 내역
@@ -741,13 +782,13 @@ function formatDateTime(dateTimeStr: string) {
             </button>
           </div>
         </div>
-        <div class="text-[11px] font-mono app-text-muted" v-if="selectedInbound">
+        <div class="app-type-11 font-mono app-text-muted" v-if="selectedInbound">
           오더 ID: <span class="app-font-strong app-accent">{{ selectedInbound.inboundId }}</span>
         </div>
       </div>
 
       <!-- 상세정보 바디 (자연스럽게 늘어남) -->
-      <div class="p-6 text-xs app-bg-surface min-h-[140px]">
+      <div class="p-6 app-type-xs app-bg-surface min-h-[140px]">
         <div v-if="!selectedInbound" class="py-8 flex items-center justify-center app-text-muted app-font-label">
           <div class="text-center">
             <FileSpreadsheet class="w-8 h-8 app-text-subtle mx-auto mb-2" />
@@ -758,7 +799,7 @@ function formatDateTime(dateTimeStr: string) {
         <!-- 품목 & 거래처 정보 탭 -->
         <div v-else-if="activeTab === 'item-partner'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="app-section-mark"></span>
               자재 마스터 스펙
             </h4>
@@ -777,7 +818,7 @@ function formatDateTime(dateTimeStr: string) {
           </div>
 
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="app-section-mark"></span>
               공급업체 상세정보
             </h4>
@@ -797,7 +838,7 @@ function formatDateTime(dateTimeStr: string) {
         <!-- 관리 정보 탭 -->
         <div v-else-if="activeTab === 'management'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="w-1.5 h-3.5 app-accent-bg rounded-sm"></span>
               시스템 및 처리 상태
             </h4>
@@ -814,7 +855,7 @@ function formatDateTime(dateTimeStr: string) {
           </div>
 
           <div class="space-y-3.5">
-            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 text-xs">
+            <h4 class="app-font-strong app-text-strong border-b app-border-muted pb-2 flex items-center gap-2 app-type-xs">
               <span class="w-1.5 h-3.5 app-accent-bg rounded-sm"></span>
               창고 임시 배치 정보
             </h4>
@@ -840,14 +881,14 @@ function formatDateTime(dateTimeStr: string) {
       <div class="flex min-h-screen items-center justify-center p-4">
         <div class="relative w-full max-w-lg app-bg-surface rounded-2xl shadow-xl border app-border overflow-hidden transform transition-all duration-300 scale-100">
           <div class="px-6 py-4.5 app-bg-muted border-b app-border-muted flex items-center justify-between">
-            <h3 class="text-sm app-font-strong app-text-strong flex items-center gap-2">
+            <h3 class="app-type-sm app-font-strong app-text-strong flex items-center gap-2">
               <span class="w-1.5 h-4.5 app-accent-bg rounded-sm"></span>
               신규 원자재 입고 오더 예정 등록
             </h3>
-            <button @click="closeRegisterModal" class="app-text-muted app-font-strong text-lg">×</button>
+            <button @click="closeRegisterModal" class="app-text-muted app-font-strong app-type-lg">×</button>
           </div>
 
-          <form @submit.prevent="handleRegister" class="p-6 space-y-4.5 text-xs">
+          <form @submit.prevent="handleRegister" class="p-6 space-y-4.5 app-type-xs">
             <div v-if="registerError" class="p-3 app-bg-danger-soft border app-border app-text-danger rounded-lg app-font-strong">
               {{ registerError }}
             </div>

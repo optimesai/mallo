@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -16,6 +17,11 @@ public class AiChartResponse {
     private String xKey;
     @JsonProperty("yKeys")
     private List<String> yKeys;
+    private String xLabel;
+    @JsonProperty("yLabels")
+    private Map<String, String> yLabels;
+    private String labelKey;
+    private String labelFormat;
     private String title;
     private String reason;
 
@@ -24,6 +30,7 @@ public class AiChartResponse {
         response.setEnabled(false);
         response.setType(ChartType.NONE);
         response.setYKeys(List.of());
+        response.setYLabels(Map.of());
         response.setReason(reason);
         return response;
     }
@@ -33,6 +40,7 @@ public class AiChartResponse {
         response.setEnabled(true);
         response.setType(ChartType.TABLE);
         response.setYKeys(List.of());
+        response.setYLabels(Map.of());
         response.setTitle(title);
         response.setReason(reason);
         return response;
@@ -44,6 +52,11 @@ public class AiChartResponse {
         STAT,
         BAR,
         LINE,
-        DONUT
+        DONUT,
+        HORIZONTAL_BAR,
+        STACKED_BAR,
+        AREA,
+        COMBO,
+        PARETO
     }
 }

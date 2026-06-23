@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { computed } from 'vue'
 
 interface TableColumn {
   key: string
@@ -44,8 +44,6 @@ function pageRange() {
 const showPagination = computed(() =>
   props.totalPages != null && props.totalPages > 0 && props.totalElements != null
 )
-
-import { computed } from 'vue'
 </script>
 
 <template>
@@ -54,7 +52,7 @@ import { computed } from 'vue'
       <h3 class="app-panel-title">{{ title }}</h3>
       <span
         v-if="moreText"
-        class="app-accent cursor-pointer text-xs hover:underline"
+        class="app-accent cursor-pointer app-type-xs hover:underline"
         @click="emit('clickMore')"
       >
         {{ moreText }}
@@ -75,7 +73,7 @@ import { computed } from 'vue'
           </td>
         </tr>
         <tr v-if="data.length === 0">
-          <td :colspan="columns.length" class="app-empty py-8 text-xs">
+          <td :colspan="columns.length" class="app-empty py-8 app-type-xs">
             데이터가 없습니다.
           </td>
         </tr>
@@ -97,15 +95,14 @@ import { computed } from 'vue'
           :disabled="(page ?? 0) === 0"
           class="app-page-button"
         >
-          <ChevronLeft class="w-3.5 h-3.5" />
-          <ChevronLeft class="w-3.5 h-3.5 -ml-2" />
+          처음
         </button>
         <button
           @click="goToPage((page ?? 1) - 1)"
           :disabled="(page ?? 0) === 0"
           class="app-page-button"
         >
-          <ChevronLeft class="w-3.5 h-3.5" />
+          이전
         </button>
         <button
           v-for="p in pageRange()"
@@ -121,15 +118,14 @@ import { computed } from 'vue'
           :disabled="(page ?? 0) >= (totalPages ?? 1) - 1"
           class="app-page-button"
         >
-          <ChevronRight class="w-3.5 h-3.5" />
+          다음
         </button>
         <button
           @click="goToPage((totalPages ?? 1) - 1)"
           :disabled="(page ?? 0) >= (totalPages ?? 1) - 1"
           class="app-page-button"
         >
-          <ChevronRight class="w-3.5 h-3.5" />
-          <ChevronRight class="w-3.5 h-3.5 -ml-2" />
+          마지막
         </button>
       </div>
     </div>

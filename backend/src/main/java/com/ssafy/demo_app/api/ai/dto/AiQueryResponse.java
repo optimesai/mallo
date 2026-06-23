@@ -13,6 +13,10 @@ public class AiQueryResponse {
 
     private Integer queryId;
     private String question;
+    private String conversationId;
+    private Integer clarificationOfQueryId;
+    private Integer pendingClarificationQueryId;
+    private String effectiveQuestion;
     private String generatedSql;
     private List<Map<String, Object>> rows;
     private Integer rowCount;
@@ -21,4 +25,9 @@ public class AiQueryResponse {
     private AiChartResponse chart;
     private Boolean clarificationRequired;
     private String clarificationQuestion;
+    private String interpretedDomain;
+    private String interpretedIntent;
+    private String interpretationSummary;
+    private String answerType;
+    private List<String> suggestedQuestions;
 }

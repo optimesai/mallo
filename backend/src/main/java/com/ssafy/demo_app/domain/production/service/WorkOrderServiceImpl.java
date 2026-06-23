@@ -35,13 +35,18 @@ import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -105,7 +110,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         String normalizedLineName = normalize(lineName);
         String normalizedOperationName = normalize(operationName);
 
-        Page<WorkOrderResponse> page = workOrderRepository.searchWorkOrders(
+        List<WorkOrderResponse> responses = new ArrayList<>(workOrderRepository.searchWorkOrders(
                         status,
                         planDate,
                         fromDate,
@@ -115,10 +120,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         normalizedFactoryName,
                         normalizedLineName,
                         normalizedOperationName,
-                        pageable
+                        Pageable.unpaged()
                 )
-                .map(this::toListResponse);
-        return PageResponse.from(page);
+                .map(this::toListResponse)
+                .getContent());
+        responses.sort(workOrderComparator(pageable));
+        return PageResponse.from(toPage(responses, pageable));
     }
 
     @Override
@@ -368,6 +375,102 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 false,
                 canDeleteExecution(workOrder)
         );
+    }
+
+    private Page<WorkOrderResponse> toPage(List<WorkOrderResponse> responses, Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return new PageImpl<>(responses);
+        }
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), responses.size());
+        List<WorkOrderResponse> content = start >= responses.size() ? List.of() : responses.subList(start, end);
+        return new PageImpl<>(
+                content,
+                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
+                responses.size()
+        );
+    }
+
+    private Comparator<WorkOrderResponse> workOrderComparator(Pageable pageable) {
+        Sort.Order order = firstOrder(pageable, "planDate");
+        Comparator<WorkOrderResponse> comparator = switch (order.getProperty()) {
+            case "orderId" -> Comparator.comparing(WorkOrderResponse::getOrderId, Comparator.nullsLast(Integer::compareTo));
+            case "orderNo" -> Comparator.comparing(WorkOrderResponse::getOrderNo, this::compareText);
+            case "itemCode" -> Comparator.comparing(WorkOrderResponse::getItemCode, this::compareText);
+            case "itemName" -> Comparator.comparing(WorkOrderResponse::getItemName, this::compareText);
+            case "factoryName" -> Comparator.comparing(WorkOrderResponse::getFactoryName, this::compareText);
+            case "lineName" -> Comparator.comparing(WorkOrderResponse::getLineName, this::compareText);
+            case "operationSeq" -> Comparator.comparing(WorkOrderResponse::getOperationSeq, Comparator.nullsLast(Integer::compareTo));
+            case "operationName" -> Comparator.comparing(WorkOrderResponse::getOperationName, this::compareText);
+            case "bomVersion" -> this::compareBomVersion;
+            case "targetQty" -> Comparator.comparing(WorkOrderResponse::getTargetQty, Comparator.nullsLast(Integer::compareTo));
+            case "totalExecutedQty" -> Comparator.comparing(WorkOrderResponse::getTotalExecutedQty, Comparator.nullsLast(Integer::compareTo));
+            case "progressRate" -> Comparator.comparing(WorkOrderResponse::getProgressRate, Comparator.nullsLast(Double::compareTo));
+            case "status" -> Comparator.comparingInt(response -> statusLabelOrder(response.getStatus()));
+            case "createdAt" -> Comparator.comparing(WorkOrderResponse::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "updatedAt" -> Comparator.comparing(WorkOrderResponse::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(WorkOrderResponse::getPlanDate, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
+        if (order.getDirection().isDescending()) {
+            comparator = comparator.reversed();
+        }
+        return comparator
+                .thenComparing(WorkOrderResponse::getPlanDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(WorkOrderResponse::getOrderNo, this::compareText);
+    }
+
+    private Sort.Order firstOrder(Pageable pageable, String defaultProperty) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return Sort.Order.desc(defaultProperty);
+        }
+        return pageable.getSort().iterator().next();
+    }
+
+    private int compareBomVersion(WorkOrderResponse left, WorkOrderResponse right) {
+        return compareVersion(left.getBomVersion(), right.getBomVersion());
+    }
+
+    private int compareVersion(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        String[] leftParts = left.replaceFirst("^[^0-9]+", "").split("\\.");
+        String[] rightParts = right.replaceFirst("^[^0-9]+", "").split("\\.");
+        int length = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < length; i++) {
+            int leftNumber = parseVersionPart(leftParts, i);
+            int rightNumber = parseVersionPart(rightParts, i);
+            if (leftNumber != rightNumber) {
+                return Integer.compare(leftNumber, rightNumber);
+            }
+        }
+        return left.compareToIgnoreCase(right);
+    }
+
+    private int parseVersionPart(String[] parts, int index) {
+        if (index >= parts.length) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(parts[index].replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
+    }
+
+    private int statusLabelOrder(String status) {
+        if ("CLOSE".equals(status)) return 1;
+        if ("READY".equals(status)) return 2;
+        if ("HOLD".equals(status)) return 3;
+        if ("RUN".equals(status)) return 4;
+        return 99;
+    }
+
+    private int compareText(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        return left.compareToIgnoreCase(right);
     }
 
     private boolean canCancelIssueMaterials(WorkOrder workOrder) {

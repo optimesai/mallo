@@ -3,6 +3,9 @@ import type { ApiResponse } from '@/api/authApi'
 
 export interface AiQueryRequest {
   question: string
+  conversationId?: string
+  clarificationOfQueryId?: number
+  clientMessageId?: string
 }
 
 export type AiExecutionStatus =
@@ -14,16 +17,40 @@ export type AiExecutionStatus =
   | 'ANSWER_GENERATION_FAILED'
   | 'SCHEMA_LOAD_FAILED'
   | 'CLARIFICATION_REQUIRED'
+  | 'CLARIFICATION_ANSWERED'
+  | 'CANCELLED'
   | 'SEMANTIC_VALIDATION_FAILED'
   | 'TIMEOUT'
 
-export type AiChartType = 'NONE' | 'TABLE' | 'STAT' | 'BAR' | 'LINE' | 'DONUT'
+export type AiChartType =
+  | 'NONE'
+  | 'TABLE'
+  | 'STAT'
+  | 'BAR'
+  | 'LINE'
+  | 'DONUT'
+  | 'HORIZONTAL_BAR'
+  | 'STACKED_BAR'
+  | 'AREA'
+  | 'COMBO'
+  | 'PARETO'
+
+export type AiAnswerType =
+  | 'NORMAL'
+  | 'CLARIFICATION'
+  | 'NO_MATCH'
+  | 'UNSUPPORTED'
+  | 'ERROR'
 
 export interface AiChartResponse {
   enabled: boolean
   type: AiChartType
   xKey?: string
   yKeys: string[]
+  xLabel?: string
+  yLabels?: Record<string, string>
+  labelKey?: string
+  labelFormat?: string
   title?: string
   reason?: string
 }
@@ -31,6 +58,10 @@ export interface AiChartResponse {
 export interface AiQueryResponse {
   queryId: number
   question: string
+  conversationId?: string
+  clarificationOfQueryId?: number
+  pendingClarificationQueryId?: number
+  effectiveQuestion?: string
   generatedSql: string
   rows: Record<string, unknown>[]
   rowCount: number
@@ -39,6 +70,11 @@ export interface AiQueryResponse {
   chart: AiChartResponse
   clarificationRequired: boolean
   clarificationQuestion?: string
+  interpretedDomain?: string
+  interpretedIntent?: string
+  interpretationSummary?: string
+  answerType?: AiAnswerType
+  suggestedQuestions?: string[]
 }
 
 export const aiApi = {

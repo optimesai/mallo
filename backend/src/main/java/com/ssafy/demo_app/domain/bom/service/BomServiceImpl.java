@@ -17,11 +17,16 @@ import com.ssafy.demo_app.global.exception.BusinessException;
 import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,13 +50,15 @@ public class BomServiceImpl implements BomService {
             String childKeyword,
             String bomVersion
     ) {
-        return PageResponse.from(bomStructureRepository.searchBomGroups(
+        List<BomGroupResponse> groups = new ArrayList<>(bomStructureRepository.searchBomGroups(
                 normalize(parentKeyword),
                 normalize(childKeyword),
                 normalize(bomVersion),
                 BomStructure.BomStatus.ACTIVE,
-                pageable
-        ));
+                Pageable.unpaged()
+        ).getContent());
+        groups.sort(bomGroupComparator(pageable));
+        return PageResponse.from(toPage(groups, pageable));
     }
 
     @Override
@@ -511,5 +518,85 @@ public class BomServiceImpl implements BomService {
 
     private String trimRequired(String value) {
         return value.trim();
+    }
+
+    private Page<BomGroupResponse> toPage(List<BomGroupResponse> groups, Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return new PageImpl<>(groups);
+        }
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), groups.size());
+        List<BomGroupResponse> content = start >= groups.size() ? List.of() : groups.subList(start, end);
+        return new PageImpl<>(
+                content,
+                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
+                groups.size()
+        );
+    }
+
+    private Comparator<BomGroupResponse> bomGroupComparator(Pageable pageable) {
+        Sort.Order order = firstOrder(pageable, "parentItemCode");
+        Comparator<BomGroupResponse> comparator = switch (order.getProperty()) {
+            case "parentItemId" -> Comparator.comparing(BomGroupResponse::getParentItemId, Comparator.nullsLast(Integer::compareTo));
+            case "parentItemName" -> Comparator.comparing(BomGroupResponse::getParentItemName, this::compareText);
+            case "parentItemType" -> Comparator.comparing(BomGroupResponse::getParentItemType, this::compareText);
+            case "childCount" -> Comparator.comparing(BomGroupResponse::getChildCount, Comparator.nullsLast(Integer::compareTo));
+            case "bomVersion" -> this::compareBomVersion;
+            case "bomStatus" -> Comparator.comparing(BomGroupResponse::getBomStatus, this::compareText);
+            case "createdAt" -> Comparator.comparing(BomGroupResponse::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(BomGroupResponse::getParentItemCode, this::compareText);
+        };
+        if (order.getDirection().isDescending()) {
+            comparator = comparator.reversed();
+        }
+        return comparator
+                .thenComparing(BomGroupResponse::getParentItemCode, this::compareText)
+                .thenComparing(this::compareBomVersion);
+    }
+
+    private Sort.Order firstOrder(Pageable pageable, String defaultProperty) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return Sort.Order.asc(defaultProperty);
+        }
+        return pageable.getSort().iterator().next();
+    }
+
+    private int compareBomVersion(BomGroupResponse left, BomGroupResponse right) {
+        return compareVersion(left.getBomVersion(), right.getBomVersion());
+    }
+
+    private int compareVersion(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        String[] leftParts = left.replaceFirst("^[^0-9]+", "").split("\\.");
+        String[] rightParts = right.replaceFirst("^[^0-9]+", "").split("\\.");
+        int length = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < length; i++) {
+            int leftNumber = parseVersionPart(leftParts, i);
+            int rightNumber = parseVersionPart(rightParts, i);
+            if (leftNumber != rightNumber) {
+                return Integer.compare(leftNumber, rightNumber);
+            }
+        }
+        return left.compareToIgnoreCase(right);
+    }
+
+    private int parseVersionPart(String[] parts, int index) {
+        if (index >= parts.length) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(parts[index].replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
+    }
+
+    private int compareText(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        return left.compareToIgnoreCase(right);
     }
 }

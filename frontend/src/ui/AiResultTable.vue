@@ -30,7 +30,7 @@ function formatCell(value: unknown) {
         <Table2 class="app-panel-icon" />
         조회 결과
       </h3>
-      <span class="text-xs app-table-muted">{{ rows.length.toLocaleString() }}건</span>
+      <span class="app-type-xs app-table-muted">{{ rows.length.toLocaleString() }}건</span>
     </div>
 
     <div class="app-table-wrap">

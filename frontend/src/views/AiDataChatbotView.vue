@@ -51,6 +51,11 @@ async function useExample(example: string) {
   await submitQuestion()
 }
 
+async function useSuggestedQuestion(suggestedQuestion: string) {
+  question.value = suggestedQuestion
+  await submitQuestion()
+}
+
 onMounted(() => {
   submitRouteQuestion()
 })
@@ -126,7 +131,7 @@ function formatTime(value: string) {
               <MessageSquare class="app-panel-icon" />
               질의 대화
             </h2>
-            <span class="text-xs app-table-muted">{{ aiStore.messages.length.toLocaleString() }}개 메시지</span>
+            <span class="app-type-xs app-table-muted">{{ aiStore.messages.length.toLocaleString() }}개 메시지</span>
           </div>
 
           <div
@@ -141,8 +146,8 @@ function formatTime(value: string) {
                 <Bot class="h-9 w-9" />
               </div>
               <div>
-                <p class="text-base app-table-main">업무 데이터를 질문해 주세요.</p>
-                <p class="mt-1 text-sm app-table-muted">재고, 입고, 출하, 생산 데이터를 자연어로 조회할 수 있습니다.</p>
+                <p class="app-type-base app-table-main">업무 데이터를 질문해 주세요.</p>
+                <p class="mt-1 app-type-sm app-table-muted">재고, 입고, 출하, 생산 데이터를 자연어로 조회할 수 있습니다.</p>
               </div>
             </div>
 
@@ -168,8 +173,8 @@ function formatTime(value: string) {
                   ? 'background-color: var(--color-primary); border-color: var(--color-primary); color: var(--color-text-inverse);'
                   : 'background-color: var(--color-surface); border-color: var(--color-border); color: var(--color-text);'"
               >
-                <p class="whitespace-pre-line text-sm leading-6">{{ message.content }}</p>
-                <div class="mt-2 flex items-center gap-2 text-[11px] opacity-70">
+                <p class="whitespace-pre-line app-type-sm leading-10">{{ message.content }}</p>
+                <div class="mt-2 flex items-center gap-2 app-type-11 opacity-70">
                   <span>{{ formatTime(message.createdAt) }}</span>
                   <span v-if="message.response" class="app-status app-status-neutral">
                     {{ message.response.rowCount.toLocaleString() }}건
@@ -185,7 +190,7 @@ function formatTime(value: string) {
               >
                 <LoaderCircle class="h-4 w-4 animate-spin" />
               </div>
-              <div class="rounded-xl border px-4 py-3 text-sm app-table-muted" style="border-color: var(--color-border);">
+              <div class="rounded-xl border px-4 py-3 app-type-sm app-table-muted" style="border-color: var(--color-border);">
                 데이터를 조회하고 있습니다.
               </div>
             </div>
@@ -226,7 +231,10 @@ function formatTime(value: string) {
           </div>
         </div>
 
-        <AiAnswerSummary :response="aiStore.currentResponse" />
+        <AiAnswerSummary
+          :response="aiStore.currentResponse"
+          @select-suggested="useSuggestedQuestion"
+        />
       </section>
 
       <section class="space-y-6">

@@ -55,6 +55,40 @@ class ChartSpecValidationServiceTest {
     }
 
     @Test
+    void validate_acceptsExtendedAxisCharts() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("item_label", "RM-100 / 원자재", "quantity", 10, "rate", 0.1),
+                Map.of("item_label", "RM-200 / 부자재", "quantity", 20, "rate", 0.2)
+        );
+
+        for (AiChartResponse.ChartType type : List.of(
+                AiChartResponse.ChartType.HORIZONTAL_BAR,
+                AiChartResponse.ChartType.AREA,
+                AiChartResponse.ChartType.COMBO,
+                AiChartResponse.ChartType.PARETO
+        )) {
+            AiChartResponse chart = chart(type, "item_label", List.of("quantity", "rate"));
+
+            ChartSpecValidationResult result = chartSpecValidationService.validate(chart, rows);
+
+            assertThat(result.isValid()).as(type.name()).isTrue();
+        }
+    }
+
+    @Test
+    void validate_acceptsStackedBarWithMultipleYKeys() {
+        AiChartResponse chart = chart(AiChartResponse.ChartType.STACKED_BAR, "line_name", List.of("good_qty", "defect_qty", "hold_qty"));
+        List<Map<String, Object>> rows = List.of(
+                Map.of("line_name", "A라인", "good_qty", 100, "defect_qty", 5, "hold_qty", 2),
+                Map.of("line_name", "B라인", "good_qty", 80, "defect_qty", 8, "hold_qty", 1)
+        );
+
+        ChartSpecValidationResult result = chartSpecValidationService.validate(chart, rows);
+
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
     void validate_acceptsDonutWithOneYKey() {
         AiChartResponse chart = chart(AiChartResponse.ChartType.DONUT, "status", List.of("count"));
         List<Map<String, Object>> rows = List.of(

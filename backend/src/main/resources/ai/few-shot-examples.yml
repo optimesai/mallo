@@ -81,11 +81,85 @@ examples:
       FROM bom_structure bs
       JOIN item_master parent ON bs.parent_item_id = parent.item_id
       JOIN item_master child ON bs.child_item_id = child.item_id
-      WHERE parent.item_code = 'FG-100'
+      WHERE (
+          LOWER(parent.item_code) = LOWER('FG-100')
+          OR LOWER(parent.item_name) = LOWER('FG-100')
+          OR CAST(parent.item_id AS CHAR) = 'FG-100'
+        )
         AND bs.bom_status = 'ACTIVE'
       ORDER BY child.item_code ASC
       LIMIT 100
-    notes: "BOM 소요량은 bom_structure.quantity에 생산 목표 수량을 곱한다."
+    notes: "BOM 소요량은 bom_structure.quantity에 생산 목표 수량을 곱한다. 사용자가 입력한 품목 키워드는 item_code, item_name, item_id 모두로 매칭한다."
+
+  - id: bom-material-requirement-latest-active-version
+    category: bom
+    question: "testparent 100개 생산하려면 필요한 자재 수량을 알려줘. 가장 최신 버전 BOM 기준으로"
+    sql: |
+      SELECT
+        child.item_code AS child_item_code,
+        child.item_name AS child_item_name,
+        bs.bom_version,
+        bs.quantity AS bom_qty,
+        bs.quantity * 100 AS required_qty
+      FROM bom_structure bs
+      JOIN item_master parent ON bs.parent_item_id = parent.item_id
+      JOIN item_master child ON bs.child_item_id = child.item_id
+      WHERE (
+          LOWER(parent.item_code) = LOWER('testparent')
+          OR LOWER(parent.item_name) = LOWER('testparent')
+          OR CAST(parent.item_id AS CHAR) = 'testparent'
+        )
+        AND bs.bom_status = 'ACTIVE'
+        AND bs.bom_version = (
+          SELECT bs2.bom_version
+          FROM bom_structure bs2
+          WHERE bs2.parent_item_id = parent.item_id
+            AND bs2.bom_status = 'ACTIVE'
+          ORDER BY bs2.created_at DESC, bs2.bom_id DESC
+          LIMIT 1
+        )
+      ORDER BY child.item_code ASC
+      LIMIT 100
+    notes: "최신 BOM 버전은 대상 parent item의 ACTIVE BOM 중에서 선택한다. testparent 같은 자유 입력은 품목 코드가 아니라 품목명일 수 있으므로 item_code, item_name, item_id를 함께 확인한다."
+
+  - id: inventory-current-stock-by-item-keyword
+    category: inventory
+    question: "RM-100 품목의 현재고를 알려줘."
+    sql: |
+      SELECT
+        im.item_code,
+        im.item_name,
+        COALESCE(SUM(ci.current_qty), 0) AS current_qty
+      FROM item_master im
+      LEFT JOIN current_inventory ci ON im.item_id = ci.item_id
+      WHERE (
+          LOWER(im.item_code) = LOWER('RM-100')
+          OR LOWER(im.item_name) = LOWER('RM-100')
+          OR CAST(im.item_id AS CHAR) = 'RM-100'
+        )
+      GROUP BY im.item_id, im.item_code, im.item_name
+      LIMIT 100
+    notes: "품목 키워드는 코드, 이름, ID 모두로 매칭하고 현재고는 current_inventory.current_qty를 합산한다."
+
+  - id: inbound-by-partner-keyword-recent
+    category: inbound
+    question: "최근 7일 동안 삼성 거래처 입고 수량을 알려줘."
+    sql: |
+      SELECT
+        pm.partner_code,
+        pm.partner_name,
+        SUM(ir.inbound_qty) AS total_inbound_qty
+      FROM inbound_receipt ir
+      JOIN partner_master pm ON ir.partner_id = pm.partner_id
+      WHERE ir.inbound_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+        AND (
+          LOWER(pm.partner_code) = LOWER('삼성')
+          OR LOWER(pm.partner_name) = LOWER('삼성')
+          OR CAST(pm.partner_id AS CHAR) = '삼성'
+        )
+      GROUP BY pm.partner_id, pm.partner_code, pm.partner_name
+      LIMIT 100
+    notes: "거래처 키워드는 partner_code, partner_name, partner_id 모두로 매칭한다."
 
   - id: shipping-waiting-by-partner
     category: shipping

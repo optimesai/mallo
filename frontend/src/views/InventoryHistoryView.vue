@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import {
+  AlertTriangle,
   Clock,
   Search,
   RefreshCw,
@@ -26,6 +27,8 @@ const filterItem = ref('')
 const filterType = ref<'ALL' | 'INBOUND' | 'PRODUCTION_ISSUE'>('ALL')
 const filterDateStart = ref('')
 const filterDateEnd = ref('')
+const sortField = ref('createdAt')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 onMounted(async () => {
   await fetchPageData()
@@ -37,6 +40,7 @@ async function fetchPageData() {
     await inventoryStore.loadHistories({
       page: inventoryStore.histPage,
       size: 20,
+      sort: `${sortField.value},${sortDirection.value}`,
       transactionType: filterType.value !== 'ALL' ? filterType.value : undefined,
       startDate: filterDateStart.value || undefined,
       endDate: filterDateEnd.value || undefined,
@@ -70,6 +74,75 @@ function resetFilters() {
   filterDateEnd.value = ''
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else if (sortField.value === 'transactionType') {
+    result = getTransactionTypeLabel(String(aValue)).localeCompare(getTransactionTypeLabel(String(bValue)), 'ko', { numeric: true })
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function getTransactionTypeLabel(transactionType: string) {
+  if (transactionType === 'INBOUND') return '입고적재'
+  if (transactionType === 'PRODUCTION_ISSUE') return '생산불출'
+  if (transactionType === 'OUTBOUND') return '출고적재'
+  if (transactionType === 'RESERVATION') return '출고적재'
+  if (transactionType === 'PRODUCTION_RECEIPT') return '생산입고'
+  if (transactionType === 'PRODUCTION_ISSUE_CANCEL') return '불출취소'
+  if (transactionType === 'PRODUCTION_RECEIPT_CANCEL') return '입고취소'
+  if (transactionType === 'TRANSFER_OUT') return '이동출고'
+  if (transactionType === 'TRANSFER_IN') return '이동입고'
+  if (transactionType === 'SCRAP') return '폐기'
+  if (transactionType === 'ADJUSTMENT') return '재고조정'
+  if (transactionType === 'RETURN') return '반품'
+  return transactionType
+}
+
+function getDisplayQuantity(item: { transactionType: string; quantity: number }) {
+  if (['PRODUCTION_ISSUE', 'OUTBOUND', 'RESERVATION'].includes(item.transactionType)) {
+    return -Math.abs(item.quantity)
+  }
+  return item.quantity
+}
+
+function getQuantityText(item: { transactionType: string; quantity: number }) {
+  const quantity = getDisplayQuantity(item)
+  const sign = quantity > 0 ? '+' : ''
+  return `${sign}${quantity.toLocaleString()}`
+}
+
+function isInboundType(transactionType: string) {
+  return ['INBOUND', 'PRODUCTION_RECEIPT', 'PRODUCTION_ISSUE_CANCEL', 'TRANSFER_IN', 'RETURN'].includes(transactionType)
+}
+
+function isOutboundType(transactionType: string) {
+  return ['PRODUCTION_ISSUE', 'OUTBOUND', 'RESERVATION', 'PRODUCTION_RECEIPT_CANCEL', 'TRANSFER_OUT', 'SCRAP'].includes(transactionType)
+}
+
+async function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  inventoryStore.histPage = 0
+  await fetchPageData()
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // Filtered transaction history list
 const filteredHistories = computed(() => {
   return inventoryStore.histories.filter(history => {
@@ -97,6 +170,15 @@ const filteredHistories = computed(() => {
       if (itemTime > endDateTime) return false
     }
     return true
+  })
+})
+
+const sortedHistories = computed(() => {
+  return [...filteredHistories.value].sort((a, b) => {
+    if (sortField.value === 'quantity') {
+      return compareValues(getDisplayQuantity(a), getDisplayQuantity(b))
+    }
+    return compareValues(a[sortField.value], b[sortField.value])
   })
 })
 
@@ -130,7 +212,7 @@ const stats = computed(() => {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -142,7 +224,7 @@ const stats = computed(() => {
       <AlertTriangle class="w-5 h-5 app-text-danger shrink-0 mt-0.5" />
       <div>
         <h4 class="app-alert-title">오류가 발생했습니다</h4>
-        <p class="text-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
+        <p class="app-type-xs app-text-danger/90 mt-0.5">{{ pageError }}</p>
       </div>
     </div>
 
@@ -155,7 +237,7 @@ const stats = computed(() => {
       <div class="flex items-center gap-2">
         <button
           @click="handleRefresh"
-          class="h-10 px-4 text-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
+          class="h-10 px-4 app-type-xs app-font-strong app-bg-surface border app-border app-text-soft app-hover-muted rounded-lg shadow-sm flex items-center gap-2 transition"
         >
           <RefreshCw class="w-4 h-4" /> 새로고침
         </button>
@@ -170,8 +252,8 @@ const stats = computed(() => {
           <Clock class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">총 변동 이력 수</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalCount }} 건</span>
+          <span class="app-type-xs app-font-label app-text-muted block">총 변동 이력 수</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">{{ stats.totalCount }} 건</span>
         </div>
       </div>
 
@@ -181,8 +263,8 @@ const stats = computed(() => {
           <ArrowDownLeft class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">검수완료 입고량 (INBOUND)</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
+          <span class="app-type-xs app-font-label app-text-muted block">검수완료 입고량 (INBOUND)</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">+{{ stats.inboundQty.toLocaleString() }} EA</span>
         </div>
       </div>
 
@@ -192,8 +274,8 @@ const stats = computed(() => {
           <ArrowUpRight class="w-6 h-6" />
         </div>
         <div>
-          <span class="text-xs app-font-label app-text-muted block">생산 자재 불출량 (ISSUE)</span>
-          <span class="text-2xl app-font-emphasis app-text-strong mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
+          <span class="app-type-xs app-font-label app-text-muted block">생산 자재 불출량 (ISSUE)</span>
+          <span class="app-type-2xl app-font-emphasis app-text-strong mt-0.5 block">-{{ stats.issueQty.toLocaleString() }} EA</span>
         </div>
       </div>
     </div>
@@ -283,11 +365,11 @@ const stats = computed(() => {
     <!-- 타임라인 데이터 테이블 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">수불(변동) 타임라인 이력 (총 {{ filteredHistories.length }}건)</span>
+        <span class="app-panel-title">수불(변동) 타임라인 이력</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -300,26 +382,26 @@ const stats = computed(() => {
             <col class="w-[180px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">번호</th>
-              <th class="px-5 py-3">품목 코드</th>
-              <th class="px-5 py-3">품목명</th>
-              <th class="px-5 py-3">수불 유형</th>
-              <th class="px-5 py-3">적재 위치</th>
-              <th class="px-5 py-3 text-right">변동 수량</th>
-              <th class="px-5 py-3">변동 사유</th>
-              <th class="px-5 py-3">작업자</th>
-              <th class="px-5 py-3">발생 일시</th>
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionId')">번호 <span class="app-sort-mark">{{ getSortMark('transactionId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemCode')">품목 코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionType')">수불 유형 <span class="app-sort-mark">{{ getSortMark('transactionType') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('locationCode')">적재 위치 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('quantity')">변동 수량 <span class="app-sort-mark">{{ getSortMark('quantity') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('reasonDesc')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reasonDesc') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('workerName')">작업자 <span class="app-sort-mark">{{ getSortMark('workerName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('createdAt')">발생 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="item in filteredHistories"
+              v-for="item in sortedHistories"
               :key="item.transactionId"
               class="app-hover-muted transition select-none"
             >
               <!-- 번호 -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ item.transactionId }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">#{{ item.transactionId }}</td>
               <!-- 품목 코드 -->
               <td class="px-5 py-4 app-font-strong app-text-strong">{{ item.itemCode }}</td>
               <!-- 품목명 -->
@@ -329,30 +411,30 @@ const stats = computed(() => {
               <!-- 수불 유형 -->
               <td class="px-5 py-4">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="{
-                    'app-bg-success-soft app-border app-text-success': item.transactionType === 'INBOUND',
-                    'app-bg-danger-soft app-border app-text-danger': item.transactionType === 'PRODUCTION_ISSUE'
+                    'app-bg-success-soft app-border app-text-success': isInboundType(item.transactionType),
+                    'app-bg-danger-soft app-border app-text-danger': isOutboundType(item.transactionType)
                   }"
                 >
                   <span
                     class="w-1.5 h-1.5 rounded-full"
                     :class="{
-                      'app-accent-bg': item.transactionType === 'INBOUND',
-                      'app-bg-danger-soft0': item.transactionType === 'PRODUCTION_ISSUE'
+                      'app-accent-bg': isInboundType(item.transactionType),
+                      'app-bg-danger-soft0': isOutboundType(item.transactionType)
                     }"
                   ></span>
-                  {{ item.transactionType === 'INBOUND' ? '입고적재' : '생산불출' }}
+                  {{ getTransactionTypeLabel(item.transactionType) }}
                 </span>
               </td>
               <!-- 적재 위치 -->
-              <td class="px-5 py-4 font-mono text-xs app-muted">{{ item.locationCode }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ item.locationCode }}</td>
               <!-- 변동 수량 -->
-              <td class="px-5 py-4 text-right app-font-emphasis" :class="item.transactionType === 'INBOUND' ? 'app-text-success' : 'app-text-danger'">
-                {{ item.transactionType === 'INBOUND' ? '+' : '-' }}{{ item.quantity.toLocaleString() }}
+              <td class="px-5 py-4 text-right app-font-emphasis" :class="getDisplayQuantity(item) >= 0 ? 'app-text-success' : 'app-text-danger'">
+                {{ getQuantityText(item) }}
               </td>
               <!-- 변동 사유 -->
-              <td class="px-5 py-4 text-xs app-muted truncate" :title="item.reasonDesc">
+              <td class="px-5 py-4 app-type-xs app-muted truncate" :title="item.reasonDesc">
                 {{ item.reasonDesc }}
               </td>
               <!-- 작업자 -->
@@ -363,7 +445,7 @@ const stats = computed(() => {
                 </span>
               </td>
               <!-- 발생 일시 -->
-              <td class="px-5 py-4 text-xs app-text-muted font-mono">
+              <td class="px-5 py-4 app-type-xs app-text-muted font-mono">
                 {{ item.createdAt ? item.createdAt.replace('T', ' ').substring(0, 19) : '-' }}
               </td>
             </tr>
@@ -384,15 +466,15 @@ const stats = computed(() => {
           총 <span class="app-count-strong">{{ inventoryStore.histTotalElements.toLocaleString() }}</span>건
           ({{ inventoryStore.histPage + 1 }} / {{ inventoryStore.histTotalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="inventoryStore.histPage === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(inventoryStore.histPage - 1)" :disabled="inventoryStore.histPage === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(inventoryStore.histPage + 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(inventoryStore.histTotalPages - 1)" :disabled="inventoryStore.histPage >= inventoryStore.histTotalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ import {
   ArrowRight
 } from '@lucide/vue'
 import { useShippingStore } from '@/state/shippingStore'
+import type { ShippingStatus } from '@/api/shippingApi'
 
 const shippingStore = useShippingStore()
 
@@ -33,7 +34,9 @@ const vehicleInput = ref('')
 // Filter states
 const filterShippingNo = ref('')
 const filterItemName = ref('')
-const filterStatus = ref<'WORK' | 'READY' | 'PICKING'>('WORK')
+const filterStatus = ref<'WORK' | Extract<ShippingStatus, 'READY' | 'PICKING'>>('WORK')
+const sortField = ref('shippingId')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 onMounted(async () => {
   await fetchPageData()
@@ -45,6 +48,7 @@ async function fetchPageData() {
     await shippingStore.loadShippings({
       page: shippingStore.page,
       size: 20,
+      sort: `${sortField.value},${sortDirection.value}`,
       status: filterStatus.value !== 'WORK' ? filterStatus.value : undefined,
       keyword: filterShippingNo.value || filterItemName.value || undefined,
     })
@@ -77,6 +81,36 @@ function resetFilters() {
   filterStatus.value = 'WORK'
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+async function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  shippingStore.page = 0
+  await fetchPageData()
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // 작업 대상 통계 카드
 const readyCount = computed(() => shippingStore.shippings.filter((s) => s.status === 'READY').length)
 const pickingCount = computed(() => shippingStore.shippings.filter((s) => s.status === 'PICKING').length)
@@ -86,7 +120,7 @@ const filteredShippings = computed(() => {
   return shippingStore.shippings.filter((s) => {
     // 상태 필터
     if (filterStatus.value === 'WORK') {
-      if (s.status === 'SHIPPED') return false
+      if (s.status !== 'READY' && s.status !== 'PICKING') return false
     } else {
       if (s.status !== filterStatus.value) return false
     }
@@ -105,6 +139,10 @@ const filteredShippings = computed(() => {
     }
     return true
   })
+})
+
+const sortedShippings = computed(() => {
+  return [...filteredShippings.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 function selectRow(shipping: any) {
@@ -185,7 +223,7 @@ function formatDate(dateStr: string | null) {
         class="app-toast app-toast-top-right"
       >
         <span class="app-toast-dot animate-ping"></span>
-        <p class="text-sm app-font-label">{{ successToast }}</p>
+        <p class="app-type-sm app-font-label">{{ successToast }}</p>
       </div>
     </Transition>
 
@@ -227,12 +265,10 @@ function formatDate(dateStr: string | null) {
           <ClipboardList class="w-6 h-6 app-text-warning" />
         </div>
         <div>
-          <p class="text-xs app-font-strong app-text-warning uppercase tracking-wider">피킹 대기 (READY)</p>
+          <p class="app-type-xs app-font-strong app-text-warning uppercase tracking-wider">피킹 대기 (READY)</p>
           <p class="app-metric-value">{{ readyCount }} <span class="app-metric-unit">건</span></p>
-          <p class="text-xs app-text-muted mt-1">차량 배정 및 피킹 지시 대기 중</p>
         </div>
         <div class="ml-auto">
-          <span class="text-xs app-text-warning app-font-strong">클릭하여 필터</span>
         </div>
       </div>
 
@@ -246,12 +282,10 @@ function formatDate(dateStr: string | null) {
           <Truck class="w-6 h-6 app-accent" />
         </div>
         <div>
-          <p class="text-xs app-font-strong app-accent uppercase tracking-wider">상차 진행 (PICKING)</p>
+          <p class="app-type-xs app-font-strong app-accent uppercase tracking-wider">상차 진행 (PICKING)</p>
           <p class="app-metric-value">{{ pickingCount }} <span class="app-metric-unit">건</span></p>
-          <p class="text-xs app-text-muted mt-1">피킹 배정 완료, 상차 진행 중</p>
         </div>
         <div class="ml-auto">
-          <span class="text-xs app-accent app-font-strong">클릭하여 필터</span>
         </div>
       </div>
     </div>
@@ -330,14 +364,14 @@ function formatDate(dateStr: string | null) {
     <!-- 작업 테이블 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">피킹/상차 작업 목록 ({{ filteredShippings.length }}건)</span>
-        <span v-if="shippingStore.isLoading" class="flex items-center gap-1.5 text-xs app-text-muted">
+        <span class="app-panel-title">피킹/상차 작업 목록</span>
+        <span v-if="shippingStore.isLoading" class="flex items-center gap-1.5 app-type-xs app-text-muted">
           <Loader2 class="w-3.5 h-3.5 animate-spin" /> 로딩 중...
         </span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -350,21 +384,21 @@ function formatDate(dateStr: string | null) {
             <col class="w-[120px]" />
           </colgroup>
           <thead>
-            <tr class="app-bg-muted border-b app-border text-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">ID</th>
-              <th class="px-5 py-3">출하 지시 번호</th>
-              <th class="px-5 py-3">고객사</th>
-              <th class="px-5 py-3">출하 품목명</th>
-              <th class="px-5 py-3 text-right">요청 수량</th>
-              <th class="px-5 py-3 text-center">상태</th>
-              <th class="px-5 py-3">배정 차량 번호</th>
-              <th class="px-5 py-3">피킹 로케이션</th>
+            <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingId')">ID <span class="app-sort-mark">{{ getSortMark('shippingId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingNo')">출하 지시 번호 <span class="app-sort-mark">{{ getSortMark('shippingNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('partnerName')">고객사 <span class="app-sort-mark">{{ getSortMark('partnerName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">출하 품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('requestQty')">요청 수량 <span class="app-sort-mark">{{ getSortMark('requestQty') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-center" @click="changeSort('status')">상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('vehicleNo')">배정 차량 번호 <span class="app-sort-mark">{{ getSortMark('vehicleNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('pickingLocationCode')">피킹 로케이션 <span class="app-sort-mark">{{ getSortMark('pickingLocationCode') }}</span></th>
               <th class="px-5 py-3 text-center">다음 작업</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
+          <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="shipping in filteredShippings"
+              v-for="shipping in sortedShippings"
               :key="shipping.shippingId"
               @click="selectRow(shipping)"
               class="app-hover-muted cursor-pointer transition select-none"
@@ -375,7 +409,7 @@ function formatDate(dateStr: string | null) {
               }"
             >
               <!-- ID -->
-              <td class="px-5 py-4 font-mono text-xs app-text-muted">#{{ shipping.shippingId }}</td>
+              <td class="px-5 py-4 font-mono app-type-xs app-text-muted">#{{ shipping.shippingId }}</td>
               <!-- 출하 지시 번호 -->
               <td class="px-5 py-4 app-font-strong app-text-strong whitespace-nowrap">{{ shipping.shippingNo }}</td>
               <!-- 고객사 -->
@@ -393,7 +427,7 @@ function formatDate(dateStr: string | null) {
               <!-- 상태 배지 -->
               <td class="px-5 py-4 text-center whitespace-nowrap">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="{
                     'app-bg-warning-soft app-border app-text-warning': shipping.status === 'READY',
                     'app-bg-primary-soft app-border app-accent': shipping.status === 'PICKING'
@@ -412,19 +446,19 @@ function formatDate(dateStr: string | null) {
               <!-- 배정 차량 -->
               <td class="px-5 py-4 whitespace-nowrap">
                 <span v-if="shipping.vehicleNo" class="app-font-strong app-text-strong">{{ shipping.vehicleNo }}</span>
-                <span v-else class="app-text-subtle text-xs app-font-label">미배정</span>
+                <span v-else class="app-text-subtle app-type-xs app-font-label">미배정</span>
               </td>
               <!-- 피킹 로케이션 -->
               <td class="px-5 py-4 whitespace-nowrap">
                 <span v-if="shipping.pickingLocationCode" class="font-mono app-font-strong app-accent flex items-center gap-1">
                   <MapPin class="w-3.5 h-3.5" />{{ shipping.pickingLocationCode }}
                 </span>
-                <span v-else class="app-text-subtle text-xs app-font-label">미배정</span>
+                <span v-else class="app-text-subtle app-type-xs app-font-label">미배정</span>
               </td>
               <!-- 다음 작업 -->
               <td class="px-5 py-4 text-center whitespace-nowrap">
                 <span
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs app-font-strong"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong"
                   :class="{
                     'app-bg-warning-soft app-text-warning': shipping.status === 'READY',
                     'app-bg-success-soft app-text-success': shipping.status === 'PICKING'
@@ -438,8 +472,8 @@ function formatDate(dateStr: string | null) {
             <tr v-if="filteredShippings.length === 0 && !shippingStore.isLoading">
               <td colspan="9" class="px-5 py-16 text-center">
                 <Truck class="w-10 h-10 app-text-subtle mx-auto mb-3" />
-                <p class="app-text-muted app-font-label text-sm">작업 대상 피킹/상차 건이 없습니다.</p>
-                <p class="app-text-subtle text-xs mt-1">출하 지시 화면에서 신규 출하 지시를 먼저 등록해주세요.</p>
+                <p class="app-text-muted app-font-label app-type-sm">작업 대상 피킹/상차 건이 없습니다.</p>
+                <p class="app-text-subtle app-type-xs mt-1">출하 지시 화면에서 신규 출하 지시를 먼저 등록해주세요.</p>
               </td>
             </tr>
           </tbody>
@@ -453,15 +487,15 @@ function formatDate(dateStr: string | null) {
           총 <span class="app-count-strong">{{ shippingStore.totalElements.toLocaleString() }}</span>건
           ({{ shippingStore.page + 1 }} / {{ shippingStore.totalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="shippingStore.page === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(shippingStore.page - 1)" :disabled="shippingStore.page === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(shippingStore.page + 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(shippingStore.totalPages - 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>
@@ -480,14 +514,14 @@ function formatDate(dateStr: string | null) {
       >
         <div class="flex items-center gap-2">
           <Truck class="w-5 h-5 opacity-80" />
-          <h3 class="app-font-emphasis text-sm">
+          <h3 class="app-font-emphasis app-type-sm">
             {{ selectedShipping.status === 'READY' ? '차량 배정 및 피킹 지시' : '상차 현황 및 출하 완료 확정' }}
             — {{ selectedShipping.shippingNo }}
           </h3>
         </div>
         <button
           @click="selectedShipping = null"
-          class="app-text-inverse text-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
+          class="app-text-inverse app-type-xs app-font-strong app-bg-muted px-2.5 py-1 rounded"
         >
           패널 닫기
         </button>
@@ -497,24 +531,24 @@ function formatDate(dateStr: string | null) {
         <!-- 출하 정보 그리드 -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl">
-            <span class="text-xs app-text-muted app-font-strong block">고객사</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">고객사</span>
             <span class="app-font-strong app-text-strong block mt-1">{{ selectedShipping.partnerName }}</span>
-            <span class="text-xs font-mono app-text-muted block">{{ selectedShipping.partnerCode }}</span>
+            <span class="app-type-xs font-mono app-text-muted block">{{ selectedShipping.partnerCode }}</span>
           </div>
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl">
-            <span class="text-xs app-text-muted app-font-strong block">출하 품목</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출하 품목</span>
             <span class="app-font-strong app-text-strong block mt-1 truncate" :title="selectedShipping.itemName">{{ selectedShipping.itemName }}</span>
-            <span class="text-xs font-mono app-text-muted block">{{ selectedShipping.itemCode }}</span>
+            <span class="app-type-xs font-mono app-text-muted block">{{ selectedShipping.itemCode }}</span>
           </div>
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl">
-            <span class="text-xs app-text-muted app-font-strong block">출하 요청 수량</span>
-            <span class="app-font-emphasis app-text-strong text-xl block mt-1">{{ selectedShipping.requestQty?.toLocaleString() }} <span class="text-sm app-font-label app-text-muted">EA</span></span>
+            <span class="app-type-xs app-text-muted app-font-strong block">출하 요청 수량</span>
+            <span class="app-font-emphasis app-text-strong app-type-xl block mt-1">{{ selectedShipping.requestQty?.toLocaleString() }} <span class="app-type-sm app-font-label app-text-muted">EA</span></span>
           </div>
           <div class="p-4 app-bg-muted border app-border-muted rounded-xl">
-            <span class="text-xs app-text-muted app-font-strong block">현재 상태</span>
+            <span class="app-type-xs app-text-muted app-font-strong block">현재 상태</span>
             <span class="mt-1 block">
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs app-font-strong border"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                 :class="{
                   'app-bg-warning-soft app-border app-text-warning': selectedShipping.status === 'READY',
                   'app-bg-primary-soft app-border app-accent': selectedShipping.status === 'PICKING'
@@ -527,7 +561,7 @@ function formatDate(dateStr: string | null) {
         </div>
 
         <!-- 피킹 및 차량 정보 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 app-bg-muted border app-border rounded-xl text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 app-bg-muted border app-border rounded-xl app-type-sm">
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <MapPin class="w-4 h-4 app-text-muted shrink-0" />
@@ -563,7 +597,7 @@ function formatDate(dateStr: string | null) {
         <div class="pt-4 border-t app-border-muted">
           <!-- READY 상태: 차량 배정 입력 -->
           <div v-if="selectedShipping.status === 'READY'" class="space-y-3">
-            <p class="text-xs app-font-strong app-text-warning flex items-center gap-1.5">
+            <p class="app-type-xs app-font-strong app-text-warning flex items-center gap-1.5">
               <AlertTriangle class="w-4 h-4" />
               배송 차량 번호를 등록하면 창고 내 가용 완제품 재고가 있는 최적의 피킹 위치가 자동으로 배정됩니다.
             </p>
@@ -573,7 +607,7 @@ function formatDate(dateStr: string | null) {
                   v-model="vehicleInput"
                   type="text"
                   placeholder="배정할 차량 번호 입력 (예: 서울 88 가 1234)"
-                  class="w-full h-11 px-4 app-bg-surface border app-border rounded-lg text-sm focus:outline-none focus:ring-1 app-focus-ring-warning"
+                  class="w-full h-11 px-4 app-bg-surface border app-border rounded-lg app-type-sm focus:outline-none focus:ring-1 app-focus-ring-warning"
                 />
               </div>
               <button
@@ -590,7 +624,7 @@ function formatDate(dateStr: string | null) {
 
           <!-- PICKING 상태: 상차 완료 확정 -->
           <div v-else-if="selectedShipping.status === 'PICKING'" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="text-xs app-accent app-font-strong flex items-start sm:items-center gap-2">
+            <div class="app-type-xs app-accent app-font-strong flex items-start sm:items-center gap-2">
               <CheckCircle2 class="w-5 h-5 shrink-0 mt-0.5 sm:mt-0" />
               <div>
                 <p>피킹 배정 완료 — 피킹 로케이션 <strong class="font-mono app-accent">{{ selectedShipping.pickingLocationCode }}</strong> 에서 실물 피킹 및 차량 <strong>{{ selectedShipping.vehicleNo }}</strong> 에 상차를 진행하세요.</p>
@@ -604,7 +638,7 @@ function formatDate(dateStr: string | null) {
             >
               <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
               <CheckCircle2 v-else class="w-4 h-4" />
-              상차 완료 및 출하 확정 (재고 차감)
+              상차 완료 및 출하 확정
             </button>
           </div>
         </div>

@@ -163,24 +163,24 @@ async function deleteExecution(executionId: number) {
 
     <header class="wo-header">
       <div>
-        <button class="wo-button wo-button-subtle" type="button" @click="router.push({ name: 'production-work-orders' })">
+        <button class="app-button app-button-muted" type="button" @click="router.push({ name: 'production-work-orders' })">
           <ArrowLeft class="wo-button-icon" />
           목록
         </button>
         <h1 class="wo-title">작업지시 상세</h1>
       </div>
-      <button class="wo-button wo-button-subtle" :disabled="workOrderStore.isLoading" @click="loadDetail">
+      <button class="app-button app-button-muted" :disabled="workOrderStore.isLoading" @click="loadDetail">
         <Loader2 v-if="workOrderStore.isLoading" class="wo-button-icon wo-spin" />
         새로고침
       </button>
     </header>
 
     <section v-if="order" class="wo-tab-section">
-      <div class="wo-panel wo-detail-panel">
+      <div class="app-panel wo-detail-panel">
         <div class="wo-detail-head">
           <div>
             <p class="wo-kicker">WORK ORDER</p>
-            <h2 class="wo-section-title">{{ order.orderNo }}</h2>
+            <h2 class="app-panel-title">{{ order.orderNo }}</h2>
           </div>
           <span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span>
         </div>
@@ -199,41 +199,41 @@ async function deleteExecution(executionId: number) {
           <div><span>수정일</span><strong>{{ formatDateTime(order.updatedAt) }}</strong></div>
         </div>
         <div class="wo-action-grid">
-          <button class="wo-button wo-button-primary" :disabled="!canIssue || workOrderStore.isSaving" @click="issueMaterials(order)">
+          <button class="app-button app-button-primary" :disabled="!canIssue || workOrderStore.isSaving" @click="issueMaterials(order)">
             <Package class="wo-button-icon" />
             자재 불출
           </button>
-          <button class="wo-button wo-button-subtle" :disabled="!canCancelIssue || workOrderStore.isSaving" @click="cancelIssueMaterials(order)">
+          <button class="app-button app-button-muted" :disabled="!canCancelIssue || workOrderStore.isSaving" @click="cancelIssueMaterials(order)">
             <RotateCcw class="wo-button-icon" />
             불출 취소
           </button>
-          <button class="wo-button wo-button-primary" :disabled="!order.canStart || workOrderStore.isSaving" @click="changeStatus(order, 'RUN')">
+          <button class="app-button app-button-primary" :disabled="!order.canStart || workOrderStore.isSaving" @click="changeStatus(order, 'RUN')">
             <Play class="wo-button-icon" />
             작업 착수
           </button>
-          <button class="wo-button wo-button-subtle" :disabled="!order.canHold || workOrderStore.isSaving" @click="changeStatus(order, 'HOLD')">
+          <button class="app-button app-button-muted" :disabled="!order.canHold || workOrderStore.isSaving" @click="changeStatus(order, 'HOLD')">
             <Pause class="wo-button-icon" />
             보류
           </button>
-          <button class="wo-button wo-button-subtle" :disabled="order.status !== 'HOLD' || workOrderStore.isSaving" @click="changeStatus(order, 'RUN')">
+          <button class="app-button app-button-muted" :disabled="order.status !== 'HOLD' || workOrderStore.isSaving" @click="changeStatus(order, 'RUN')">
             <Play class="wo-button-icon" />
             재개
           </button>
         </div>
         <label class="wo-check"><input v-model="allowUnderTargetClose" type="checkbox" />목표 미달 마감 허용</label>
-        <button class="wo-button wo-button-danger" :disabled="!order.canClose || workOrderStore.isSaving" @click="closeOrder(order)">
+        <button class="app-button app-button-danger" :disabled="!order.canClose || workOrderStore.isSaving" @click="closeOrder(order)">
           <CheckCircle2 class="wo-button-icon" />
           작업지시 마감
         </button>
       </div>
 
-      <div class="wo-panel">
-        <div class="wo-panel-head">
-          <h2 class="wo-section-title">BOM 자재 소요량</h2>
+      <div class="app-panel">
+        <div class="app-panel-head">
+          <h2 class="app-panel-title">BOM 자재 소요량</h2>
           <span v-if="hasStockShortage" class="wo-badge-danger">재고 부족</span>
         </div>
         <div class="wo-table-wrap">
-          <table class="wo-table wo-table-compact">
+          <table class="app-table wo-table-compact">
             <thead><tr><th>자재</th><th>소요</th><th>필요</th><th>불출</th><th>잔여</th><th>가용</th></tr></thead>
             <tbody>
               <tr v-for="item in materialRequirements" :key="item.itemId">
@@ -250,13 +250,13 @@ async function deleteExecution(executionId: number) {
         </div>
       </div>
 
-      <div class="wo-panel">
-        <div class="wo-panel-head">
-          <h2 class="wo-section-title">수불 연결 이력</h2>
+      <div class="app-panel">
+        <div class="app-panel-head">
+          <h2 class="app-panel-title">수불 연결 이력</h2>
           <span class="wo-count">총 {{ issueHistories.length }}건</span>
         </div>
         <div class="wo-table-wrap">
-          <table class="wo-table wo-table-compact">
+          <table class="app-table wo-table-compact">
             <thead><tr><th>일시</th><th>유형</th><th>품목</th><th>로케이션</th><th>수량</th><th>작업자</th></tr></thead>
             <tbody>
               <tr v-for="history in issueHistories" :key="history.transactionId">
@@ -273,13 +273,13 @@ async function deleteExecution(executionId: number) {
         </div>
       </div>
 
-      <div class="wo-panel">
-        <div class="wo-panel-head">
-          <h2 class="wo-section-title">생산 실적 이력</h2>
+      <div class="app-panel">
+        <div class="app-panel-head">
+          <h2 class="app-panel-title">생산 실적 이력</h2>
           <span class="wo-count">총 {{ executions.length }}건</span>
         </div>
         <div class="wo-table-wrap">
-          <table class="wo-table">
+          <table class="app-table">
             <thead><tr><th>일시</th><th>공정</th><th>양품</th><th>불량</th><th>불량 사유</th><th>공수</th><th>작업자</th><th>액션</th></tr></thead>
             <tbody>
               <tr v-for="execution in executions" :key="execution.executionId">
@@ -303,7 +303,7 @@ async function deleteExecution(executionId: number) {
       </div>
     </section>
 
-    <section v-else-if="workOrderStore.isLoading" class="wo-panel wo-empty-panel">
+    <section v-else-if="workOrderStore.isLoading" class="app-panel wo-empty-panel">
       <Loader2 class="wo-empty-icon wo-spin" />
       <span>작업지시 상세 정보를 불러오고 있습니다.</span>
     </section>
