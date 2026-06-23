@@ -66,6 +66,7 @@ async function fetchShippingList() {
     await shippingStore.loadShippings({
       page: shippingStore.page,
       size: 20,
+      sort: `${sortField.value},${sortDirection.value}`,
       status: filterStatus.value !== 'ALL' ? filterStatus.value : undefined,
       keyword: filterShippingNo.value || filterPartnerName.value || undefined,
     })
@@ -124,13 +125,15 @@ function compareValues(aValue: unknown, bValue: unknown) {
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  shippingStore.page = 0
+  await fetchShippingList()
 }
 
 function getSortMark(field: string) {
