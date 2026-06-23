@@ -1,3 +1,5 @@
+version: "2.4"
+
 services:
   mysql:
     image: mysql:8.0
@@ -23,12 +25,9 @@ services:
       start_period: 5s
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: backend-app
+    image: ghcr.io/optimesai/mallo-backend:latest
     container_name: backend-app
-    restart: no
+    restart: always
     env_file:
       - .env
       - .secret.env
