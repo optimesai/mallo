@@ -119,6 +119,19 @@ jobs:
 
             cd ~/mallo/backend
             docker-compose pull app
+            docker-compose up -d --no-recreate mysql
+            
+            i=0
+            until [ "$(docker inspect --format='{{.State.Health.Status}}' backend-mysql 2>/dev/null)" = "healthy" ]; do
+              i=$((i+1))
+              if [ "$i" -ge 30 ]; then
+                docker-compose logs --tail=100 mysql
+                exit 1
+              fi
+              echo "Waiting for mysql..."
+              sleep 3
+            done
+            
             docker-compose stop app || true
             docker-compose rm -f app || true
             docker-compose up -d --no-deps app
