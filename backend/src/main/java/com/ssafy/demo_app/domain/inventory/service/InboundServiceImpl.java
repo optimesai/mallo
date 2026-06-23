@@ -26,7 +26,9 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +57,7 @@ public class InboundServiceImpl implements InboundService {
     public PageResponse<InboundReceiptResponse> getInbounds(Pageable pageable, String status, String keyword,
                                                             LocalDate startDate, LocalDate endDate) {
         Specification<InboundReceipt> spec = buildInboundSpec(status, keyword, startDate, endDate);
-        Page<InboundReceipt> page = inboundReceiptRepository.findAll(spec, pageable);
+        Page<InboundReceipt> page = inboundReceiptRepository.findAll(spec, sanitizeInboundPageable(pageable));
         return PageResponse.from(page.map(InboundReceiptResponse::from));
     }
 
@@ -181,5 +184,43 @@ public class InboundServiceImpl implements InboundService {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private Pageable sanitizeInboundPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return Pageable.unpaged();
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mapSort(pageable.getSort()));
+    }
+
+    private Sort mapSort(Sort sort) {
+        if (sort == null || sort.isUnsorted()) {
+            return Sort.unsorted();
+        }
+        Map<String, String> sortProperties = inboundSortProperties();
+        List<Sort.Order> orders = new ArrayList<>();
+        for (Sort.Order order : sort) {
+            String property = sortProperties.get(order.getProperty());
+            if (property != null) {
+                orders.add(new Sort.Order(order.getDirection(), property));
+            }
+        }
+        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
+    }
+
+    private Map<String, String> inboundSortProperties() {
+        return Map.ofEntries(
+                Map.entry("inboundId", "inboundId"),
+                Map.entry("itemCode", "item.itemCode"),
+                Map.entry("itemName", "item.itemName"),
+                Map.entry("partnerCode", "partner.partnerCode"),
+                Map.entry("partnerName", "partner.partnerName"),
+                Map.entry("locationCode", "location.locationCode"),
+                Map.entry("inboundQty", "inboundQty"),
+                Map.entry("inboundDate", "inboundDate"),
+                Map.entry("status", "status"),
+                Map.entry("workerName", "worker.userName"),
+                Map.entry("createdAt", "createdAt")
+        );
     }
 }

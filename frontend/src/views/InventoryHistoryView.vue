@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import {
+  AlertTriangle,
   Clock,
   Search,
   RefreshCw,
@@ -39,6 +40,7 @@ async function fetchPageData() {
     await inventoryStore.loadHistories({
       page: inventoryStore.histPage,
       size: 20,
+      sort: `${sortField.value},${sortDirection.value}`,
       transactionType: filterType.value !== 'ALL' ? filterType.value : undefined,
       startDate: filterDateStart.value || undefined,
       endDate: filterDateEnd.value || undefined,
@@ -80,19 +82,60 @@ function compareValues(aValue: unknown, bValue: unknown) {
   let result = 0
   if (typeof aValue === 'number' && typeof bValue === 'number') {
     result = aValue - bValue
+  } else if (sortField.value === 'transactionType') {
+    result = getTransactionTypeLabel(String(aValue)).localeCompare(getTransactionTypeLabel(String(bValue)), 'ko', { numeric: true })
   } else {
     result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
   }
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+function getTransactionTypeLabel(transactionType: string) {
+  if (transactionType === 'INBOUND') return '입고적재'
+  if (transactionType === 'PRODUCTION_ISSUE') return '생산불출'
+  if (transactionType === 'OUTBOUND') return '출고적재'
+  if (transactionType === 'RESERVATION') return '출고적재'
+  if (transactionType === 'PRODUCTION_RECEIPT') return '생산입고'
+  if (transactionType === 'PRODUCTION_ISSUE_CANCEL') return '불출취소'
+  if (transactionType === 'PRODUCTION_RECEIPT_CANCEL') return '입고취소'
+  if (transactionType === 'TRANSFER_OUT') return '이동출고'
+  if (transactionType === 'TRANSFER_IN') return '이동입고'
+  if (transactionType === 'SCRAP') return '폐기'
+  if (transactionType === 'ADJUSTMENT') return '재고조정'
+  if (transactionType === 'RETURN') return '반품'
+  return transactionType
+}
+
+function getDisplayQuantity(item: { transactionType: string; quantity: number }) {
+  if (['PRODUCTION_ISSUE', 'OUTBOUND', 'RESERVATION'].includes(item.transactionType)) {
+    return -Math.abs(item.quantity)
+  }
+  return item.quantity
+}
+
+function getQuantityText(item: { transactionType: string; quantity: number }) {
+  const quantity = getDisplayQuantity(item)
+  const sign = quantity > 0 ? '+' : ''
+  return `${sign}${quantity.toLocaleString()}`
+}
+
+function isInboundType(transactionType: string) {
+  return ['INBOUND', 'PRODUCTION_RECEIPT', 'PRODUCTION_ISSUE_CANCEL', 'TRANSFER_IN', 'RETURN'].includes(transactionType)
+}
+
+function isOutboundType(transactionType: string) {
+  return ['PRODUCTION_ISSUE', 'OUTBOUND', 'RESERVATION', 'PRODUCTION_RECEIPT_CANCEL', 'TRANSFER_OUT', 'SCRAP'].includes(transactionType)
+}
+
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  inventoryStore.histPage = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {
@@ -131,7 +174,12 @@ const filteredHistories = computed(() => {
 })
 
 const sortedHistories = computed(() => {
-  return [...filteredHistories.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
+  return [...filteredHistories.value].sort((a, b) => {
+    if (sortField.value === 'quantity') {
+      return compareValues(getDisplayQuantity(a), getDisplayQuantity(b))
+    }
+    return compareValues(a[sortField.value], b[sortField.value])
+  })
 })
 
 // Statistics calculations
@@ -341,8 +389,8 @@ const stats = computed(() => {
               <th class="app-sortable-header px-5 py-3" @click="changeSort('transactionType')">수불 유형 <span class="app-sort-mark">{{ getSortMark('transactionType') }}</span></th>
               <th class="app-sortable-header px-5 py-3" @click="changeSort('locationCode')">적재 위치 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
               <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('quantity')">변동 수량 <span class="app-sort-mark">{{ getSortMark('quantity') }}</span></th>
-              <th class="app-sortable-header px-5 py-3" @click="changeSort('reason')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reason') }}</span></th>
-              <th class="app-sortable-header px-5 py-3" @click="changeSort('createdBy')">작업자 <span class="app-sort-mark">{{ getSortMark('createdBy') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('reasonDesc')">변동 사유 <span class="app-sort-mark">{{ getSortMark('reasonDesc') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('workerName')">작업자 <span class="app-sort-mark">{{ getSortMark('workerName') }}</span></th>
               <th class="app-sortable-header px-5 py-3" @click="changeSort('createdAt')">발생 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
             </tr>
           </thead>
@@ -365,25 +413,25 @@ const stats = computed(() => {
                 <span
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full app-type-xs app-font-strong border"
                   :class="{
-                    'app-bg-success-soft app-border app-text-success': item.transactionType === 'INBOUND',
-                    'app-bg-danger-soft app-border app-text-danger': item.transactionType === 'PRODUCTION_ISSUE'
+                    'app-bg-success-soft app-border app-text-success': isInboundType(item.transactionType),
+                    'app-bg-danger-soft app-border app-text-danger': isOutboundType(item.transactionType)
                   }"
                 >
                   <span
                     class="w-1.5 h-1.5 rounded-full"
                     :class="{
-                      'app-accent-bg': item.transactionType === 'INBOUND',
-                      'app-bg-danger-soft0': item.transactionType === 'PRODUCTION_ISSUE'
+                      'app-accent-bg': isInboundType(item.transactionType),
+                      'app-bg-danger-soft0': isOutboundType(item.transactionType)
                     }"
                   ></span>
-                  {{ item.transactionType === 'INBOUND' ? '입고적재' : '생산불출' }}
+                  {{ getTransactionTypeLabel(item.transactionType) }}
                 </span>
               </td>
               <!-- 적재 위치 -->
               <td class="px-5 py-4 font-mono app-type-xs app-muted">{{ item.locationCode }}</td>
               <!-- 변동 수량 -->
-              <td class="px-5 py-4 text-right app-font-emphasis" :class="item.transactionType === 'INBOUND' ? 'app-text-success' : 'app-text-danger'">
-                {{ item.transactionType === 'INBOUND' ? '+' : '-' }}{{ item.quantity.toLocaleString() }}
+              <td class="px-5 py-4 text-right app-font-emphasis" :class="getDisplayQuantity(item) >= 0 ? 'app-text-success' : 'app-text-danger'">
+                {{ getQuantityText(item) }}
               </td>
               <!-- 변동 사유 -->
               <td class="px-5 py-4 app-type-xs app-muted truncate" :title="item.reasonDesc">

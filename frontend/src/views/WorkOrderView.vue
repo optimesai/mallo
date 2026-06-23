@@ -220,7 +220,7 @@ async function loadInitialData() {
     loadProductionItems('HALF'),
     loadProductionItems('FG'),
     factoryRoutingStore.loadRoutings({ routingStatus: 'ACTIVE' }),
-    workOrderStore.loadWorkOrders({ page: 0, size: 10 })
+    workOrderStore.loadWorkOrders({ page: 0, size: 10, sort: `${String(sortField.value)},${sortDirection.value}` })
   ])
 
   const labels = ['반제품 품목', '완제품 품목', '공장/생산 라우팅', '작업지시 목록']

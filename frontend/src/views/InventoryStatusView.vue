@@ -46,6 +46,7 @@ async function fetchPageData() {
       inventoryStore.loadInventories({
         page: inventoryStore.invPage,
         size: 20,
+        sort: `${sortField.value},${sortDirection.value}`,
         keyword: filterItem.value || undefined,
       }),
       inboundStore.loadItems()
@@ -93,13 +94,15 @@ function compareValues(aValue: unknown, bValue: unknown) {
   return sortDirection.value === 'asc' ? result : -result
 }
 
-function changeSort(field: string) {
+async function changeSort(field: string) {
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  inventoryStore.invPage = 0
+  await fetchPageData()
 }
 
 function getSortMark(field: string) {

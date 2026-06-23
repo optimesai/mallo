@@ -30,12 +30,14 @@ import com.ssafy.demo_app.global.exception.ErrorCode;
 import com.ssafy.demo_app.global.response.PageResponse;
 
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +47,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +68,7 @@ public class InventoryServiceImpl implements InventoryService {
     public PageResponse<InboundReceiptResponse> getInbounds(Pageable pageable, String status, String keyword,
                                                             LocalDate startDate, LocalDate endDate) {
         Specification<InboundReceipt> spec = buildInboundSpec(status, keyword, startDate, endDate);
-        Page<InboundReceipt> page = inboundReceiptRepository.findAll(spec, pageable);
+        Page<InboundReceipt> page = inboundReceiptRepository.findAll(spec, sanitizeInboundPageable(pageable));
         return PageResponse.from(page.map(InboundReceiptResponse::from));
     }
 
@@ -186,8 +189,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public PageResponse<TransactionHistoryResponse> getTransactionHistories(Pageable pageable, String transactionType,
                                                                             LocalDate startDate, LocalDate endDate) {
-        Specification<InventoryTransactionHistory> spec = buildTransactionHistorySpec(transactionType, startDate, endDate);
-        Page<InventoryTransactionHistory> page = transactionHistoryRepository.findAll(spec, pageable);
+        Specification<InventoryTransactionHistory> spec = buildTransactionHistorySpec(transactionType, startDate, endDate, pageable);
+        Page<InventoryTransactionHistory> page = transactionHistoryRepository.findAll(spec, sanitizeHistoryPageable(pageable));
         return PageResponse.from(page.map(TransactionHistoryResponse::from));
     }
 
@@ -414,6 +417,23 @@ public class InventoryServiceImpl implements InventoryService {
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
+    private Pageable sanitizeInboundPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return Pageable.unpaged();
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mapSort(pageable.getSort(), inboundSortProperties()));
+    }
+
+    private Pageable sanitizeHistoryPageable(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return Pageable.unpaged();
+        }
+        if (hasSortProperty(pageable, "transactionType") || hasSortProperty(pageable, "quantity")) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mapSort(pageable.getSort(), historySortProperties()));
+    }
+
     private void validateInboundPartner(PartnerMaster partner) {
         if (partner.getPartnerType() != PartnerMaster.PartnerType.SUPPLIER) {
             throw new BusinessException(ErrorCode.PARTNER_TYPE_INVALID);
@@ -424,7 +444,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     private Specification<InventoryTransactionHistory> buildTransactionHistorySpec(
-            String transactionType, LocalDate startDate, LocalDate endDate) {
+            String transactionType, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -442,8 +462,104 @@ public class InventoryServiceImpl implements InventoryService {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), end));
             }
 
+            if (!isCountQuery(query) && hasSortProperty(pageable, "transactionType")) {
+                var typeOrder = cb.selectCase()
+                        .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_ISSUE), 1)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.OUTBOUND), 2)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.INBOUND), 3)
+                        .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_RECEIPT), 4)
+                        .otherwise(99);
+                Sort.Order order = firstOrder(pageable, "transactionType");
+                if (order.getDirection().isDescending()) {
+                    query.orderBy(cb.desc(typeOrder), cb.desc(root.get("createdAt")));
+                } else {
+                    query.orderBy(cb.asc(typeOrder), cb.desc(root.get("createdAt")));
+                }
+            }
+            if (!isCountQuery(query) && hasSortProperty(pageable, "quantity")) {
+                Expression<Integer> displayQuantity = displayQuantityExpression(root, cb);
+                Sort.Order order = firstOrder(pageable, "quantity");
+                if (order.getDirection().isDescending()) {
+                    query.orderBy(cb.desc(displayQuantity), cb.desc(root.get("createdAt")));
+                } else {
+                    query.orderBy(cb.asc(displayQuantity), cb.desc(root.get("createdAt")));
+                }
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private Expression<Integer> displayQuantityExpression(
+            jakarta.persistence.criteria.Root<InventoryTransactionHistory> root,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
+        return cb.<Integer>selectCase()
+                .when(cb.equal(root.get("transactionType"), TransactionType.PRODUCTION_ISSUE), cb.neg(root.get("quantity")))
+                .when(cb.equal(root.get("transactionType"), TransactionType.OUTBOUND), cb.neg(root.get("quantity")))
+                .when(cb.equal(root.get("transactionType"), TransactionType.RESERVATION), cb.neg(root.get("quantity")))
+                .otherwise(root.get("quantity"));
+    }
+
+    private boolean isCountQuery(jakarta.persistence.criteria.CriteriaQuery<?> query) {
+        Class<?> resultType = query.getResultType();
+        return Long.class.equals(resultType) || long.class.equals(resultType);
+    }
+
+    private Sort mapSort(Sort sort, Map<String, String> sortProperties) {
+        if (sort == null || sort.isUnsorted()) {
+            return Sort.unsorted();
+        }
+        List<Sort.Order> orders = new ArrayList<>();
+        for (Sort.Order order : sort) {
+            String property = sortProperties.get(order.getProperty());
+            if (property != null) {
+                orders.add(new Sort.Order(order.getDirection(), property));
+            }
+        }
+        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
+    }
+
+    private Map<String, String> inboundSortProperties() {
+        return Map.ofEntries(
+                Map.entry("inboundId", "inboundId"),
+                Map.entry("itemCode", "item.itemCode"),
+                Map.entry("itemName", "item.itemName"),
+                Map.entry("partnerCode", "partner.partnerCode"),
+                Map.entry("partnerName", "partner.partnerName"),
+                Map.entry("locationCode", "location.locationCode"),
+                Map.entry("inboundQty", "inboundQty"),
+                Map.entry("inboundDate", "inboundDate"),
+                Map.entry("status", "status"),
+                Map.entry("workerName", "worker.userName"),
+                Map.entry("createdAt", "createdAt")
+        );
+    }
+
+    private Map<String, String> historySortProperties() {
+        return Map.ofEntries(
+                Map.entry("transactionId", "transactionId"),
+                Map.entry("itemCode", "item.itemCode"),
+                Map.entry("itemName", "item.itemName"),
+                Map.entry("locationCode", "location.locationCode"),
+                Map.entry("reasonDesc", "reasonDesc"),
+                Map.entry("workerName", "worker.userName"),
+                Map.entry("createdAt", "createdAt")
+        );
+    }
+
+    private boolean hasSortProperty(Pageable pageable, String property) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return false;
+        }
+        return pageable.getSort().stream().anyMatch(order -> order.getProperty().equals(property));
+    }
+
+    private Sort.Order firstOrder(Pageable pageable, String defaultProperty) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return Sort.Order.asc(defaultProperty);
+        }
+        return pageable.getSort().iterator().next();
     }
 
     private Specification<WarehouseLocation> buildLocationSpec(String keyword) {
