@@ -35,6 +35,8 @@ const filterPartner = ref('')
 const filterStatus = ref<'ALL' | 'READY' | 'COMPLETED' | 'STACKED'>('ALL')
 const filterDateStart = ref('')
 const filterDateEnd = ref('')
+const sortField = ref('inboundDate')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 // 2. 체크박스 다중 선택 상태
 const selectedIds = ref<number[]>([])
@@ -81,6 +83,10 @@ const stats = computed(() => {
 // 서버 측 필터링 사용 — inboundStore.inbounds 그대로 표시
 const filteredInbounds = computed(() => {
   return inboundStore.inbounds
+})
+
+const sortedInbounds = computed(() => {
+  return [...filteredInbounds.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 // 합계 계산 (필터링된 수량 총합)
@@ -130,6 +136,34 @@ function resetFilters() {
   filterStatus.value = 'ALL'
   filterDateStart.value = ''
   filterDateEnd.value = ''
+}
+
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
 }
 
 // 다중 선택 관리
@@ -490,6 +524,10 @@ function formatDateTime(dateTimeStr: string) {
 
     <!-- 메인 그리드 및 액션 툴바 -->
     <div class="app-panel">
+      <div class="app-list-head">
+        <span class="app-list-title">입고 예정 목록</span>
+      </div>
+
       <!-- 액션 버튼 툴바 (패딩 및 마진 강화) -->
       <div class="px-5 py-4 app-bg-muted border-b app-border flex flex-wrap items-center justify-between gap-3">
         <!-- 다중 선택 액션 -->
@@ -535,7 +573,7 @@ function formatDateTime(dateTimeStr: string) {
 
       <!-- 고밀도 데이터 테이블 영역 (Spacious border & alignment) -->
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1200px] text-left app-type-xs app-text-soft border-collapse">
+        <table class="app-table min-w-[1200px]">
           <thead class="app-bg-muted app-text-soft app-font-strong uppercase border-b app-border">
             <tr class="whitespace-nowrap">
               <th class="px-4 py-3 text-center w-12 border-r app-border app-bg-muted">
@@ -546,16 +584,16 @@ function formatDateTime(dateTimeStr: string) {
                   class="app-checkbox"
                 >
               </th>
-              <th class="px-4 py-3 text-center w-12 border-r app-border">No</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">상태</th>
-              <th class="px-4 py-3 w-32 border-r app-border app-font-strong">품목코드</th>
-              <th class="px-4 py-3 w-64 border-r app-border">품목명</th>
-              <th class="px-4 py-3 w-56 border-r app-border">공급처명</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">예정 로케이션</th>
-              <th class="px-4 py-3 text-right w-24 border-r app-border">예정 수량</th>
-              <th class="px-4 py-3 text-center w-28 border-r app-border">입고 예정일</th>
-              <th class="px-4 py-3 text-center w-36 border-r app-border">등록 일시</th>
-              <th class="px-4 py-3 text-center w-20 border-r app-border">작업자</th>
+              <th class="app-sortable-header px-4 py-3 text-center w-12 border-r app-border" @click="changeSort('inboundId')">No <span class="app-sort-mark">{{ getSortMark('inboundId') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('status')">상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-32 border-r app-border app-font-strong" @click="changeSort('itemCode')">품목코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-64 border-r app-border" @click="changeSort('itemName')">품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 w-56 border-r app-border" @click="changeSort('partnerName')">공급처명 <span class="app-sort-mark">{{ getSortMark('partnerName') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('locationCode')">예정 로케이션 <span class="app-sort-mark">{{ getSortMark('locationCode') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-right w-24 border-r app-border" @click="changeSort('inboundQty')">예정 수량 <span class="app-sort-mark">{{ getSortMark('inboundQty') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-28 border-r app-border" @click="changeSort('inboundDate')">입고 예정일 <span class="app-sort-mark">{{ getSortMark('inboundDate') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-36 border-r app-border" @click="changeSort('createdAt')">등록 일시 <span class="app-sort-mark">{{ getSortMark('createdAt') }}</span></th>
+              <th class="app-sortable-header px-4 py-3 text-center w-20 border-r app-border" @click="changeSort('workerName')">작업자 <span class="app-sort-mark">{{ getSortMark('workerName') }}</span></th>
               <th class="px-4 py-3 text-center w-36">액션</th>
             </tr>
           </thead>
@@ -574,7 +612,7 @@ function formatDateTime(dateTimeStr: string) {
               </td>
             </tr>
             <tr
-              v-for="(item, idx) in filteredInbounds"
+              v-for="(item, idx) in sortedInbounds"
               :key="item.inboundId"
               @click="selectRow(item)"
               class="app-hover-muted/80 cursor-pointer transition-colors whitespace-nowrap"
@@ -684,12 +722,12 @@ function formatDateTime(dateTimeStr: string) {
             @click="goToPage(0)"
             :disabled="inboundStore.page === 0"
             class="app-page-button"
-          >««</button>
+          >처음</button>
           <button
             @click="goToPage(inboundStore.page - 1)"
             :disabled="inboundStore.page === 0"
             class="app-page-button"
-          >«</button>
+          >이전</button>
           <button
             v-for="p in Math.min(inboundStore.totalPages, 5)"
             :key="p"
@@ -705,12 +743,12 @@ function formatDateTime(dateTimeStr: string) {
             @click="goToPage(inboundStore.page + 1)"
             :disabled="inboundStore.page >= inboundStore.totalPages - 1"
             class="app-page-button"
-          >»</button>
+          >다음</button>
           <button
             @click="goToPage(inboundStore.totalPages - 1)"
             :disabled="inboundStore.page >= inboundStore.totalPages - 1"
             class="app-page-button"
-          >»»</button>
+          >마지막</button>
         </div>
       </div>
     </div>

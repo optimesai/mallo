@@ -24,10 +24,7 @@ async function handleLogout() {
 <template>
   <header class="app-header">
     <div class="flex items-center gap-4">
-      <span class="app-status app-status-success">
-        <span class="app-toast-dot animate-pulse"></span>
-        공장 가동 중 (Normal)
-      </span>
+
     </div>
     <div class="relative flex items-center gap-4">
       <div class="app-table-strong app-type-sm">{{ displayName }}님 환영합니다</div>

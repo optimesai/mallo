@@ -35,6 +35,8 @@ const vehicleInput = ref('')
 const filterShippingNo = ref('')
 const filterItemName = ref('')
 const filterStatus = ref<'WORK' | Extract<ShippingStatus, 'READY' | 'PICKING'>>('WORK')
+const sortField = ref('shippingId')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 onMounted(async () => {
   await fetchPageData()
@@ -78,6 +80,34 @@ function resetFilters() {
   filterStatus.value = 'WORK'
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // 작업 대상 통계 카드
 const readyCount = computed(() => shippingStore.shippings.filter((s) => s.status === 'READY').length)
 const pickingCount = computed(() => shippingStore.shippings.filter((s) => s.status === 'PICKING').length)
@@ -106,6 +136,10 @@ const filteredShippings = computed(() => {
     }
     return true
   })
+})
+
+const sortedShippings = computed(() => {
+  return [...filteredShippings.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 function selectRow(shipping: any) {
@@ -230,10 +264,8 @@ function formatDate(dateStr: string | null) {
         <div>
           <p class="app-type-xs app-font-strong app-text-warning uppercase tracking-wider">피킹 대기 (READY)</p>
           <p class="app-metric-value">{{ readyCount }} <span class="app-metric-unit">건</span></p>
-          <p class="app-type-xs app-text-muted mt-1">차량 배정 및 피킹 지시 대기 중</p>
         </div>
         <div class="ml-auto">
-          <span class="app-type-xs app-text-warning app-font-strong">클릭하여 필터</span>
         </div>
       </div>
 
@@ -249,10 +281,8 @@ function formatDate(dateStr: string | null) {
         <div>
           <p class="app-type-xs app-font-strong app-accent uppercase tracking-wider">상차 진행 (PICKING)</p>
           <p class="app-metric-value">{{ pickingCount }} <span class="app-metric-unit">건</span></p>
-          <p class="app-type-xs app-text-muted mt-1">피킹 배정 완료, 상차 진행 중</p>
         </div>
         <div class="ml-auto">
-          <span class="app-type-xs app-accent app-font-strong">클릭하여 필터</span>
         </div>
       </div>
     </div>
@@ -331,14 +361,14 @@ function formatDate(dateStr: string | null) {
     <!-- 작업 테이블 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">피킹/상차 작업 목록 ({{ filteredShippings.length }}건)</span>
+        <span class="app-panel-title">피킹/상차 작업 목록</span>
         <span v-if="shippingStore.isLoading" class="flex items-center gap-1.5 app-type-xs app-text-muted">
           <Loader2 class="w-3.5 h-3.5 animate-spin" /> 로딩 중...
         </span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -352,20 +382,20 @@ function formatDate(dateStr: string | null) {
           </colgroup>
           <thead>
             <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">ID</th>
-              <th class="px-5 py-3">출하 지시 번호</th>
-              <th class="px-5 py-3">고객사</th>
-              <th class="px-5 py-3">출하 품목명</th>
-              <th class="px-5 py-3 text-right">요청 수량</th>
-              <th class="px-5 py-3 text-center">상태</th>
-              <th class="px-5 py-3">배정 차량 번호</th>
-              <th class="px-5 py-3">피킹 로케이션</th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingId')">ID <span class="app-sort-mark">{{ getSortMark('shippingId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingNo')">출하 지시 번호 <span class="app-sort-mark">{{ getSortMark('shippingNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('partnerName')">고객사 <span class="app-sort-mark">{{ getSortMark('partnerName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">출하 품목명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('requestQty')">요청 수량 <span class="app-sort-mark">{{ getSortMark('requestQty') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-center" @click="changeSort('status')">상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('vehicleNo')">배정 차량 번호 <span class="app-sort-mark">{{ getSortMark('vehicleNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('pickingLocationCode')">피킹 로케이션 <span class="app-sort-mark">{{ getSortMark('pickingLocationCode') }}</span></th>
               <th class="px-5 py-3 text-center">다음 작업</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="shipping in filteredShippings"
+              v-for="shipping in sortedShippings"
               :key="shipping.shippingId"
               @click="selectRow(shipping)"
               class="app-hover-muted cursor-pointer transition select-none"
@@ -454,15 +484,15 @@ function formatDate(dateStr: string | null) {
           총 <span class="app-count-strong">{{ shippingStore.totalElements.toLocaleString() }}</span>건
           ({{ shippingStore.page + 1 }} / {{ shippingStore.totalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="shippingStore.page === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(shippingStore.page - 1)" :disabled="shippingStore.page === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(shippingStore.page + 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(shippingStore.totalPages - 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>

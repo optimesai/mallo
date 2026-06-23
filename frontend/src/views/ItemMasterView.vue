@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@lucide/vue'
+import { CheckCircle2, Package, RefreshCw, Search } from '@lucide/vue'
 import { useAuthStore } from '@/state/authStore'
 import { useItemMasterStore } from '@/state/itemMasterStore'
 import type { ItemMasterRequest, ItemMasterResponse, ItemStatus, ItemType, ItemUnit } from '@/api/itemMasterApi'
@@ -58,6 +58,11 @@ const stats = computed(() => {
   }
 })
 const canWrite = computed(() => authStore.canManageMasterData)
+const pageStart = computed(() => {
+  if (itemMasterStore.totalElements === 0) return 0
+  return itemMasterStore.page * itemMasterStore.size + 1
+})
+const pageEnd = computed(() => Math.min((itemMasterStore.page + 1) * itemMasterStore.size, itemMasterStore.totalElements))
 
 const keywordSuggestions = computed(() => {
   const searchKeyword = keyword.value.trim().toLowerCase()
@@ -288,28 +293,43 @@ function showToast(message: string) {
       {{ pageError }}
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
-        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-muted">전체 품목</p>
-        <strong class="mt-2 block app-type-3xl app-text-strong">{{ stats.total.toLocaleString() }}</strong>
+    <div class="app-news-grid">
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label">전체 품목</p>
+          <strong class="app-news-value app-text-strong">{{ stats.total.toLocaleString() }}</strong>
+        </div>
+        <div class="app-news-icon">
+          <Package />
+        </div>
       </div>
-      <div class="rounded-3xl border app-border app-bg-success-soft p-5 shadow-sm">
-        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-success">활성 상태 품목</p>
-        <strong class="mt-2 block app-type-3xl app-text-success">{{ stats.active.toLocaleString() }}</strong>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label app-text-success">활성 상태 품목</p>
+          <strong class="app-news-value app-text-success">{{ stats.active.toLocaleString() }}</strong>
+        </div>
+        <div class="app-news-icon app-bg-success-soft app-text-success">
+          <CheckCircle2 />
+        </div>
       </div>
-      <div class="rounded-3xl border app-border app-bg-warning-soft p-5 shadow-sm">
-        <p class="app-type-xs app-font-emphasis uppercase tracking-widest app-text-warning">비활성 상태 품목</p>
-        <strong class="mt-2 block app-type-3xl app-text-warning">{{ stats.inactive.toLocaleString() }}</strong>
+      <div class="app-news-card">
+        <div>
+          <p class="app-news-label app-text-warning">비활성 상태 품목</p>
+          <strong class="app-news-value app-text-warning">{{ stats.inactive.toLocaleString() }}</strong>
+        </div>
+        <div class="app-news-icon app-bg-warning-soft app-text-warning">
+          <RefreshCw />
+        </div>
       </div>
     </div>
 
-    <section class="rounded-3xl border app-border app-bg-surface p-5 shadow-sm">
+    <section class="app-search-panel">
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_0.8fr_0.8fr_auto]">
         <div class="relative">
           <Search class="pointer-events-none absolute left-4 top-3.5 z-10 h-4 w-4 app-text-muted" />
           <input
             v-model="keyword"
-            class="h-11 w-full rounded-xl border app-border app-bg-surface pl-11 pr-4 app-type-sm app-font-label outline-none transition  focus:ring-2 "
+            class="app-control app-control-lg app-control-search"
             placeholder="품목 ID, 품목코드, 품목명, 규격 검색"
             @input="handleKeywordInput"
             @focus="openSuggestions"
@@ -328,34 +348,37 @@ function showToast(message: string) {
             </button>
           </div>
         </div>
-        <select v-model="itemType" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
+        <select v-model="itemType" class="app-control app-control-lg">
           <option value="ALL">전체 분류</option>
           <option v-for="option in itemTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
-        <select v-model="itemStatus" class="h-11 rounded-2xl border app-border px-4 app-type-sm app-font-label outline-none">
+        <select v-model="itemStatus" class="app-control app-control-lg">
           <option value="ALL">전체 상태</option>
           <option value="ACTIVE">활성</option>
           <option value="INACTIVE">비활성</option>
         </select>
-        <div class="flex gap-2">
-          <button class="h-11 rounded-2xl app-bg-strong px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="fetchItems(0)">조회</button>
-          <button class="h-11 rounded-2xl app-bg-muted px-5 app-type-sm app-font-emphasis app-text-soft" type="button" @click="resetFilters">초기화</button>
-          <button v-if="canWrite" class="h-11 rounded-2xl app-accent-bg px-5 app-type-sm app-font-emphasis app-text-inverse" type="button" @click="openCreate">신규 등록</button>
+        <div class="app-search-actions">
+          <button class="app-button app-button-lg app-button-primary" type="button" @click="fetchItems(0)">조회</button>
+          <button class="app-button app-button-lg app-button-muted" type="button" @click="resetFilters">초기화</button>
+          <button v-if="canWrite" class="app-button app-button-lg app-button-primary" type="button" @click="openCreate">신규 등록</button>
         </div>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-3xl border app-border app-bg-surface shadow-sm">
+      <div class="app-list-head">
+        <span class="app-list-title">품목 목록</span>
+      </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[980px] text-left app-type-sm">
-          <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
+        <table class="app-table min-w-[980px]">
+          <thead>
             <tr>
-              <th class="px-4 py-3">No</th>
-              <th v-for="column in sortableFields" :key="column.field" class="cursor-pointer px-4 py-3" @click="changeSort(column.field)">
+              <th>No</th>
+              <th v-for="column in sortableFields" :key="column.field" class="app-sortable-header" @click="changeSort(column.field)">
                 {{ column.label }}
-                <span v-if="sortField === column.field">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortField === column.field" class="app-sort-mark">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3">상태</th>
+              <th>상태</th>
             </tr>
           </thead>
           <tbody>
@@ -369,18 +392,18 @@ function showToast(message: string) {
               v-for="(item, index) in itemMasterStore.items"
               v-else
               :key="item.itemId"
-              class="cursor-pointer border-t app-border-muted transition app-hover-muted"
+              class="app-table-row"
               @click="goToDetail(item)"
             >
-              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ itemMasterStore.page * itemMasterStore.size + index + 1 }}</td>
-              <td class="px-4 py-3 font-mono app-font-emphasis app-text-strong">{{ item.itemCode }}</td>
-              <td class="px-4 py-3 app-font-strong app-text-strong">{{ item.itemName }}</td>
-              <td class="px-4 py-3">{{ getTypeLabel(item.itemType) }}</td>
-              <td class="px-4 py-3 font-mono app-type-xs app-text-muted">{{ item.unit }}</td>
-              <td class="px-4 py-3 text-right app-font-strong">{{ item.safetyStock.toLocaleString() }}</td>
-              <td class="px-4 py-3 app-type-xs app-text-muted">{{ formatDate(item.createdAt) }}</td>
-              <td class="px-4 py-3">
-                <span class="rounded-full px-2.5 py-1 app-type-xs app-font-emphasis" :class="item.itemStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
+              <td class="app-table-id">{{ itemMasterStore.page * itemMasterStore.size + index + 1 }}</td>
+              <td class="app-table-main font-mono">{{ item.itemCode }}</td>
+              <td class="app-table-main">{{ item.itemName }}</td>
+              <td>{{ getTypeLabel(item.itemType) }}</td>
+              <td class="app-table-id">{{ item.unit }}</td>
+              <td class="app-table-number">{{ item.safetyStock.toLocaleString() }}</td>
+              <td class="app-table-id">{{ formatDate(item.createdAt) }}</td>
+              <td>
+                <span class="app-status" :class="item.itemStatus === 'ACTIVE' ? 'app-status-success' : 'app-status-warning'">
                   {{ getStatusLabel(item.itemStatus) }}
                 </span>
               </td>
@@ -388,14 +411,15 @@ function showToast(message: string) {
           </tbody>
         </table>
       </div>
-      <div class="flex flex-col gap-3 border-t app-border-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="app-type-sm app-font-strong app-text-muted">
-          총 {{ itemMasterStore.totalElements.toLocaleString() }}건 · {{ itemMasterStore.page + 1 }} / {{ Math.max(itemMasterStore.totalPages, 1) }} 페이지
+      <div class="app-pagination">
+        <p>
+          총 {{ itemMasterStore.totalElements.toLocaleString() }}건 · {{ pageStart.toLocaleString() }}-{{ pageEnd.toLocaleString() }} 표시 · {{ itemMasterStore.size }}건씩 · {{ itemMasterStore.page + 1 }} / {{ Math.max(itemMasterStore.totalPages, 1) }} 페이지
         </p>
-        <div class="flex gap-2">
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="itemMasterStore.page === 0" @click="fetchItems(0)">처음</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="itemMasterStore.page === 0" @click="fetchItems(itemMasterStore.page - 1)">이전</button>
-          <button class="rounded-xl app-bg-muted px-4 py-2 app-type-sm app-font-emphasis disabled:opacity-40" type="button" :disabled="itemMasterStore.page >= itemMasterStore.totalPages - 1" @click="fetchItems(itemMasterStore.page + 1)">다음</button>
+        <div class="app-pagination-actions">
+          <button class="app-page-button" type="button" :disabled="itemMasterStore.page === 0" @click="fetchItems(0)">처음</button>
+          <button class="app-page-button" type="button" :disabled="itemMasterStore.page === 0" @click="fetchItems(itemMasterStore.page - 1)">이전</button>
+          <button class="app-page-button" type="button" :disabled="itemMasterStore.page >= itemMasterStore.totalPages - 1" @click="fetchItems(itemMasterStore.page + 1)">다음</button>
+          <button class="app-page-button" type="button" :disabled="itemMasterStore.page >= itemMasterStore.totalPages - 1" @click="fetchItems(itemMasterStore.totalPages - 1)">마지막</button>
         </div>
       </div>
     </section>

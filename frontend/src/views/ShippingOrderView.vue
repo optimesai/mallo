@@ -46,6 +46,8 @@ const vehicleInput = ref('')
 const filterShippingNo = ref('')
 const filterPartnerName = ref('')
 const filterStatus = ref<'ALL' | ShippingStatus>('ALL')
+const sortField = ref('shippingId')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 onMounted(async () => {
   await fetchPageData()
@@ -108,6 +110,34 @@ function resetFilters() {
   filterStatus.value = 'ALL'
 }
 
+function compareValues(aValue: unknown, bValue: unknown) {
+  if (aValue == null && bValue == null) return 0
+  if (aValue == null) return sortDirection.value === 'asc' ? -1 : 1
+  if (bValue == null) return sortDirection.value === 'asc' ? 1 : -1
+
+  let result = 0
+  if (typeof aValue === 'number' && typeof bValue === 'number') {
+    result = aValue - bValue
+  } else {
+    result = String(aValue).localeCompare(String(bValue), 'ko', { numeric: true })
+  }
+  return sortDirection.value === 'asc' ? result : -result
+}
+
+function changeSort(field: string) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+}
+
+function getSortMark(field: string) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
+}
+
 // Filtered Shippings
 const filteredShippings = computed(() => {
   return shippingStore.shippings.filter((s) => {
@@ -129,6 +159,10 @@ const filteredShippings = computed(() => {
     }
     return true
   })
+})
+
+const sortedShippings = computed(() => {
+  return [...filteredShippings.value].sort((a, b) => compareValues(a[sortField.value], b[sortField.value]))
 })
 
 function openRegisterModal() {
@@ -402,11 +436,11 @@ function getShippingStatusDotClass(status: ShippingStatus) {
     <!-- 마스터 테이블: 출하 지시 목록 -->
     <div class="app-panel">
       <div class="app-panel-head">
-        <span class="app-panel-title">출하 지시 목록 (총 {{ filteredShippings.length }}건)</span>
+        <span class="app-panel-title">출하 지시 목록</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1200px] w-full text-left border-collapse table-fixed">
+        <table class="app-table min-w-[1200px] table-fixed">
           <colgroup>
             <col class="w-[80px]" />
             <col class="w-[180px]" />
@@ -420,20 +454,20 @@ function getShippingStatusDotClass(status: ShippingStatus) {
           </colgroup>
           <thead>
             <tr class="app-bg-muted border-b app-border app-type-xs app-font-strong app-muted uppercase tracking-wider">
-              <th class="px-5 py-3">ID</th>
-              <th class="px-5 py-3">출하 지시 번호</th>
-              <th class="px-5 py-3">고객사</th>
-              <th class="px-5 py-3">완제품 코드</th>
-              <th class="px-5 py-3">완제품명</th>
-              <th class="px-5 py-3 text-right">요청 수량</th>
-              <th class="px-5 py-3 text-center">출하 상태</th>
-              <th class="px-5 py-3">배정 차량</th>
-              <th class="px-5 py-3">피킹 위치</th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingId')">ID <span class="app-sort-mark">{{ getSortMark('shippingId') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('shippingNo')">출하 지시 번호 <span class="app-sort-mark">{{ getSortMark('shippingNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('partnerName')">고객사 <span class="app-sort-mark">{{ getSortMark('partnerName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemCode')">완제품 코드 <span class="app-sort-mark">{{ getSortMark('itemCode') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('itemName')">완제품명 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-right" @click="changeSort('requestQty')">요청 수량 <span class="app-sort-mark">{{ getSortMark('requestQty') }}</span></th>
+              <th class="app-sortable-header px-5 py-3 text-center" @click="changeSort('status')">출하 상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('vehicleNo')">배정 차량 <span class="app-sort-mark">{{ getSortMark('vehicleNo') }}</span></th>
+              <th class="app-sortable-header px-5 py-3" @click="changeSort('pickingLocationCode')">피킹 위치 <span class="app-sort-mark">{{ getSortMark('pickingLocationCode') }}</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 app-type-sm">
             <tr
-              v-for="shipping in filteredShippings"
+              v-for="shipping in sortedShippings"
               :key="shipping.shippingId"
               @click="selectRow(shipping)"
               class="app-hover-muted cursor-pointer transition select-none"
@@ -496,15 +530,15 @@ function getShippingStatusDotClass(status: ShippingStatus) {
           총 <span class="app-count-strong">{{ shippingStore.totalElements.toLocaleString() }}</span>건
           ({{ shippingStore.page + 1 }} / {{ shippingStore.totalPages }} 페이지)
         </span>
-        <div class="flex items-center gap-1">
+        <div class="app-pagination-actions">
           <button @click="goToPage(0)" :disabled="shippingStore.page === 0"
-            class="app-page-button">««</button>
+            class="app-page-button">처음</button>
           <button @click="goToPage(shippingStore.page - 1)" :disabled="shippingStore.page === 0"
-            class="app-page-button">«</button>
+            class="app-page-button">이전</button>
           <button @click="goToPage(shippingStore.page + 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»</button>
+            class="app-page-button">다음</button>
           <button @click="goToPage(shippingStore.totalPages - 1)" :disabled="shippingStore.page >= shippingStore.totalPages - 1"
-            class="app-page-button">»»</button>
+            class="app-page-button">마지막</button>
         </div>
       </div>
     </div>

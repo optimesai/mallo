@@ -194,8 +194,13 @@ function showToast(message: string) {
         <button class="rounded-2xl px-4 py-2 app-type-sm app-font-emphasis" :class="activeTab === 'system' ? 'app-bg-strong app-text-inverse' : 'app-text-soft app-hover-muted'" type="button" @click="activeTab = 'system'">시스템</button>
       </div>
 
-      <div v-if="activeTab === 'lines'" class="overflow-x-auto p-5">
-        <table class="w-full min-w-[920px] text-left app-type-sm">
+      <div v-if="activeTab === 'lines'">
+        <div class="app-list-head">
+          <span class="app-list-title">구성 품목 목록</span>
+          <span class="app-list-meta">총 {{ lines.length.toLocaleString() }}건</span>
+        </div>
+        <div class="overflow-x-auto p-5">
+        <table class="app-table min-w-[920px]">
           <thead class="app-bg-muted app-type-xs uppercase tracking-widest app-text-muted">
             <tr>
               <th class="px-4 py-3">No</th>
@@ -246,6 +251,7 @@ function showToast(message: string) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <div v-else-if="activeTab === 'tree'" class="p-5">

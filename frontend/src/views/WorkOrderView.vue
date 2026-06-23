@@ -54,6 +54,8 @@ const bomVersions = ref<string[]>([])
 const keywordQuery = ref('')
 const itemKeywordQuery = ref('')
 const isKeywordSuggestOpen = ref(false)
+const sortField = ref<keyof WorkOrderResponse>('planDate')
+const sortDirection = ref<'asc' | 'desc'>('desc')
 
 const filters = reactive({
   keyword: '',
@@ -166,6 +168,13 @@ function getStatusLabel(status: WorkOrderStatus) {
   return labels[status]
 }
 
+function getStatusClass(status: WorkOrderStatus) {
+  if (status === 'READY') return 'app-status-warning'
+  if (status === 'RUN') return 'app-status-progress'
+  if (status === 'CLOSE') return 'app-status-success'
+  return 'app-status-neutral'
+}
+
 function formatNumber(value: number | null | undefined) {
   return Number(value ?? 0).toLocaleString()
 }
@@ -272,10 +281,25 @@ async function searchWorkOrders(page = 0) {
   filters.keyword = keywordQuery.value.trim()
   filters.itemKeyword = itemKeywordQuery.value.trim()
   try {
-    await workOrderStore.loadWorkOrders({ ...filters, page, size: 10, sort: 'planDate,desc' })
+    await workOrderStore.loadWorkOrders({ ...filters, page, size: 10, sort: `${String(sortField.value)},${sortDirection.value}` })
   } catch (err) {
     pageError.value = err instanceof Error ? err.message : '작업지시 목록 조회에 실패했습니다.'
   }
+}
+
+async function changeSort(field: keyof WorkOrderResponse) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  await searchWorkOrders(0)
+}
+
+function getSortMark(field: keyof WorkOrderResponse) {
+  if (sortField.value !== field) return ''
+  return sortDirection.value === 'asc' ? '▲' : '▼'
 }
 
 function resetFilters() {
@@ -422,7 +446,7 @@ async function closeOrder(order: WorkOrderResponse) {
         <h1 class="wo-title">작업 지시 관리</h1>
         <p class="wo-subtitle">작업지시 생성, 조회, 상태 액션, 마감을 중심으로 생산 작업 흐름을 관리합니다.</p>
       </div>
-      <button class="wo-button wo-button-subtle" @click="loadInitialData">
+      <button class="app-button app-button-muted" @click="loadInitialData">
         <RefreshCw class="wo-button-icon" />
         새로고침
       </button>
@@ -437,18 +461,18 @@ async function closeOrder(order: WorkOrderResponse) {
       <div v-if="hasNoActiveRoutings" class="wo-alert wo-alert-danger">
         <AlertTriangle class="wo-icon" />
         <span>활성 공장/생산 라우팅 기준정보가 없어 작업지시를 등록할 수 없습니다.</span>
-        <RouterLink v-if="authStore.canManageMasterData" class="wo-button wo-button-subtle" to="/master/factory-lines">
+        <RouterLink v-if="authStore.canManageMasterData" class="app-button app-button-muted" to="/master/factory-lines">
           기준정보 등록
         </RouterLink>
       </div>
 
-      <div class="wo-panel wo-form-panel">
-        <div class="wo-panel-head">
+      <div class="app-panel wo-form-panel">
+        <div class="app-panel-head">
           <div>
             <p class="wo-kicker">WORK ORDER</p>
-            <h2 class="wo-section-title">{{ isEditing ? '작업지시 수정' : '작업지시 등록' }}</h2>
+            <h2 class="app-panel-title">{{ isEditing ? '작업지시 수정' : '작업지시 등록' }}</h2>
           </div>
-          <button v-if="isEditing" class="wo-button wo-button-subtle" @click="resetForm">
+          <button v-if="isEditing" class="app-button app-button-muted" @click="resetForm">
             <XCircle class="wo-button-icon" />
             수정 취소
           </button>
@@ -461,7 +485,7 @@ async function closeOrder(order: WorkOrderResponse) {
               <Search class="wo-search-icon" />
               <input
                 v-model="itemQuery"
-                class="wo-control wo-control-search"
+                class="app-control app-control-search"
                 placeholder="예) SM-PCB-ASSY 또는 제어보드 PCB 조립체"
                 @focus="isItemSuggestOpen = true"
                 @input="isItemSuggestOpen = true"
@@ -484,7 +508,7 @@ async function closeOrder(order: WorkOrderResponse) {
 
           <label class="wo-field">
             <span class="wo-label">BOM 버전</span>
-            <select v-model="form.bomVersion" class="wo-control" :disabled="!form.itemCode || bomVersions.length === 0">
+            <select v-model="form.bomVersion" class="app-control" :disabled="!form.itemCode || bomVersions.length === 0">
               <option value="">BOM 버전 선택</option>
               <option v-for="version in bomVersions" :key="version" :value="version">{{ version }}</option>
             </select>
@@ -492,25 +516,25 @@ async function closeOrder(order: WorkOrderResponse) {
 
           <label class="wo-field">
             <span class="wo-label">공장</span>
-            <select v-model="formFactoryName" class="wo-control">
+            <select v-model="formFactoryName" class="app-control">
               <option value="">공장 선택</option>
               <option v-for="factory in formFactories" :key="factory" :value="factory">{{ factory }}</option>
             </select>
           </label>
           <label class="wo-field">
             <span class="wo-label">라인</span>
-            <select v-model="formLineName" class="wo-control" :disabled="!formFactoryName">
+            <select v-model="formLineName" class="app-control" :disabled="!formFactoryName">
               <option value="">라인 선택</option>
               <option v-for="line in formLines" :key="line" :value="line">{{ line }}</option>
             </select>
           </label>
           <label class="wo-field">
             <span class="wo-label">목표 수량</span>
-            <input v-model.number="form.targetQty" class="wo-control" type="number" min="1" placeholder="예) 100" />
+            <input v-model.number="form.targetQty" class="app-control" type="number" min="1" placeholder="예) 100" />
           </label>
           <label class="wo-field">
             <span class="wo-label">계획일</span>
-            <input v-model="form.planDate" class="wo-control" type="date" />
+            <input v-model="form.planDate" class="app-control" type="date" />
             <span class="wo-field-help">예) 2026-06-05</span>
           </label>
         </div>
@@ -532,11 +556,11 @@ async function closeOrder(order: WorkOrderResponse) {
         </div>
 
         <div class="wo-toolbar wo-toolbar-end">
-          <button class="wo-button wo-button-subtle" @click="resetForm">
+          <button class="app-button app-button-muted" @click="resetForm">
             <RotateCcw class="wo-button-icon" />
             초기화
           </button>
-          <button class="wo-button wo-button-primary" :disabled="workOrderStore.isSaving" @click="submitWorkOrder">
+          <button class="app-button app-button-primary" :disabled="workOrderStore.isSaving" @click="submitWorkOrder">
             <Loader2 v-if="workOrderStore.isSaving" class="wo-button-icon wo-spin" />
             <ClipboardList v-else class="wo-button-icon" />
             {{ isEditing ? '수정 저장' : '작업지시 등록' }}
@@ -544,13 +568,13 @@ async function closeOrder(order: WorkOrderResponse) {
         </div>
       </div>
 
-      <div class="wo-panel wo-table-panel">
-        <div class="wo-panel-head">
-          <h2 class="wo-section-title">최근 작업지시</h2>
-          <button class="wo-button wo-button-subtle" @click="activeTab = 'list'">전체 목록 보기</button>
+      <div class="app-panel wo-table-panel">
+        <div class="app-panel-head">
+          <h2 class="app-panel-title">최근 작업지시</h2>
+          <button class="app-button app-button-muted" @click="activeTab = 'list'">전체 목록 보기</button>
         </div>
         <div class="wo-table-wrap">
-          <table class="wo-table wo-table-compact">
+          <table class="app-table wo-table-compact">
             <thead>
               <tr>
                 <th>작업지시번호</th>
@@ -580,21 +604,21 @@ async function closeOrder(order: WorkOrderResponse) {
     </section>
 
     <section v-else-if="activeTab === 'list'" class="wo-tab-section">
-      <section class="wo-panel">
-        <button class="wo-panel-head wo-panel-toggle" @click="isSearchExpanded = !isSearchExpanded">
-          <div class="wo-head-inline">
-            <SlidersHorizontal class="wo-icon" />
-            <span class="wo-section-title">검색 조건</span>
+      <section class="app-search-panel">
+        <button class="app-panel-head -mx-5 -mt-5 mb-5 w-[calc(100%+2.5rem)] rounded-t-[var(--radius-panel)] text-left" @click="isSearchExpanded = !isSearchExpanded">
+          <div class="app-panel-title">
+            <SlidersHorizontal class="app-panel-icon" />
+            <span>검색 조건</span>
           </div>
         </button>
-        <div v-show="isSearchExpanded" class="wo-filter-grid">
-          <label class="wo-field wo-autocomplete">
-            <span class="wo-label">키워드</span>
-            <div class="wo-search-box">
-              <Search class="wo-search-icon" />
+        <div v-show="isSearchExpanded" class="app-filter-grid">
+          <label class="app-field wo-autocomplete">
+            <span class="app-label">키워드</span>
+            <div class="app-search-box">
+              <Search class="app-search-icon" />
               <input
                 v-model="keywordQuery"
-                class="wo-control wo-control-search"
+                class="app-control app-control-search"
                 placeholder="예) WO-20260605-001 또는 SM-PCB-ASSY"
                 @focus="isKeywordSuggestOpen = true"
                 @input="isKeywordSuggestOpen = true"
@@ -613,18 +637,18 @@ async function closeOrder(order: WorkOrderResponse) {
               </button>
             </div>
           </label>
-          <label class="wo-field">
-            <span class="wo-label">품목</span>
+          <label class="app-field">
+            <span class="app-label">품목</span>
             <input
               v-model="itemKeywordQuery"
-              class="wo-control"
+              class="app-control"
               placeholder="품목코드 또는 품목명"
               @keyup.enter="searchWorkOrders(0)"
             />
           </label>
-          <label class="wo-field">
-            <span class="wo-label">상태</span>
-            <select v-model="filters.status" class="wo-control">
+          <label class="app-field">
+            <span class="app-label">상태</span>
+            <select v-model="filters.status" class="app-control">
               <option value="">전체</option>
               <option value="READY">대기</option>
               <option value="RUN">진행</option>
@@ -632,74 +656,75 @@ async function closeOrder(order: WorkOrderResponse) {
               <option value="CLOSE">마감</option>
             </select>
           </label>
-          <label class="wo-field"><span class="wo-label">계획일</span><input v-model="filters.planDate" class="wo-control" type="date" /></label>
-          <label class="wo-field"><span class="wo-label">시작일</span><input v-model="filters.fromDate" class="wo-control" type="date" /></label>
-          <label class="wo-field"><span class="wo-label">종료일</span><input v-model="filters.toDate" class="wo-control" type="date" /></label>
-          <label class="wo-field">
-            <span class="wo-label">공장</span>
-            <select v-model="filters.factoryName" class="wo-control">
+          <label class="app-field"><span class="app-label">계획일</span><input v-model="filters.planDate" class="app-control" type="date" /></label>
+          <label class="app-field"><span class="app-label">시작일</span><input v-model="filters.fromDate" class="app-control" type="date" /></label>
+          <label class="app-field"><span class="app-label">종료일</span><input v-model="filters.toDate" class="app-control" type="date" /></label>
+          <label class="app-field">
+            <span class="app-label">공장</span>
+            <select v-model="filters.factoryName" class="app-control">
               <option value="">전체</option>
               <option v-for="factory in searchFactories" :key="factory" :value="factory">{{ factory }}</option>
             </select>
           </label>
-          <label class="wo-field">
-            <span class="wo-label">라인</span>
-            <select v-model="filters.lineName" class="wo-control">
+          <label class="app-field">
+            <span class="app-label">라인</span>
+            <select v-model="filters.lineName" class="app-control">
               <option value="">전체</option>
               <option v-for="line in searchLines" :key="line" :value="line">{{ line }}</option>
             </select>
           </label>
-          <label class="wo-field">
-            <span class="wo-label">공정</span>
-            <input v-model="filters.operationName" class="wo-control" placeholder="공정명 입력" />
+          <label class="app-field">
+            <span class="app-label">공정</span>
+            <input v-model="filters.operationName" class="app-control" placeholder="공정명 입력" />
           </label>
         </div>
-        <div v-show="isSearchExpanded" class="wo-toolbar wo-toolbar-end">
-          <button class="wo-button wo-button-subtle" @click="resetFilters">조건 초기화</button>
-          <button class="wo-button wo-button-primary" @click="searchWorkOrders(0)">조회</button>
+        <div v-show="isSearchExpanded" class="mt-4 app-actions-end">
+          <button class="app-button app-button-muted" @click="resetFilters">조건 초기화</button>
+          <button class="app-button app-button-primary" @click="searchWorkOrders(0)">조회</button>
         </div>
       </section>
 
-      <section class="wo-panel wo-table-panel">
-        <div class="wo-panel-head">
-          <h2 class="wo-section-title">작업지시 목록</h2>
-          <span class="wo-count">총 {{ formatNumber(workOrderStore.totalElements) }}건</span>
+      <section class="app-panel">
+        <div class="app-panel-head">
+          <h2 class="app-panel-title">작업지시 목록</h2>
+          <span class="app-type-xs app-font-strong app-text-muted">총 {{ formatNumber(workOrderStore.totalElements) }}건</span>
         </div>
-        <div class="wo-table-wrap">
-          <table class="wo-table">
+        <div class="app-table-wrap">
+          <table class="app-table min-w-[1200px]">
             <thead>
               <tr>
-                <th>작업지시번호</th>
-                <th>품목</th>
-                <th>라우팅</th>
-                <th>BOM</th>
-                <th>목표</th>
-                <th>실적</th>
-                <th>진행률</th>
-                <th>상태</th>
-                <th>계획일</th>
+                <th class="app-sortable-header" @click="changeSort('orderNo')">작업지시번호 <span class="app-sort-mark">{{ getSortMark('orderNo') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('itemName')">품목 <span class="app-sort-mark">{{ getSortMark('itemName') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('factoryName')">라우팅 <span class="app-sort-mark">{{ getSortMark('factoryName') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('bomVersion')">BOM <span class="app-sort-mark">{{ getSortMark('bomVersion') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('targetQty')">목표 <span class="app-sort-mark">{{ getSortMark('targetQty') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('totalExecutedQty')">실적 <span class="app-sort-mark">{{ getSortMark('totalExecutedQty') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('progressRate')">진행률 <span class="app-sort-mark">{{ getSortMark('progressRate') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('status')">상태 <span class="app-sort-mark">{{ getSortMark('status') }}</span></th>
+                <th class="app-sortable-header" @click="changeSort('planDate')">계획일 <span class="app-sort-mark">{{ getSortMark('planDate') }}</span></th>
                 <th>액션</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="workOrderStore.isLoading">
-                <td colspan="10" class="wo-empty"><Loader2 class="wo-empty-icon wo-spin" />데이터를 불러오고 있습니다.</td>
+                <td colspan="10" class="app-empty"><Loader2 class="mx-auto mb-2 h-5 w-5 app-spin" />데이터를 불러오고 있습니다.</td>
               </tr>
               <tr
                 v-for="order in workOrderStore.workOrders"
                 :key="order.orderId"
-                :class="{ 'wo-row-selected': selectedOrder?.orderId === order.orderId }"
+                class="app-table-row"
+                :class="{ 'app-table-row-selected': selectedOrder?.orderId === order.orderId }"
                 @click="selectOrder(order)"
               >
-                <td class="wo-mono">{{ order.orderNo }}</td>
-                <td><strong>{{ order.itemName }}</strong><span>{{ order.itemCode }}</span></td>
-                <td><strong>{{ order.factoryName }} / {{ order.lineName }}</strong><span>{{ order.operationSeq }}. {{ order.operationName }}</span></td>
-                <td class="wo-mono">{{ order.bomVersion }}</td>
-                <td class="wo-number">{{ formatNumber(order.targetQty) }}</td>
-                <td class="wo-number">{{ formatNumber(order.totalExecutedQty) }}</td>
+                <td class="app-table-id">{{ order.orderNo }}</td>
+                <td><strong class="app-table-main">{{ order.itemName }}</strong><span class="app-table-muted">{{ order.itemCode }}</span></td>
+                <td><strong class="app-table-main">{{ order.factoryName }} / {{ order.lineName }}</strong><span class="app-table-muted">{{ order.operationSeq }}. {{ order.operationName }}</span></td>
+                <td class="app-table-id">{{ order.bomVersion }}</td>
+                <td class="app-table-number">{{ formatNumber(order.targetQty) }}</td>
+                <td class="app-table-number">{{ formatNumber(order.totalExecutedQty) }}</td>
                 <td><div class="wo-progress"><span :style="{ width: `${Math.min(order.progressRate, 100)}%` }"></span></div><span class="wo-progress-label">{{ order.progressRate }}%</span></td>
-                <td><span class="wo-status" :data-status="order.status">{{ getStatusLabel(order.status) }}</span></td>
-                <td class="wo-mono">{{ order.planDate }}</td>
+                <td><span class="app-status" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span></td>
+                <td class="app-table-id">{{ order.planDate }}</td>
                 <td>
                   <div class="wo-actions" @click.stop>
                     <button class="wo-icon-button" :disabled="!order.canUpdate" @click="fillEditForm(order)"><Pencil class="wo-button-icon" /></button>
@@ -708,27 +733,45 @@ async function closeOrder(order: WorkOrderResponse) {
                 </td>
               </tr>
               <tr v-if="!workOrderStore.isLoading && workOrderStore.workOrders.length === 0">
-                <td colspan="10" class="wo-empty"><FileText class="wo-empty-icon" />조회된 작업지시가 없습니다.</td>
+                <td colspan="10" class="app-empty"><FileText class="mx-auto mb-2 h-7 w-7" />조회된 작업지시가 없습니다.</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="wo-toolbar wo-toolbar-end">
+        <div class="app-pagination">
+          <p>
+            총 {{ formatNumber(workOrderStore.totalElements) }}건 · {{ workOrderStore.page + 1 }} / {{ Math.max(workOrderStore.totalPages, 1) }} 페이지
+          </p>
+          <div class="app-pagination-actions">
           <button
-            class="wo-button wo-button-subtle"
+            class="app-page-button"
+            :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
+            @click="searchWorkOrders(0)"
+          >
+            처음
+          </button>
+          <button
+            class="app-page-button"
             :disabled="workOrderStore.page <= 0 || workOrderStore.isLoading"
             @click="searchWorkOrders(workOrderStore.page - 1)"
           >
             이전
           </button>
-          <span class="wo-count">{{ workOrderStore.page + 1 }} / {{ Math.max(workOrderStore.totalPages, 1) }}</span>
           <button
-            class="wo-button wo-button-subtle"
+            class="app-page-button"
             :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
             @click="searchWorkOrders(workOrderStore.page + 1)"
           >
             다음
           </button>
+          <button
+            class="app-page-button"
+            :disabled="workOrderStore.page + 1 >= workOrderStore.totalPages || workOrderStore.isLoading"
+            @click="searchWorkOrders(workOrderStore.totalPages - 1)"
+          >
+            마지막
+          </button>
+          </div>
         </div>
       </section>
     </section>
