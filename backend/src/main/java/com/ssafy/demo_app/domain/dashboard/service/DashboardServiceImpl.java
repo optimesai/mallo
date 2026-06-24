@@ -76,7 +76,7 @@ public class DashboardServiceImpl implements DashboardService {
     ) {
         BigDecimal avgDefectRate = average(qualityRows, "defectRate");
         long shortageCount = currentInventoryRepository.countItemsUnderSafetyStock();
-        long finalProductionTotal = inventoryTransactionHistoryRepository.sumNetProductionReceiptQty(fromDateTime);
+        long finalProductionTotal = productionExecutionRepository.sumFinalOperationGoodQty(fromDateTime);
         long waitingShippingCount = outboundShippingRepository.countByStatus(OutboundShipping.ShippingStatus.READY);
         long activeWorkOrderCount = workOrderRepository.countByStatusIn(List.of(
                 WorkOrder.OrderStatus.READY,

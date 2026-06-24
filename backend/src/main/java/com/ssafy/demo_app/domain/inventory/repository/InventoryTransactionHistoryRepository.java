@@ -27,17 +27,6 @@ public interface InventoryTransactionHistoryRepository extends JpaRepository<Inv
     List<InventoryTransactionHistory> findTop5ByItemOrderByTransactionIdDesc(ItemMaster item);
 
     @Query("""
-            select coalesce(sum(ith.quantity), 0)
-            from InventoryTransactionHistory ith
-            where ith.createdAt >= :fromDateTime
-              and ith.transactionType in (
-                com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT,
-                com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT_CANCEL
-              )
-            """)
-    long sumNetProductionReceiptQty(@Param("fromDateTime") LocalDateTime fromDateTime);
-
-    @Query("""
             select ith.location.warehouseName, coalesce(sum(ith.quantity), 0)
             from InventoryTransactionHistory ith
             where ith.createdAt >= :fromDateTime

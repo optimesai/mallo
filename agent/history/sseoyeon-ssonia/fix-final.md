@@ -31,6 +31,26 @@
 
   </details>
 
+### 대시보드 최종 생산량 카드 수정 (Codex)
+- **User Intent**: 대시보드 카드의 `라인 생산량`이 공정/라인별 실적을 각각 더해 최종 생산량 1개가 라인 5개일 때 5개로 보이는 문제만 수정 요청
+- **Agent Context**: 기존 수불 입고 기준보다 마지막 공정 실적의 양품 수량이 “모든 공정을 거친 최종 생산량” 정의에 더 직접적으로 부합한다고 판단. 대시보드 카드 값만 마지막 공정 실적 합계로 변경하고, 라인별 분석 차트는 이번 범위에서 제외.
+- **Key Decisions**:
+  - 최종 생산량은 같은 공장/라인의 최대 `operationSeq` 라우팅에 등록된 `ProductionExecution.goodQty`만 합산 — 중간 공정 실적 중복 카운트 방지
+  - 대시보드 카드 서비스만 신규 repository 쿼리를 호출 — 기존 API 응답 구조와 프론트엔드 변경 없이 카드 값만 수정
+  - 미사용 수불 기반 생산량 합계 쿼리는 제거 — 카드 기준을 하나로 유지하고 혼동 방지
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/dashboard/service/DashboardServiceImpl.java` (+1/-1) — 생산량 카드 값을 마지막 공정 양품 합계로 변경
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/repository/ProductionExecutionRepository.java` (+14/-0) — 마지막 공정 양품 합계 쿼리 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/repository/InventoryTransactionHistoryRepository.java` (+0/-11) — 미사용 생산 입고 합계 쿼리 제거
+  - **Deleted**:
+    - 없음
+
+  </details>
+
 ### 품목 통계 서버 오류 방지 (Codex)
 - **User Intent**: 품목마스터에서만 서버 오류가 발생하고 이전 수정사항이 반영되지 않은 것처럼 보여, 원인 재확인과 수정 요청
 - **Agent Context**: 새로 추가한 `/api/items/stats` 호출이 실행 중인 구버전 백엔드에서 `/api/items/{id}`로 오인되어 문자열 `stats`를 숫자 ID로 변환하다 500 처리될 수 있는 경로를 확인. 별도 신규 엔드포인트 의존을 제거하고 기존 품목 목록 API의 `totalElements`로 전체 기준 통계를 계산하도록 변경.
