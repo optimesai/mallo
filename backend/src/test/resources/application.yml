@@ -1,9 +1,10 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:ssafy_pjt;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:mysql:8.0:///mallo_test
+    username: test
+    password: test
+
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -12,10 +13,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.H2Dialect
+
   sql:
     init:
       mode: always
+      data-locations: classpath:data.sql
 
 jwt:
   secret: testsecretkeyfordemoapplocaltesting1234567890

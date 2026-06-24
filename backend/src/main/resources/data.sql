@@ -53,12 +53,12 @@ SELECT
         WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
         WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
         ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
-    END,
+        END,
     CASE
         WHEN n <= 20 THEN CONCAT('원자재 ', LPAD(n, 3, '0'))
         WHEN n <= 35 THEN CONCAT('반제품 ', LPAD(n - 20, 3, '0'))
         ELSE CONCAT('완제품 ', LPAD(n - 35, 3, '0'))
-    END,
+        END,
     CONCAT(ELT(1 + MOD(n - 1, 5), 'STD', 'PRO', 'ECO', 'HEAVY', 'LIGHT'), '-', LPAD(n, 3, '0')),
     ELT(1 + MOD(n - 1, 4), 'ea', 'kg', 'box', 'L'),
     CASE WHEN n <= 20 THEN 'RAW' WHEN n <= 35 THEN 'HALF' ELSE 'FG' END,
@@ -138,16 +138,16 @@ SELECT
     CASE WHEN MOD(n, 29) = 0 THEN 'INACTIVE' ELSE 'ACTIVE' END,
     TIMESTAMP('2026-01-06 08:00:00') + INTERVAL n DAY
 FROM seq
-JOIN item_master parent_item
-    ON parent_item.item_code = CASE
-        WHEN n <= 30 THEN CONCAT('SM-', LPAD(1 + MOD(n - 1, 15), 3, '0'))
-        ELSE CONCAT('FG-', LPAD(1 + MOD(n - 31, 15), 3, '0'))
-    END
+    JOIN item_master parent_item
+ON parent_item.item_code = CASE
+    WHEN n <= 30 THEN CONCAT('SM-', LPAD(1 + MOD(n - 1, 15), 3, '0'))
+    ELSE CONCAT('FG-', LPAD(1 + MOD(n - 31, 15), 3, '0'))
+END
 JOIN item_master child_item
     ON child_item.item_code = CASE
         WHEN n <= 30 THEN CONCAT('RM-', LPAD(1 + MOD((n * 7) - 1, 20), 3, '0'))
         ELSE CONCAT('SM-', LPAD(1 + MOD((n - 31) + (5 * FLOOR((n - 31) / 15)), 15), 3, '0'))
-    END;
+END;
 
 -- ===================================================================
 -- 4. 입고 및 재고 도메인 (WMS / INVENTORY)
@@ -166,12 +166,12 @@ SELECT
     DATE('2026-01-01') + INTERVAL n DAY,
     TIMESTAMP('2026-02-01 10:00:00') + INTERVAL n DAY
 FROM seq
-JOIN item_master item
-    ON item.item_code = CASE
-        WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
-        WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
-        ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
-    END
+    JOIN item_master item
+ON item.item_code = CASE
+    WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
+    WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
+    ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
+END
 JOIN warehouse_location location
     ON location.location_code = CONCAT('WH', LPAD(1 + MOD(n - 1, 5), 2, '0'), '-R', CHAR(65 + MOD(n - 1, 10)), '-C', LPAD(1 + FLOOR((n - 1) / 10), 2, '0'));
 
@@ -191,12 +191,12 @@ SELECT
     ELT(1 + MOD(n - 1, 3), 'READY', 'COMPLETED', 'STACKED'),
     TIMESTAMP('2026-01-10 09:30:00') + INTERVAL n DAY
 FROM seq
-JOIN item_master item
-    ON item.item_code = CASE
-        WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
-        WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
-        ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
-    END
+    JOIN item_master item
+ON item.item_code = CASE
+    WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
+    WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
+    ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
+END
 JOIN partner_master partner
     ON partner.partner_code = CONCAT('SUP-', LPAD(1 + MOD(n - 1, 25), 3, '0'))
 JOIN warehouse_location location
@@ -224,8 +224,8 @@ SELECT
     TIMESTAMP('2026-01-20 08:00:00') + INTERVAL n DAY,
     TIMESTAMP('2026-01-20 08:00:00') + INTERVAL n DAY
 FROM seq
-JOIN item_master item
-    ON item.item_code = CASE WHEN n <= 25 THEN CONCAT('SM-', LPAD(1 + MOD(n - 1, 15), 3, '0')) ELSE CONCAT('FG-', LPAD(1 + MOD(n - 26, 15), 3, '0')) END
+    JOIN item_master item
+ON item.item_code = CASE WHEN n <= 25 THEN CONCAT('SM-', LPAD(1 + MOD(n - 1, 15), 3, '0')) ELSE CONCAT('FG-', LPAD(1 + MOD(n - 26, 15), 3, '0')) END
 JOIN factory_routing routing
     ON routing.factory_name = CONCAT('창원제', 1 + FLOOR((n - 1) / 25), '공장')
     AND routing.line_name = CONCAT(CHAR(65 + MOD(FLOOR((n - 1) / 5), 5)), '라인')
@@ -263,12 +263,12 @@ SELECT
     60 + (n * 7),
     TIMESTAMP('2026-02-01 13:00:00') + INTERVAL n DAY
 FROM seq
-JOIN work_order ON work_order.order_no = CONCAT('WO-2026-', LPAD(n, 4, '0'))
-JOIN factory_routing routing
+    JOIN work_order ON work_order.order_no = CONCAT('WO-2026-', LPAD(n, 4, '0'))
+    JOIN factory_routing routing
     ON routing.factory_name = CONCAT('창원제', 1 + FLOOR((n - 1) / 25), '공장')
     AND routing.line_name = CONCAT(CHAR(65 + MOD(FLOOR((n - 1) / 5), 5)), '라인')
     AND routing.operation_seq = 1 + MOD(n - 1, 5)
-JOIN users worker
+    JOIN users worker
     ON worker.employee_no = CONCAT('user', LPAD(1 + MOD(n + 1, 50), 3, '0'));
 
 INSERT IGNORE INTO inventory_transaction_history (
@@ -292,12 +292,12 @@ SELECT
     worker.user_id,
     TIMESTAMP('2026-02-10 11:00:00') + INTERVAL n DAY
 FROM seq
-JOIN item_master item
-    ON item.item_code = CASE
-        WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
-        WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
-        ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
-    END
+    JOIN item_master item
+ON item.item_code = CASE
+    WHEN n <= 20 THEN CONCAT('RM-', LPAD(n, 3, '0'))
+    WHEN n <= 35 THEN CONCAT('SM-', LPAD(n - 20, 3, '0'))
+    ELSE CONCAT('FG-', LPAD(n - 35, 3, '0'))
+END
 JOIN warehouse_location location
     ON location.location_code = CONCAT('WH', LPAD(1 + MOD(n - 1, 5), 2, '0'), '-R', CHAR(65 + MOD(n - 1, 10)), '-C', LPAD(1 + FLOOR((n - 1) / 10), 2, '0'))
 LEFT JOIN work_order ON work_order.order_no = CONCAT('WO-2026-', LPAD(n, 4, '0'))
@@ -375,8 +375,8 @@ SELECT
     CASE WHEN MOD(n, 6) IN (3, 4, 5) THEN CONCAT('더미 오류 로그 ', LPAD(n, 3, '0')) ELSE NULL END,
     TIMESTAMP('2026-03-10 10:00:00') + INTERVAL n DAY
 FROM seq
-JOIN users worker
-    ON worker.employee_no = CONCAT('user', LPAD(1 + MOD(n + 4, 50), 3, '0'));
+    JOIN users worker
+ON worker.employee_no = CONCAT('user', LPAD(1 + MOD(n + 4, 50), 3, '0'));
 
 INSERT IGNORE INTO dynamic_batch_schedule (
     schedule_name, cron_expression, query_id, is_active, last_run_at,
@@ -397,8 +397,8 @@ SELECT
     worker.user_id,
     TIMESTAMP('2026-03-20 08:00:00') + INTERVAL n DAY
 FROM seq
-JOIN ai_query_history query_history
-    ON query_history.conversation_id = CONCAT('conv-2026-', LPAD(1 + FLOOR((n - 1) / 5), 3, '0'))
+    JOIN ai_query_history query_history
+ON query_history.conversation_id = CONCAT('conv-2026-', LPAD(1 + FLOOR((n - 1) / 5), 3, '0'))
     AND query_history.natural_question = CONCAT('2026년 재고와 생산 현황을 조회해줘 ', LPAD(n, 3, '0'))
-JOIN users worker
+    JOIN users worker
     ON worker.employee_no = CONCAT('user', LPAD(1 + MOD(n + 5, 50), 3, '0'));
