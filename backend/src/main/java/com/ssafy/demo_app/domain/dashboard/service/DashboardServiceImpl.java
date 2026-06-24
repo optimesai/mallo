@@ -57,7 +57,7 @@ public class DashboardServiceImpl implements DashboardService {
         response.setPeriod(normalizedPeriod);
         response.setSummaryCards(getSummaryCards(fromDateTime, qualityRows));
         response.setMetricViews(List.of(
-                metric("production", "생산", "라인별 생산량 비교", "실제 생산 실적의 양품과 불량 수량을 라인 단위로 비교합니다.",
+                metric("production", "생산", "라인별 생산량 비교", "마감된 작업지시의 마지막 공정 양품 수량을 공장/라인 단위로 비교합니다.",
                         chart("BAR", "lineName", List.of("totalQty"), "라인별 생산량", "라인별 수치 비교 데이터이므로 Bar 차트를 추천합니다."), productionRows),
                 metric("quality", "품질", "제품별 불량률 비교", "양품/불량 실적을 기준으로 불량률이 높은 제품을 식별합니다.",
                         chart("BAR", "itemName", List.of("defectRate"), "제품별 불량률", "제품별 비율 비교 데이터이므로 Bar 차트를 추천합니다."), qualityRows),
@@ -76,7 +76,7 @@ public class DashboardServiceImpl implements DashboardService {
     ) {
         BigDecimal avgDefectRate = average(qualityRows, "defectRate");
         long shortageCount = currentInventoryRepository.countItemsUnderSafetyStock();
-        long finalProductionTotal = productionExecutionRepository.sumFinalOperationGoodQty(fromDateTime);
+        long finalProductionTotal = inventoryTransactionHistoryRepository.sumProductionReceiptQty(fromDateTime);
         long waitingShippingCount = outboundShippingRepository.countByStatus(OutboundShipping.ShippingStatus.READY);
         long activeWorkOrderCount = workOrderRepository.countByStatusIn(List.of(
                 WorkOrder.OrderStatus.READY,
@@ -85,7 +85,7 @@ public class DashboardServiceImpl implements DashboardService {
         ));
 
         return List.of(
-                card("production-throughput", "라인 생산량", formatNumber(finalProductionTotal) + " EA", "선택 기간 최종 생산 입고", "success"),
+                card("production-throughput", "라인 생산량", formatNumber(finalProductionTotal) + " EA", "선택 기간 마감 생산량", "success"),
                 card("avg-defect-rate", "평균 불량률", avgDefectRate + "%", "제품별 불량률 평균", avgDefectRate.compareTo(BigDecimal.valueOf(3)) >= 0 ? "warning" : "success"),
                 card("stock-shortage", "안전재고 미만", formatNumber(shortageCount) + " 품목", "현재고와 품목 안전재고 비교", shortageCount > 0 ? "danger" : "success"),
                 card("shipping-backlog", "출하 대기", formatNumber(waitingShippingCount) + " 건", "READY 상태 출하 지시", waitingShippingCount > 0 ? "neutral" : "success"),
@@ -94,7 +94,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private List<Map<String, Object>> getProductionRows(LocalDateTime fromDateTime) {
-        return productionExecutionRepository.aggregateProductionByLine(fromDateTime).stream()
+        return inventoryTransactionHistoryRepository.aggregateProductionReceiptByLine(fromDateTime).stream()
                 .map(row -> {
                     long goodQty = toLong(row[1]);
                     long defectQty = toLong(row[2]);
@@ -102,7 +102,7 @@ public class DashboardServiceImpl implements DashboardService {
                     data.put("lineName", row[0]);
                     data.put("goodQty", goodQty);
                     data.put("defectQty", defectQty);
-                    data.put("totalQty", goodQty + defectQty);
+                    data.put("totalQty", goodQty);
                     return data;
                 })
                 .toList();

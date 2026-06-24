@@ -74,3 +74,74 @@
     - `backend/src/main/java/com/ssafy/demo_app/api/item/dto/ItemStatsResponse.java` — 서버 전용 통계 DTO 제거
 
   </details>
+
+### AI SQL 스키마 요약 리소스 추가 (Codex)
+- **User Intent**: AI가 SQL을 생성할 때 DDL 또는 스키마 정보를 먼저 참조하는 항목이 프로젝트에 반영되어 있는지 확인하고, 없으면 생성해달라고 요청.
+- **Agent Context**: 기존 AI SQL 흐름에는 `DatabaseSchemaService`가 `information_schema` 기반 스키마 프롬프트를 생성하여 `SqlAssistant`에 전달하는 런타임 반영이 존재함. 다만 정적 참조용 DDL/schema summary 파일은 없어 `backend/src/main/resources/ai/schema-summary.md`를 추가함.
+- **Key Decisions**:
+  - 정적 참조 파일은 `backend/src/main/resources/ai/`에 배치 — AI 관련 리소스인 `few-shot-examples.yml`과 같은 위치를 사용하여 기존 리소스 구조를 따름.
+  - 실행 코드는 수정하지 않음 — 이미 `DatabaseSchemaService`, `SchemaPromptBuilder`, `SqlAssistant` 흐름이 스키마 선참조를 수행하므로 중복 로딩 로직을 추가하지 않음.
+  - schema summary에는 허용 테이블, 관계, 날짜 기준, 비즈니스 의미 규칙을 포함 — `agent/project/backend.md`의 AI 도메인 및 MySQL 기반 SQL 생성 맥락에 맞춰 SQL 생성 오류를 줄이는 정보를 문서화함.
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+    - `backend/src/main/resources/ai/schema-summary.md` — AI SQL 생성 전 참조 가능한 정적 스키마 요약 리소스
+  - **Modified**:
+  - **Deleted**:
+
+  </details>
+
+### 대시보드 생산 집계 기준 수정 (Codex)
+- **User Intent**: 대시보드의 라인 생산량 합계와 다차원 분석 지표 생산 합계가 잘못 표시되고, 라인명이 라인명만 표기되어 공장 구분이 되지 않는 문제 수정 요청. 모든 공정 단계가 각각 생산량으로 합산되는 것이 아니라 작업 마감 기준 실제 생산 수량으로 집계되어야 한다는 기준을 제시함.
+- **Agent Context**: 기존 `aggregateProductionByLine`은 모든 생산 실적 공정을 합산하여 한 작업이 여러 공정을 통과하면 생산량이 중복 집계될 수 있었음. 대시보드 생산 집계를 마감된 작업지시의 마지막 공정 양품 수량으로 제한하고, 표시 라벨을 `공장/라인` 형식으로 변경함.
+- **Key Decisions**:
+  - 생산량 집계는 `WorkOrder.Status.CLOSE` 작업지시와 라인별 마지막 `operationSeq` 실적만 대상으로 제한 — 작업 마감 후 최종 공정 수량을 생산량으로 보는 도메인 기준을 반영함.
+  - `totalQty`는 `goodQty`만 사용 — 불량 수량은 생산 완료 수량에 더하지 않고 별도 지표로 유지하여 대시보드 카드 합계와 차트 합계의 기준을 일치시킴.
+  - 라인 라벨은 `factoryName/lineName`으로 구성 — 같은 라인명이 여러 공장에 존재할 때 구분 가능하도록 대시보드 표시값을 백엔드 응답 단계에서 통일함.
+  - repository 테스트를 추가 — 중간 공정 실적과 RUN 작업지시가 대시보드 생산 집계에 섞이지 않는지 회귀 검증함.
+- **Affected Files**: <details><summary>3개 파일</summary>
+
+  - **Created**:
+    - `backend/src/test/java/com/ssafy/demo_app/domain/production/repository/ProductionExecutionRepositoryTest.java` — 대시보드 생산 집계 기준 회귀 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/dashboard/service/DashboardServiceImpl.java` (+3/-3) — 생산 지표 문구와 `totalQty` 산정 기준 수정
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/repository/ProductionExecutionRepository.java` (+15/-5) — 마감 작업 마지막 공정 기준 집계 및 공장/라인 라벨 적용
+  - **Deleted**:
+
+  </details>
+
+### 사이드바 통합 스크롤 적용 (Codex)
+- **User Intent**: 메인 화면을 스크롤할 때 왼쪽 사이드바도 함께 내려가도록 하고, 사이드바 자체 스크롤 기능을 제거해달라는 요청.
+- **Agent Context**: 기존 레이아웃은 `app-content`에 `overflow-y-auto`, `app-sidebar-nav`에 `max-height`와 `overflow-y-auto`가 적용되어 메인 콘텐츠와 사이드바가 별도 스크롤 컨테이너로 동작했음. 전역 레이아웃 CSS에서 내부 스크롤 설정을 제거하여 브라우저 페이지 스크롤 하나로 통합함.
+- **Key Decisions**:
+  - `DefaultLayout.vue` 구조는 유지 — 프론트엔드 계층 구조를 변경하지 않고 공통 레이아웃 CSS만 수정하여 영향 범위를 최소화함.
+  - `app-content`의 `overflow-y-auto` 제거 — 메인 콘텐츠가 별도 스크롤 영역을 만들지 않고 문서 흐름에 따라 페이지 전체 높이를 확장하도록 함.
+  - `app-sidebar-nav`의 `max-height`와 `overflow-y-auto` 제거 — 사이드바 내부 스크롤을 없애고 사이드바 전체가 페이지 스크롤과 함께 이동하도록 함.
+- **Affected Files**: <details><summary>1개 파일</summary>
+
+  - **Created**:
+  - **Modified**:
+    - `frontend/src/main.css` (+2/-2) — 메인 콘텐츠와 사이드바 nav의 내부 스크롤 제거
+  - **Deleted**:
+
+  </details>
+
+### 대시보드 생산량 집계 수정 (Codex)
+- **User Intent**: 오늘 생산량이 주문 수량과 맞지 않고 공정 단계별 실적이 단순 합산되어 11개/1개/1개 주문에서 생산량이 68개로 표시되는 문제 수정 요청
+- **Agent Context**: 대시보드 생산량이 `production_execution` 공정 실적을 기준으로 집계되어 중간 공정 수량까지 생산량에 포함되는 것이 원인으로 진단. 마지막 공정 완료 시 생성되는 `PRODUCTION_RECEIPT` 재고 이력을 생산량 기준으로 변경.
+- **Key Decisions**:
+  - 대시보드 생산량 집계를 `InventoryTransactionHistoryRepository`로 이동 — 생산 완료 시점에 생성되는 생산 입고 이력이 실제 생산량 증가 이벤트이므로 Backend 문서의 Domain Repository 책임에 맞게 집계 소스를 조정
+  - `PRODUCTION_RECEIPT_CANCEL` 원거래가 존재하는 입고 이력은 제외 — 삭제/취소된 마지막 공정 실적이 대시보드 생산량에 남지 않도록 실제 재고 이력의 취소 관계를 반영
+  - 기존 `ProductionExecutionRepository`의 대시보드용 집계 메서드는 제거 — 공정별 실적 Repository가 생산량 대시보드 집계에 재사용되어 같은 버그가 재발하지 않도록 책임을 분리
+- **Affected Files**: <details><summary>4개 파일</summary>
+
+  - **Created**:
+    - `backend/src/test/java/com/ssafy/demo_app/domain/inventory/repository/InventoryTransactionHistoryRepositoryTest.java` (+180/-0) — 생산 입고 이력 기반 대시보드 생산량 집계 회귀 테스트
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/domain/dashboard/service/DashboardServiceImpl.java` (+5/-5) — 대시보드 생산량 집계 소스를 생산 입고 이력으로 변경
+    - `backend/src/main/java/com/ssafy/demo_app/domain/inventory/repository/InventoryTransactionHistoryRepository.java` (+32/-0) — 생산 입고 이력 라인별/총량 집계 JPQL 추가
+    - `backend/src/main/java/com/ssafy/demo_app/domain/production/repository/ProductionExecutionRepository.java` (+0/-24) — 공정 실적 기반 대시보드 생산량 집계 메서드 제거
+  - **Deleted**:
+    - 없음
+
+  </details>
