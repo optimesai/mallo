@@ -7,6 +7,7 @@ import type {
   ItemMasterRequest,
   ItemMasterResponse,
   ItemMasterSearchParams,
+  ItemStatsResponse,
   ItemMasterUpdateRequest,
   ItemReferenceResponse,
   ItemStatus,
@@ -36,6 +37,23 @@ export const itemMasterService = {
       return response.data
     } catch (error) {
       throw new Error(getErrorMessage(error, '품목 상세 정보를 불러오지 못했습니다.'))
+    }
+  },
+
+  async getItemStats(): Promise<ItemStatsResponse> {
+    try {
+      const [total, active, inactive] = await Promise.all([
+        itemMasterApi.getItems({ page: 0, size: 1 }),
+        itemMasterApi.getItems({ page: 0, size: 1, itemStatus: 'ACTIVE' }),
+        itemMasterApi.getItems({ page: 0, size: 1, itemStatus: 'INACTIVE' })
+      ])
+      return {
+        totalCount: total.data.totalElements,
+        activeCount: active.data.totalElements,
+        inactiveCount: inactive.data.totalElements
+      }
+    } catch (error) {
+      throw new Error(getErrorMessage(error, '품목 통계를 불러오지 못했습니다.'))
     }
   },
 

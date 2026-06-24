@@ -61,11 +61,11 @@
   --app-line-height-11: 1rem;
   --app-font-size-xs: 0.75rem;
   --app-line-height-xs: 1rem;
-  --app-font-size-sm: 0.875rem;
+  --app-font-size-sm: 1rem;
   --app-line-height-sm: 1.25rem;
-  --app-font-size-base: 1rem;
+  --app-font-size-base: 1.125rem;
   --app-line-height-base: 1.5rem;
-  --app-font-size-lg: 1.125rem;
+  --app-font-size-lg: 1.25rem;
   --app-line-height-lg: 1.75rem;
   --app-font-size-xl: 1.25rem;
   --app-line-height-xl: 1.75rem;
@@ -196,7 +196,7 @@
   }
 
   .app-content {
-    @apply flex-grow overflow-y-auto p-8;
+    @apply flex-grow p-8;
   }
 
   .app-header {
@@ -243,7 +243,7 @@
   }
 
   .app-sidebar-nav {
-    @apply max-h-[calc(100vh-8rem)] flex-grow space-y-6 overflow-y-auto p-4;
+    @apply flex-grow space-y-6 p-4;
   }
 
   .app-sidebar-group {

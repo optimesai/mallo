@@ -27,6 +27,38 @@ public interface InventoryTransactionHistoryRepository extends JpaRepository<Inv
     List<InventoryTransactionHistory> findTop5ByItemOrderByTransactionIdDesc(ItemMaster item);
 
     @Query("""
+            select concat(concat(r.factoryName, '/'), r.lineName), coalesce(sum(ith.quantity), 0), 0
+            from InventoryTransactionHistory ith
+            join ith.productionExecution pe
+            join pe.routing r
+            where ith.createdAt >= :fromDateTime
+              and ith.transactionType = com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT
+              and not exists (
+                select 1
+                from InventoryTransactionHistory cancel
+                where cancel.originalTransaction = ith
+                  and cancel.transactionType = com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT_CANCEL
+              )
+            group by r.factoryName, r.lineName
+            order by coalesce(sum(ith.quantity), 0) desc, r.factoryName asc, r.lineName asc
+            """)
+    List<Object[]> aggregateProductionReceiptByLine(@Param("fromDateTime") LocalDateTime fromDateTime);
+
+    @Query("""
+            select coalesce(sum(ith.quantity), 0)
+            from InventoryTransactionHistory ith
+            where ith.createdAt >= :fromDateTime
+              and ith.transactionType = com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT
+              and not exists (
+                select 1
+                from InventoryTransactionHistory cancel
+                where cancel.originalTransaction = ith
+                  and cancel.transactionType = com.ssafy.demo_app.domain.inventory.entity.TransactionType.PRODUCTION_RECEIPT_CANCEL
+              )
+            """)
+    long sumProductionReceiptQty(@Param("fromDateTime") LocalDateTime fromDateTime);
+
+    @Query("""
             select ith.location.warehouseName, coalesce(sum(ith.quantity), 0)
             from InventoryTransactionHistory ith
             where ith.createdAt >= :fromDateTime
