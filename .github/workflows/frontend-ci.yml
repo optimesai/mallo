@@ -30,3 +30,34 @@ jobs:
       - name: Build frontend
         run: npm run build
         working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Notify on Success (Discord)
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CI }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "[알림] 프론트엔드 CI 성공!",
+              "embeds": [{
+                "title": "Frontend CI Success!",
+                "description": "> [[PR #${{ github.event.number }}](${{ github.event.pull_request.html_url }})] ${{ github.event.pull_request.title }} (`${{ github.base_ref }}` ← `${{ github.head_ref }}`)",
+                "color": 65280
+              }]
+            }'
+
+      - name: Notify on Failure (Discord)
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CI }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "[알림] 프론트엔드 CI 실패 - @everyone",
+              "embeds": [{
+                "title": "Frontend CI Failed",
+                "description": "> [[PR #${{ github.event.number }}](${{ github.event.pull_request.html_url }})] ${{ github.event.pull_request.title }} (`${{ github.base_ref }}` ← `${{ github.head_ref }}`)",
+                "color": 16711680,
+                "fields": [
+                  {"name": "🔗 Detail", "value": "[Action #${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false}
+                ]
+              }]
+            }'
