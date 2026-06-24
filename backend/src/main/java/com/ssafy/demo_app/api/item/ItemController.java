@@ -4,6 +4,7 @@ import com.ssafy.demo_app.api.item.dto.ItemRequest;
 import com.ssafy.demo_app.api.item.dto.ItemDuplicateCheckResponse;
 import com.ssafy.demo_app.api.item.dto.ItemReferenceResponse;
 import com.ssafy.demo_app.api.item.dto.ItemResponse;
+import com.ssafy.demo_app.api.item.dto.ItemStatsResponse;
 import com.ssafy.demo_app.api.item.dto.ItemStatusUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUsageResponse;
@@ -31,6 +32,11 @@ public class ItemController implements ItemApi {
             String keyword
     ) {
         return ResponseEntity.ok(ApiResponse.success(itemService.getItems(pageable, itemType, itemStatus, keyword)));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<ItemStatsResponse>> getItemStats() {
+        return ResponseEntity.ok(ApiResponse.success(itemService.getItemStats()));
     }
 
     @Override

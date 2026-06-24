@@ -7,6 +7,7 @@ import type {
   ItemMasterRequest,
   ItemMasterResponse,
   ItemMasterSearchParams,
+  ItemStatsResponse,
   ItemMasterUpdateRequest,
   ItemReferenceResponse,
   ItemStatus,
@@ -20,6 +21,11 @@ export const useItemMasterStore = defineStore('itemMaster', () => {
   const itemUsages = ref<ItemUsageResponse | null>(null)
   const duplicateCheck = ref<ItemDuplicateCheckResponse | null>(null)
   const suggestions = ref<ItemMasterResponse[]>([])
+  const stats = ref<ItemStatsResponse>({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
   const isLoading = ref(false)
   const isSaving = ref(false)
   const error = ref<string | null>(null)
@@ -69,6 +75,16 @@ export const useItemMasterStore = defineStore('itemMaster', () => {
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadItemStats() {
+    try {
+      stats.value = await itemMasterService.getItemStats()
+      return stats.value
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '품목 통계를 불러오지 못했습니다.'
+      throw err
     }
   }
 
@@ -177,6 +193,7 @@ export const useItemMasterStore = defineStore('itemMaster', () => {
     itemUsages,
     duplicateCheck,
     suggestions,
+    stats,
     isLoading,
     isSaving,
     error,
@@ -188,6 +205,7 @@ export const useItemMasterStore = defineStore('itemMaster', () => {
     lastSearchParams,
     loadItems,
     loadItem,
+    loadItemStats,
     loadItemReferences,
     loadItemUsages,
     checkDuplicates,

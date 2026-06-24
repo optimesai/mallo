@@ -10,6 +10,7 @@ import com.ssafy.demo_app.domain.inventory.repository.InventoryTransactionHistor
 import com.ssafy.demo_app.domain.production.entity.WorkOrder;
 import com.ssafy.demo_app.domain.production.repository.ProductionExecutionRepository;
 import com.ssafy.demo_app.domain.production.repository.WorkOrderRepository;
+import com.ssafy.demo_app.domain.shipping.entity.OutboundShipping;
 import com.ssafy.demo_app.domain.shipping.repository.OutboundShippingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,7 @@ public class DashboardServiceImpl implements DashboardService {
         DashboardSummaryResponse response = new DashboardSummaryResponse();
         response.setGeneratedAt(LocalDateTime.now());
         response.setPeriod(normalizedPeriod);
-        response.setSummaryCards(getSummaryCards(fromDateTime, productionRows, qualityRows));
+        response.setSummaryCards(getSummaryCards(fromDateTime, qualityRows));
         response.setMetricViews(List.of(
                 metric("production", "생산", "라인별 생산량 비교", "실제 생산 실적의 양품과 불량 수량을 라인 단위로 비교합니다.",
                         chart("BAR", "lineName", List.of("totalQty"), "라인별 생산량", "라인별 수치 비교 데이터이므로 Bar 차트를 추천합니다."), productionRows),
@@ -71,15 +72,12 @@ public class DashboardServiceImpl implements DashboardService {
 
     private List<DashboardSummaryCardResponse> getSummaryCards(
             LocalDateTime fromDateTime,
-            List<Map<String, Object>> productionRows,
             List<Map<String, Object>> qualityRows
     ) {
-        long productionTotal = productionRows.stream()
-                .mapToLong(row -> toLong(row.get("totalQty")))
-                .sum();
         BigDecimal avgDefectRate = average(qualityRows, "defectRate");
         long shortageCount = currentInventoryRepository.countItemsUnderSafetyStock();
-        long waitingShippingCount = outboundShippingRepository.countWaitingShipping(fromDateTime);
+        long finalProductionTotal = inventoryTransactionHistoryRepository.sumNetProductionReceiptQty(fromDateTime);
+        long waitingShippingCount = outboundShippingRepository.countByStatus(OutboundShipping.ShippingStatus.READY);
         long activeWorkOrderCount = workOrderRepository.countByStatusIn(List.of(
                 WorkOrder.OrderStatus.READY,
                 WorkOrder.OrderStatus.RUN,
@@ -87,10 +85,10 @@ public class DashboardServiceImpl implements DashboardService {
         ));
 
         return List.of(
-                card("production-throughput", "라인 생산량", formatNumber(productionTotal) + " EA", "선택 기간 전체 공정 실적", "success"),
+                card("production-throughput", "라인 생산량", formatNumber(finalProductionTotal) + " EA", "선택 기간 최종 생산 입고", "success"),
                 card("avg-defect-rate", "평균 불량률", avgDefectRate + "%", "제품별 불량률 평균", avgDefectRate.compareTo(BigDecimal.valueOf(3)) >= 0 ? "warning" : "success"),
                 card("stock-shortage", "안전재고 미만", formatNumber(shortageCount) + " 품목", "현재고와 품목 안전재고 비교", shortageCount > 0 ? "danger" : "success"),
-                card("shipping-backlog", "출하 대기", formatNumber(waitingShippingCount) + " 건", "출하 완료 전 지시 건수", waitingShippingCount > 0 ? "neutral" : "success"),
+                card("shipping-backlog", "출하 대기", formatNumber(waitingShippingCount) + " 건", "READY 상태 출하 지시", waitingShippingCount > 0 ? "neutral" : "success"),
                 card("active-work-orders", "진행 작업지시", formatNumber(activeWorkOrderCount) + " 건", "READY/RUN/HOLD 상태", "neutral")
         );
     }

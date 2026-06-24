@@ -24,6 +24,7 @@ public interface OutboundShippingRepository extends JpaRepository<OutboundShippi
     Optional<OutboundShipping> findTopByPartnerOrderByCreatedAtDesc(PartnerMaster partner);
     List<OutboundShipping> findByPartnerOrderByCreatedAtDescShippingIdDesc(PartnerMaster partner);
     void deleteByItem(ItemMaster item);
+    long countByStatus(OutboundShipping.ShippingStatus status);
 
     @Query(value = """
             select os.shipping_id as shippingId,

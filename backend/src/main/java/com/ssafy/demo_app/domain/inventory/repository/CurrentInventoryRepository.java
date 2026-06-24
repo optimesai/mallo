@@ -60,7 +60,8 @@ public interface CurrentInventoryRepository extends JpaRepository<CurrentInvento
             from item_master i
             left join current_inventory ci on ci.item_id = i.item_id
             left join warehouse_location wl on wl.location_id = ci.location_id
-            where (:keyword is null
+            where i.item_status = 'ACTIVE'
+              and (:keyword is null
                 or lower(coalesce(i.item_code, '')) like concat('%', lower(:keyword), '%')
                 or lower(coalesce(i.item_name, '')) like concat('%', lower(:keyword), '%'))
             group by i.item_id, i.item_code, i.item_name
@@ -71,7 +72,8 @@ public interface CurrentInventoryRepository extends JpaRepository<CurrentInvento
             countQuery = """
                     select count(*)
                     from item_master i
-                    where (:keyword is null
+                    where i.item_status = 'ACTIVE'
+                      and (:keyword is null
                         or lower(coalesce(i.item_code, '')) like concat('%', lower(:keyword), '%')
                         or lower(coalesce(i.item_name, '')) like concat('%', lower(:keyword), '%'))
                     """,

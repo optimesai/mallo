@@ -4,6 +4,7 @@ import com.ssafy.demo_app.api.item.dto.ItemRequest;
 import com.ssafy.demo_app.api.item.dto.ItemDuplicateCheckResponse;
 import com.ssafy.demo_app.api.item.dto.ItemReferenceResponse;
 import com.ssafy.demo_app.api.item.dto.ItemResponse;
+import com.ssafy.demo_app.api.item.dto.ItemStatsResponse;
 import com.ssafy.demo_app.api.item.dto.ItemStatusUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUsageResponse;
@@ -21,6 +22,8 @@ public interface ItemService {
     );
 
     ItemResponse getItem(Integer itemId);
+
+    ItemStatsResponse getItemStats();
 
     ItemResponse createItem(ItemRequest request);
 

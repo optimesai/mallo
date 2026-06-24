@@ -45,6 +45,12 @@ export interface ItemMasterSearchParams extends PageParams {
   keyword?: string
 }
 
+export interface ItemStatsResponse {
+  totalCount: number
+  activeCount: number
+  inactiveCount: number
+}
+
 export interface ItemReferenceResponse {
   itemId: number
   itemCode: string
@@ -98,6 +104,11 @@ export const itemMasterApi = {
 
   async getItem(id: number) {
     const response = await apiClient.get<ApiResponse<ItemMasterResponse>>(`/api/items/${id}`)
+    return response.data
+  },
+
+  async getItemStats() {
+    const response = await apiClient.get<ApiResponse<ItemStatsResponse>>('/api/items/stats')
     return response.data
   },
 

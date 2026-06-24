@@ -72,6 +72,15 @@ function severityLabel(severity: DashboardSeverity) {
   }[severity]
 }
 
+function insightSourceLabel(source: string) {
+  return {
+    production_execution: '품질 지표',
+    current_inventory: '재고 지표',
+    outbound_shipping: '출하 지표',
+    dashboard: '대시보드'
+  }[source] ?? source
+}
+
 function selectPeriod(period: DashboardPeriod) {
   dashboardStore.loadDashboard(period)
 }
@@ -259,7 +268,7 @@ function getDashboardAnalysisQuestion(metricId: DashboardMetricCategory) {
                   </span>
                   <span class="flex items-center gap-1 app-type-xs app-table-muted">
                     <Database class="h-3.5 w-3.5" />
-                    {{ insight.source }}
+                    {{ insightSourceLabel(insight.source) }}
                   </span>
                 </div>
                 <div>
