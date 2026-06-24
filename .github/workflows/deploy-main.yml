@@ -66,6 +66,65 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
+      - name: Notify on Success (Discord)
+        if: success()
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUM: ${{ github.event.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DESCRIPTION="> [[PR #${PR_NUM}](${PR_URL})] ${PR_TITLE} (\`${BASE_REF}\` ← \`${HEAD_REF}\`)"
+          else
+            DESCRIPTION="> [\`${BASE_REF}\`] Deploy by ${ACTOR} (${SHA})"
+          fi
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CD }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg desc "$DESCRIPTION" '{
+              "content": "[알림] 백엔드 빌드/배포 성공!",
+              "embeds": [{
+                "title": "Backend Build & Deploy Success!",
+                "description": $desc,
+                "color": 65280
+              }]
+            }')"
+
+      - name: Notify on Failure (Discord)
+        if: failure()
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUM: ${{ github.event.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DESCRIPTION="> [[PR #${PR_NUM}](${PR_URL})] ${PR_TITLE} (\`${BASE_REF}\` ← \`${HEAD_REF}\`)"
+          else
+            DESCRIPTION="> [\`${BASE_REF}\`] Deploy by ${ACTOR} (${SHA})"
+          fi
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CI }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg desc "$DESCRIPTION" '{
+              "content": "[알림] 백엔드 빌드/배포 실패 - @everyone",
+              "embeds": [{
+                "title": "Backend Build & Deploy Failed",
+                "description": $desc,
+                "color": 16711680,
+                "fields": [
+                  {"name": "🔗 Detail", "value": "[Action #${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false}
+                ]
+              }]
+            }')"
+
   frontend:
     name: Frontend Build
     runs-on: ubuntu-latest
@@ -90,6 +149,65 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Notify on Success (Discord)
+        if: success()
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUM: ${{ github.event.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DESCRIPTION="> [[PR #${PR_NUM}](${PR_URL})] ${PR_TITLE} (\`${BASE_REF}\` ← \`${HEAD_REF}\`)"
+          else
+            DESCRIPTION="> [\`${BASE_REF}\`] Deploy by ${ACTOR} (${SHA})"
+          fi
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CI }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg desc "$DESCRIPTION" '{
+              "content": "[알림] 프론트엔드 빌드 성공!",
+              "embeds": [{
+                "title": "Frontend Build Success!",
+                "description": $desc,
+                "color": 65280
+              }]
+            }')"
+
+      - name: Notify on Failure (Discord)
+        if: failure()
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUM: ${{ github.event.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DESCRIPTION="> [[PR #${PR_NUM}](${PR_URL})] ${PR_TITLE} (\`${BASE_REF}\` ← \`${HEAD_REF}\`)"
+          else
+            DESCRIPTION="> [\`${BASE_REF}\`] Deploy by ${ACTOR} (${SHA})"
+          fi
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_CI }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg desc "$DESCRIPTION" '{
+              "content": "[알림] 프론트엔드 빌드 실패 - @everyone",
+              "embeds": [{
+                "title": "Frontend Build Failed",
+                "description": $desc,
+                "color": 16711680,
+                "fields": [
+                  {"name": "🔗 Detail", "value": "[Action #${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false}
+                ]
+              }]
+            }')"
 
   deploy:
     name: Deploy to EC2
