@@ -107,11 +107,6 @@ export const itemMasterApi = {
     return response.data
   },
 
-  async getItemStats() {
-    const response = await apiClient.get<ApiResponse<ItemStatsResponse>>('/api/items/stats')
-    return response.data
-  },
-
   async getItemReferences(id: number) {
     const response = await apiClient.get<ApiResponse<ItemReferenceResponse>>(`/api/items/${id}/references`)
     return response.data

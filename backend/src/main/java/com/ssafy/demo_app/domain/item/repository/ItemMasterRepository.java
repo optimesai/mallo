@@ -13,7 +13,6 @@ public interface ItemMasterRepository extends JpaRepository<ItemMaster, Integer>
         JpaSpecificationExecutor<ItemMaster> {
     Optional<ItemMaster> findByItemCode(String itemCode);
     boolean existsByItemCode(String itemCode);
-    long countByItemStatus(ItemMaster.ItemStatus itemStatus);
     List<ItemMaster> findByItemCodeStartingWith(String itemCodePrefix);
     List<ItemMaster> findByItemNameIgnoreCaseAndSpecAndUnit(String itemName, String spec, ItemMaster.Unit unit);
     List<ItemMaster> findByItemTypeAndItemStatus(ItemMaster.ItemType itemType, ItemMaster.ItemStatus itemStatus);

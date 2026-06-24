@@ -6,7 +6,6 @@ import com.ssafy.demo_app.api.item.dto.ItemDuplicateCheckResponse;
 import com.ssafy.demo_app.api.item.dto.ItemReferenceResponse;
 import com.ssafy.demo_app.api.item.dto.ItemRequest;
 import com.ssafy.demo_app.api.item.dto.ItemResponse;
-import com.ssafy.demo_app.api.item.dto.ItemStatsResponse;
 import com.ssafy.demo_app.api.item.dto.ItemStatusUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUsageResponse;
@@ -68,15 +67,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponse getItem(Integer itemId) {
         return ItemResponse.from(findItem(itemId));
-    }
-
-    @Override
-    public ItemStatsResponse getItemStats() {
-        ItemStatsResponse response = new ItemStatsResponse();
-        response.setTotalCount(itemMasterRepository.count());
-        response.setActiveCount(itemMasterRepository.countByItemStatus(ItemMaster.ItemStatus.ACTIVE));
-        response.setInactiveCount(itemMasterRepository.countByItemStatus(ItemMaster.ItemStatus.INACTIVE));
-        return response;
     }
 
     @Override

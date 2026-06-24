@@ -4,7 +4,6 @@ import com.ssafy.demo_app.api.item.dto.ItemRequest;
 import com.ssafy.demo_app.api.item.dto.ItemDuplicateCheckResponse;
 import com.ssafy.demo_app.api.item.dto.ItemReferenceResponse;
 import com.ssafy.demo_app.api.item.dto.ItemResponse;
-import com.ssafy.demo_app.api.item.dto.ItemStatsResponse;
 import com.ssafy.demo_app.api.item.dto.ItemStatusUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUpdateRequest;
 import com.ssafy.demo_app.api.item.dto.ItemUsageResponse;
@@ -40,10 +39,6 @@ public interface ItemApi {
             @Parameter(description = "품목 ID, 품목명, 품목 코드, 규격 검색어") @RequestParam(required = false) String keyword
     );
 
-    @Operation(summary = "품목 마스터 통계 조회", description = "전체 품목 수와 활성/비활성 품목 수를 전체 데이터 기준으로 조회합니다.")
-    @GetMapping("/stats")
-    ResponseEntity<ApiResponse<ItemStatsResponse>> getItemStats();
-
     @Operation(summary = "중복 품목 검증", description = "품목명, 규격, 단위가 같은 유사 품목을 조회합니다.")
     @GetMapping("/duplicates")
     ResponseEntity<ApiResponse<ItemDuplicateCheckResponse>> checkDuplicates(
@@ -53,7 +48,7 @@ public interface ItemApi {
     );
 
     @Operation(summary = "품목 단건 조회", description = "ID로 특정 품목 마스터 정보를 조회합니다.")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     ResponseEntity<ApiResponse<ItemResponse>> getItem(
             @Parameter(description = "품목 ID", required = true) @PathVariable Integer id
     );

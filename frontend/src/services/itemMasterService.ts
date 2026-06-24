@@ -42,8 +42,16 @@ export const itemMasterService = {
 
   async getItemStats(): Promise<ItemStatsResponse> {
     try {
-      const response = await itemMasterApi.getItemStats()
-      return response.data
+      const [total, active, inactive] = await Promise.all([
+        itemMasterApi.getItems({ page: 0, size: 1 }),
+        itemMasterApi.getItems({ page: 0, size: 1, itemStatus: 'ACTIVE' }),
+        itemMasterApi.getItems({ page: 0, size: 1, itemStatus: 'INACTIVE' })
+      ])
+      return {
+        totalCount: total.data.totalElements,
+        activeCount: active.data.totalElements,
+        inactiveCount: inactive.data.totalElements
+      }
     } catch (error) {
       throw new Error(getErrorMessage(error, '품목 통계를 불러오지 못했습니다.'))
     }

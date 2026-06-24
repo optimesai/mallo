@@ -30,3 +30,27 @@
     - 없음
 
   </details>
+
+### 품목 통계 서버 오류 방지 (Codex)
+- **User Intent**: 품목마스터에서만 서버 오류가 발생하고 이전 수정사항이 반영되지 않은 것처럼 보여, 원인 재확인과 수정 요청
+- **Agent Context**: 새로 추가한 `/api/items/stats` 호출이 실행 중인 구버전 백엔드에서 `/api/items/{id}`로 오인되어 문자열 `stats`를 숫자 ID로 변환하다 500 처리될 수 있는 경로를 확인. 별도 신규 엔드포인트 의존을 제거하고 기존 품목 목록 API의 `totalElements`로 전체 기준 통계를 계산하도록 변경.
+- **Key Decisions**:
+  - 품목 통계는 `GET /api/items`를 전체/활성/비활성 조건으로 조회해 계산 — 기존 운영 중인 품목 목록 API만 사용하여 서버 재시작 전후 라우팅 불일치 위험 축소
+  - 품목 단건 조회 경로는 숫자 ID만 받도록 제한 — `/stats`, `/duplicates` 같은 고정 경로가 단건 조회로 오인되는 재발 방지
+  - 대시보드 최종 생산량, READY 출하 대기, 현재고 활성 품목 조건, 인사이트 지표명 표시가 현재 코드에 남아 있음을 grep으로 재확인 — 사용자 요청 범위의 반영 상태 검증
+- **Affected Files**: <details><summary>9개 파일</summary>
+
+  - **Created**:
+    - 없음
+  - **Modified**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/item/ItemApi.java` (+1/-6) — 품목 통계 엔드포인트 제거 및 숫자 ID 경로 제한
+    - `backend/src/main/java/com/ssafy/demo_app/api/item/ItemController.java` (+0/-6) — 품목 통계 컨트롤러 제거
+    - `backend/src/main/java/com/ssafy/demo_app/domain/item/repository/ItemMasterRepository.java` (+0/-1) — 미사용 상태별 count 메서드 제거
+    - `backend/src/main/java/com/ssafy/demo_app/domain/item/service/ItemService.java` (+0/-3) — 미사용 품목 통계 서비스 계약 제거
+    - `backend/src/main/java/com/ssafy/demo_app/domain/item/service/ItemServiceImpl.java` (+0/-10) — 미사용 품목 통계 구현 제거
+    - `frontend/src/api/itemMasterApi.ts` (+0/-5) — `/api/items/stats` 호출 제거
+    - `frontend/src/services/itemMasterService.ts` (+10/-2) — 기존 목록 API 3회 조회로 전체/활성/비활성 통계 계산
+  - **Deleted**:
+    - `backend/src/main/java/com/ssafy/demo_app/api/item/dto/ItemStatsResponse.java` — 서버 전용 통계 DTO 제거
+
+  </details>
