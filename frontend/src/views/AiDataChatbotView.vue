@@ -13,6 +13,7 @@ import {
 import { useAiStore } from '@/state/aiStore'
 import AiAnswerSummary from '@/ui/AiAnswerSummary.vue'
 import AiChartPanel from '@/ui/AiChartPanel.vue'
+import AiMarkdownRenderer from '@/ui/AiMarkdownRenderer.vue'
 import AiResultTable from '@/ui/AiResultTable.vue'
 import AiSqlPanel from '@/ui/AiSqlPanel.vue'
 
@@ -173,7 +174,8 @@ function formatTime(value: string) {
                   ? 'background-color: var(--color-primary); border-color: var(--color-primary); color: var(--color-text-inverse);'
                   : 'background-color: var(--color-surface); border-color: var(--color-border); color: var(--color-text);'"
               >
-                <p class="whitespace-pre-line app-type-sm leading-10">{{ message.content }}</p>
+                <p v-if="message.role === 'user'" class="whitespace-pre-line app-type-sm leading-10">{{ message.content }}</p>
+                <AiMarkdownRenderer v-else :content="message.content" />
                 <div class="mt-2 flex items-center gap-2 app-type-11 opacity-70">
                   <span>{{ formatTime(message.createdAt) }}</span>
                   <span v-if="message.response" class="app-status app-status-neutral">
