@@ -208,8 +208,7 @@ class WorkOrderServiceTest {
                 .setParameter("lineName", "A라인")
                 .getResultList();
         FactoryRouting firstRouting = lineRoutings.get(0);
-        FactoryRouting secondRouting = lineRoutings.get(1);
-        FactoryRouting lastRouting = lineRoutings.get(2);
+        FactoryRouting lastRouting = lineRoutings.get(lineRoutings.size() - 1);
         WarehouseLocation location = em.createQuery("select l from WarehouseLocation l", WarehouseLocation.class).getResultList().get(0);
         location.setProductionReceiptDefault(true);
         ItemMaster item = createItem("WO-FG-CLOSE", "미달마감 완제품", ItemMaster.ItemType.FG);
@@ -222,14 +221,13 @@ class WorkOrderServiceTest {
 
         workOrderService.issueMaterials(workOrder.getOrderNo(), worker.getUserId());
 
-        productionExecutionService.createExecution(
-                worker.getUserId(),
-                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), firstRouting.getRoutingId(), 9, 0, 60)
-        );
-        productionExecutionService.createExecution(
-                worker.getUserId(),
-                new ProductionExecutionCreateRequest(workOrder.getOrderNo(), secondRouting.getRoutingId(), 9, 0, 60)
-        );
+        for (int index = 0; index < lineRoutings.size() - 1; index++) {
+            FactoryRouting routing = lineRoutings.get(index);
+            productionExecutionService.createExecution(
+                    worker.getUserId(),
+                    new ProductionExecutionCreateRequest(workOrder.getOrderNo(), routing.getRoutingId(), 9, 0, 60)
+            );
+        }
         ProductionExecutionCreateRequest request = new ProductionExecutionCreateRequest(workOrder.getOrderNo(), lastRouting.getRoutingId(), 8, 1, 120);
         request.setDefectReason("테스트 불량");
         ProductionExecutionResponse execution = productionExecutionService.createExecution(worker.getUserId(), request);
