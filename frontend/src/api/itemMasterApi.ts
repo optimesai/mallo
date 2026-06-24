@@ -45,6 +45,12 @@ export interface ItemMasterSearchParams extends PageParams {
   keyword?: string
 }
 
+export interface ItemStatsResponse {
+  totalCount: number
+  activeCount: number
+  inactiveCount: number
+}
+
 export interface ItemReferenceResponse {
   itemId: number
   itemCode: string

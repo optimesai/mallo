@@ -22,16 +22,6 @@ public interface ProductionExecutionRepository extends JpaRepository<ProductionE
     Optional<ProductionExecution> findTopByRoutingOrderByCreatedAtDesc(FactoryRouting routing);
 
     @Query("""
-            select r.lineName, coalesce(sum(pe.goodQty), 0), coalesce(sum(pe.defectQty), 0)
-            from ProductionExecution pe
-            join pe.routing r
-            where pe.createdAt >= :fromDateTime
-            group by r.lineName
-            order by coalesce(sum(pe.goodQty), 0) + coalesce(sum(pe.defectQty), 0) desc
-            """)
-    List<Object[]> aggregateProductionByLine(@Param("fromDateTime") LocalDateTime fromDateTime);
-
-    @Query("""
             select i.itemName, coalesce(sum(pe.goodQty), 0), coalesce(sum(pe.defectQty), 0)
             from ProductionExecution pe
             join pe.order wo

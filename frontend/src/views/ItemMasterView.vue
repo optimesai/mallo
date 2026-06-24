@@ -50,11 +50,10 @@ const form = reactive<ItemMasterRequest>({
 })
 
 const stats = computed(() => {
-  const items = itemMasterStore.items
   return {
-    total: itemMasterStore.totalElements,
-    active: items.filter((item) => item.itemStatus === 'ACTIVE').length,
-    inactive: items.filter((item) => item.itemStatus === 'INACTIVE').length
+    total: itemMasterStore.stats.totalCount,
+    active: itemMasterStore.stats.activeCount,
+    inactive: itemMasterStore.stats.inactiveCount
   }
 })
 const canWrite = computed(() => authStore.canManageMasterData)
@@ -79,9 +78,20 @@ const keywordSuggestions = computed(() => {
   return [...unique.values()].slice(0, 8)
 })
 
-onMounted(() => {
-  fetchItems(0)
+onMounted(async () => {
+  await Promise.all([
+    fetchItems(0),
+    loadStats()
+  ])
 })
+
+async function loadStats() {
+  try {
+    await itemMasterStore.loadItemStats()
+  } catch (err) {
+    pageError.value = err instanceof Error ? err.message : '품목 통계를 불러오지 못했습니다.'
+  }
+}
 
 async function fetchItems(page = itemMasterStore.page) {
   try {
@@ -206,6 +216,7 @@ async function submitCreate(skipDuplicateCheck = false) {
     closeCreate()
     isDuplicateOpen.value = false
     pendingPayload.value = null
+    await loadStats()
     await router.push({ name: 'item-master-detail', params: { id: created.itemId } })
   } catch (err) {
     formError.value = err instanceof Error ? err.message : '품목 등록에 실패했습니다.'
@@ -220,6 +231,7 @@ async function submitDuplicateConfirmed() {
     closeCreate()
     isDuplicateOpen.value = false
     pendingPayload.value = null
+    await loadStats()
     await router.push({ name: 'item-master-detail', params: { id: created.itemId } })
   } catch (err) {
     formError.value = err instanceof Error ? err.message : '품목 등록에 실패했습니다.'

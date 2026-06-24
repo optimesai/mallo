@@ -48,7 +48,7 @@ public interface ItemApi {
     );
 
     @Operation(summary = "품목 단건 조회", description = "ID로 특정 품목 마스터 정보를 조회합니다.")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     ResponseEntity<ApiResponse<ItemResponse>> getItem(
             @Parameter(description = "품목 ID", required = true) @PathVariable Integer id
     );
