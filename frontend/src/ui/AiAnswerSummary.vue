@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { AlertTriangle, Bot, CheckCircle2, Database, Sparkles } from '@lucide/vue'
 import type { AiQueryResponse } from '@/api/aiApi'
+import AiMarkdownRenderer from '@/ui/AiMarkdownRenderer.vue'
 
 const props = defineProps<{
   response?: AiQueryResponse | null
@@ -87,7 +88,7 @@ const suggestedQuestions = computed(() => props.response?.suggestedQuestions ?? 
             class="mt-0.5 h-5 w-5 shrink-0"
             style="color: var(--color-success);"
           />
-          <p class="min-w-0 whitespace-pre-line break-words app-type-sm leading-6">{{ answerText }}</p>
+          <AiMarkdownRenderer :content="answerText" />
         </div>
       </div>
 
@@ -97,7 +98,7 @@ const suggestedQuestions = computed(() => props.response?.suggestedQuestions ?? 
         style="border-color: var(--color-border);"
       >
         <p class="app-stat-label-compact">질의 해석</p>
-        <p class="mt-1 min-w-0 break-words app-type-sm leading-6">{{ response.interpretationSummary }}</p>
+        <AiMarkdownRenderer :content="response.interpretationSummary" />
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
