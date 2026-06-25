@@ -37,9 +37,6 @@ async function handleSubmit() {
           <h1 id="login-title" class="auth-title">
             MALLO
           </h1>
-          <p class="auth-subtitle">
-            AI 기반 MES 플랫폼, MALLO에 로그인합니다.
-          </p>
         </div>
       </div>
 

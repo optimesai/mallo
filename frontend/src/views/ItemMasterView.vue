@@ -293,8 +293,10 @@ function showToast(message: string) {
   <div class="space-y-6 pb-12">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="app-type-2xl app-font-emphasis tracking-tight app-text-strong">품목 마스터</h1>
-        <p class="mt-1 app-type-sm app-font-label app-text-muted">검색 후 목록에서 품목을 선택하면 상세 화면으로 이동합니다.</p>
+        <h1 class="app-page-title">
+          품목 마스터
+        </h1>
+        <p class="app-page-subtitle">검색 후 목록에서 품목을 선택하면 상세 화면으로 이동합니다.</p>
       </div>
       <div v-if="toast" class="rounded-xl border app-border app-bg-success-soft px-4 py-2 app-type-sm app-font-strong app-text-success">
         {{ toast }}

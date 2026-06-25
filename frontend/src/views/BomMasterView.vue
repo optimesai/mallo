@@ -702,11 +702,10 @@ function formatDateTime(value: string) {
   <div class="bom-page">
     <div class="bom-heading">
       <div>
-        <h1 class="bom-title">
-          <span class="bom-title-mark"></span>
-          BOM Master
+        <h1 class="app-page-title">
+          BOM 마스터
         </h1>
-        <p class="bom-subtitle">제품별 부품명세서를 등록하고, BOM 정전개와 역전개 구조를 확인합니다.</p>
+        <p class="app-page-subtitle">제품별 부품명세서를 등록하고, BOM 정전개와 역전개 구조를 확인합니다.</p>
       </div>
       <div v-if="successToast" class="bom-toast">
         <span class="bom-toast-dot"></span>
@@ -1241,12 +1240,6 @@ function formatDateTime(value: string) {
   letter-spacing: -0.025em;
 }
 
-.bom-title-mark {
-  width: 0.375rem;
-  height: 1.5rem;
-  background: var(--bom-color-primary);
-  border-radius: 0.125rem;
-}
 
 .bom-subtitle,
 .bom-detail-kicker,

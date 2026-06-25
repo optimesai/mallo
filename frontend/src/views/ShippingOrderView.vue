@@ -341,7 +341,9 @@ function getShippingStatusDotClass(status: ShippingStatus) {
     <!-- 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">완제품 출하 지시 관리</h1>
+        <h1 class="app-page-title">
+          완제품 출하 지시 관리
+        </h1>
         <p class="app-page-subtitle">고객사 주문 사양에 맞춰 출하 지시를 신규 등록하고, 피킹 로케이션 배정 및 출하 완료 처리를 관리합니다.</p>
       </div>
       <div class="flex items-center gap-2">
