@@ -13,6 +13,8 @@
   "dependencies": {
     "@lucide/vue": "^1.17.0",
     "axios": "^1.16.1",
+    "dompurify": "^3.4.11",
+    "marked": "^18.0.5",
     "pinia": "^3.0.4",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"

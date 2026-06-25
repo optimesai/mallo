@@ -1,19 +1,14 @@
-# AI 기반 물류 분석 플랫폼
+# MALLO (말로) - 지능형 물류 분석 엔진
 
-> **자연어 인터페이스 기반의 런타임 데이터 파이프라인 및 배치 생성 엔진**
-> 
-
-현장 실무자가 IT 지식 없이 대화만으로 데이터를 분석하고, 반복 보고 업무를 자동화하는 환경을 구축합니다.
+> SQL 없이, IT 전문가 없이. 현장 작업자가 말로 묻고, 시스템이 데이터로 답합니다.
 
 ## 프로젝트 개요 (Overview)
 
-> 본 프로젝트는 물류 현장의 데이터 접근성 문제를 해결하고 업무 효율을 극대화하는 것을 목표로 합니다.
-> 
+본 프로젝트는 물류 현장의 데이터 접근성 문제를 해결하고 업무 효율을 극대화하는 것을 목표로 합니다.
 
 #### 기획 배경 & 문제 정의
 
-> 제조·물류 현장에는 생산, 설비, 재고 등 방대한 데이터가 축적되지만, 실무자가 이를 활용하기에는 높은 장벽이 존재합니다.
-> 
+제조·물류 현장에는 생산, 설비, 재고 등 방대한 데이터가 축적되지만, 실무자가 이를 활용하기에는 높은 장벽이 존재합니다.
 
 | 분류 | 현상 및 문제점 | 결과 |
 | --- | --- | --- |
@@ -33,20 +28,20 @@
     - 자연어로 생성한 분석 쿼리를 정기 배치로 등록, 주간·월간 보고서 자동 생성
     - 코드 재배포 없이 실무자가 직접 배치 스케줄을 등록·수정·삭제
 - **시스템 안전성 및 성능 확보:**
-    - 자연어 → SQL 변환 시 Syntax 검증, DDL/DML 차단, Read-only 권한 격리 적용
-    - Spring Batch 기반 Raw → Summary 정제로 AI 응답 속도 및 정확도 향상
+    - 자연어 → SQL 변환 시 구문 검증, DDL/DML 차단, Read-only 권한 격리 적용
+    - 데이터 정제 파이프라인으로 AI 응답 속도 및 정확도 향상
 
 ## 주요 기능 (Key Features)
 
 1. **지능형 데이터 인터페이스 (NL2SQL)**
     - **맥락 인식형 쿼리 생성**: DB 메타데이터를 학습한 AI가 자연어 질문을 정확한 SQL 명령어로 변환합니다.
-    - **안전한 실행 샌드박스**: Read-only 권한 격리 및 DDL/DML 차단 로직을 통해 DB 보안을 유지합니다.
+    - **안전한 실행 샌드박스**: 구문 검증 → SQL 리뷰 → 의미론적 검증까지 3단계 안전장치를 거쳐 DB 보안을 유지합니다.
 2. **자율형 업무 자동화 (Dynamic Batch)**
     - **런타임 배치 등록**: 코드 재배포 없이 사용자의 요청에 따라 실시간으로 분석 스케줄(Cron)을 생성 및 수정합니다.
     - **업무 이력 통합**: 요청한 데이터 질의와 생성된 리포트 이력을 한눈에 관리하여 팀 내 공유 프로세스를 통합합니다.
 3. **직관적 데이터 시각화 & 최적화**
     - **자동 차트 추천**: 데이터 특성에 맞는 최적의 시각화 결과물(Chart)을 AI가 스스로 판단하여 제시합니다.
-    - **데이터 정제 파이프라인**: Spring Batch 기반의 요약 테이블(Summary) 생성으로 AI 응답 속도와 분석 정확도를 높입니다.
+    - **데이터 정제 파이프라인**: 요약 테이블(Summary) 생성으로 AI 응답 속도와 분석 정확도를 높입니다.
 
 ## 핵심 개념 (Core Concepts)
 
@@ -55,35 +50,155 @@
 - **Zero-touch Reporting**: 런타임 스케줄링을 통한 정기 업무의 완전 자동화
 - **Visual Insights**: 데이터 특성에 최적화된 자동 시각화 대시보드
 
-## 기술 스택 (Planned)
+## 기술 스택
 
-- **Backend:** Java 21, Spring Boot 4.x, Spring Batch, Spring AI
-- **AI/LLM:** LangChain, OpenAI API (NL2SQL)
-- **Database:** MySQL
-- **Frontend:** Vue.js, Tailwind CSS
+### Backend
 
-## 로드맵 (Planned)
+| 분류 | 기술 |
+|------|------|
+| Runtime | Java 21 |
+| Framework | Spring Boot 4.0.6 |
+| Build | Gradle (Multi-module) |
+| ORM | Spring Data JPA (Hibernate) |
+| Database | MySQL 8.0 |
+| Security | Spring Security + JWT (jjwt) |
+| AI/LLM | LangChain4j + OpenAI |
+| API Docs | SpringDoc OpenAPI (Swagger) |
 
-1단계: 기반 아키텍처 설계
+### Frontend
 
-- [ ]  도메인(제조/물류) 데이터 모델링 및 시나리오 10종 정의
-- [ ]  Spring AI 기반의 기본 NL2SQL 파이프라인 구축 (Text → SQL → Result)
-- [ ]  Docker 기반 개발 환경 및 CI/CD 파이프라인 구성
+| 분류 | 기술 |
+|------|------|
+| Framework | Vue 3.5 (Composition API) |
+| Language | TypeScript |
+| Build | Vite |
+| State | Pinia |
+| CSS | Tailwind CSS 4 |
+| Icons | Lucide Vue |
+| Markdown | marked + DOMPurify |
 
-2단계: 지능형 엔진 고도화
+### DevOps
 
-- [ ]  Few-shot 및 RAG 기법을 활용한 NL2SQL 정확도 개선
-- [ ]  런타임 동적 스케줄러 개발: API를 통한 실시간 배치 작업 등록/수정/삭제 엔진 구현
-- [ ]  데이터 요약(Summary)을 위한 정기 배치 시나리오 완성
+| 분류 | 기술 |
+|------|------|
+| Container | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
+| Registry | GitHub Container Registry |
 
-3단계: 안정화 및 모니터링
+## 시작하기 (Getting Started)
 
-- [ ]  배치 실행 이력 및 에러 로그 모니터링 대시보드 구축
-- [ ]  대량 데이터 환경에서의 쿼리 성능 튜닝 및 부하 테스트
-- [ ]  사용자 시나리오 기반 최종 검증 (QA)
+### 사전 요구사항
 
-## Future Works
+- Java 21
+- Docker + Docker Compose
+- Node.js 20.19+ / 22.12+
+- OpenAI API Key
 
-- **Semantic Caching:** 유사 질문에 대해 LLM 호출 없이 빠른 결과를 제공하는 캐싱 레이어 도입
-- **이벤트 기반 처리:** 시스템 확장성을 고려한 비동기 내부 이벤트 구조 고도화
-- **인프라 오케스트레이션:** 고부하 작업 대응을 위한 Kubernetes 환경 마이그레이션 검토
+### 백엔드 실행
+
+```bash
+cd backend
+
+# .env, .secret.env 파일 생성 후 환경 변수 설정
+# (DB 접속 정보, JWT 시크릿, OpenAI API Key 등)
+
+docker compose up -d --build
+```
+
+### 프론트엔드 실행
+
+```bash
+cd frontend
+
+npm install
+npm run dev
+```
+
+### 접속 정보
+
+> 배포 URL: **https://mallo.cloud**
+
+## 프로젝트 구조
+
+```
+ssafy-pjt/
+├── backend/
+│   ├── src/main/java/com/ssafy/demo_app/
+│   │   ├── api/                  # Controller + DTO
+│   │   │   ├── ai/               # AI 챗봇
+│   │   │   ├── auth/             # 인증
+│   │   │   ├── user/             # 사용자 관리
+│   │   │   ├── item/             # 품목 마스터
+│   │   │   ├── partner/          # 거래처 마스터
+│   │   │   ├── bom/              # BOM
+│   │   │   ├── routing/          # 라우팅
+│   │   │   ├── inbound/          # 입고 관리
+│   │   │   ├── inventory/        # 재고 관리
+│   │   │   ├── production/       # 생산 관리
+│   │   │   ├── shipping/         # 출하 관리
+│   │   │   └── dashboard/        # 대시보드
+│   │   ├── domain/               # Entity + Repository + Service
+│   │   ├── global/               # 공통 설정/예외/응답
+│   │   └── infrastructure/       # Security + JWT
+│   ├── sql/                      # DB 초기화 스크립트
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   └── run_docker.ps1
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api/                  # API 호출
+│   │   ├── services/             # 비즈니스 로직
+│   │   ├── state/                # Pinia Store
+│   │   ├── views/                # 페이지 컴포넌트
+│   │   ├── ui/                   # UI 컴포넌트
+│   │   └── router/               # 라우트
+│   └── package.json
+│
+└── .github/workflows/
+    ├── backend-ci.yml
+    ├── frontend-ci.yml
+    └── deploy-main.yml
+```
+
+## API 문서
+
+주요 API 엔드포인트:
+
+| 도메인 | Method | Endpoint | 설명 |
+|--------|--------|----------|------|
+| Auth | POST | `/api/auth/login` | 로그인 |
+| Auth | POST | `/api/auth/reissue` | 토큰 갱신 |
+| Users | GET | `/api/users` | 사용자 목록 |
+| Inbounds | GET/PATCH | `/api/inbounds` | 입고 접수 관리 |
+| Inventories | GET | `/api/inventories` | 현재고 조회 |
+| Work Orders | GET/POST | `/api/work-orders` | 작업 지시 관리 |
+| Shippings | GET | `/api/shippings` | 출하 지시 목록 |
+| AI | POST | `/api/ai/queries` | 자연어 질의 전송 |
+| Dashboard | GET | `/api/dashboard/summary` | 대시보드 요약 |
+
+> 전체 API 명세는 애플리케이션 실행 후 `/swagger-ui/index.html` 에서 확인할 수 있습니다.
+
+## CI/CD
+
+```
+task & feature  ──PR──▶  dev  ──PR──▶  main  ──▶  GHCR  ──▶  EC2
+```
+
+| 워크플로 | 트리거 | 주요 작업 |
+|---------|--------|---------|
+| Backend CI | PR → `dev` (`backend/`) | Gradle Build + Test |
+| Frontend CI | PR → `dev` (`frontend/`) | npm build |
+| Deploy | Push/PR → `main` | Docker Build → GHCR Push → EC2 배포 |
+
+## 인프라 아키텍처
+
+![mallo architecture](static/img/mallo_architecture.png)
+
+### 레이어 구성
+
+| 레이어 | 구성 요소 | 역할 |
+|--------|-----------|------|
+| L1 — 서버 | EC2 + Nginx + Docker | 물리 서버, 웹 서버 (프록시/정적 파일), 애플리케이션 컨테이너 |
+| L2 — 네트워크 | Cloudflare + DNS | 도메인 연결, SSL 인증, 프록시 |
+| L3 — CI/CD | GitHub Actions | 자동 빌드 및 배포 |
