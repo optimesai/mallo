@@ -35,10 +35,10 @@ async function handleSubmit() {
         </div>
         <div>
           <h1 id="login-title" class="auth-title">
-            Logistics Control
+            MALLO
           </h1>
           <p class="auth-subtitle">
-            AI 기반 물류·분석 MES 플랫폼에 로그인합니다.
+            AI 기반 MES 플랫폼, MALLO에 로그인합니다.
           </p>
         </div>
       </div>
