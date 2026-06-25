@@ -310,7 +310,7 @@ function formatDateTime(dateTimeStr: string) {
         <h1 class="app-page-title">
           창고 적재 및 로케이션 배치
         </h1>
-        <p class="app-page-subtitle">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다. 적재 완료 시 상태가 STACKED로 변경되며 중복 적재가 방지됩니다.</p>
+        <p class="app-page-subtitle">검수 완료(COMPLETED)된 오더들을 최종 창고 렉(Rack)에 바인딩하여 실시간 가용 재고로 반영합니다.</p>
       </div>
       <!-- 성공 토스트 -->
       <div v-if="successToast" class="app-status app-status-success animate-fade-in">

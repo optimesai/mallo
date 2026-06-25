@@ -242,7 +242,9 @@ function formatDate(dateStr: string | null) {
     <!-- 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">피킹 및 상차 관리</h1>
+        <h1 class="app-page-title">
+          피킹 및 상차 관리
+        </h1>
         <p class="app-page-subtitle">배송 차량을 등록하고 최적의 완제품 피킹 위치를 자동 배정합니다. 실물 상차 완료 후 출하를 확정하여 전산 재고를 감산합니다.</p>
       </div>
       <button
