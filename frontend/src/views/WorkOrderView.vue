@@ -443,8 +443,10 @@ async function closeOrder(order: WorkOrderResponse) {
 
     <header class="wo-header">
       <div>
-        <h1 class="wo-title">작업 지시 관리</h1>
-        <p class="wo-subtitle">작업지시 생성, 조회, 상태 액션, 마감을 중심으로 생산 작업 흐름을 관리합니다.</p>
+        <h1 class="app-page-title">
+          작업 지시 관리
+        </h1>
+        <p class="app-page-subtitle">작업지시 생성, 조회, 상태 액션, 마감을 중심으로 생산 작업 흐름을 관리합니다.</p>
       </div>
       <button class="app-button app-button-muted" @click="loadInitialData">
         <RefreshCw class="wo-button-icon" />

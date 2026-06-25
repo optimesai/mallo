@@ -231,7 +231,9 @@ const stats = computed(() => {
     <!-- 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">재고 수불(변동) 이력 추적</h1>
+        <h1 class="app-page-title">
+          재고 수불 이력 추적
+        </h1>
         <p class="app-page-subtitle">창고 내에서 발생한 입고, 생산 출고 등 모든 양적 변화의 Audit 타임라인을 조회합니다.</p>
       </div>
       <div class="flex items-center gap-2">

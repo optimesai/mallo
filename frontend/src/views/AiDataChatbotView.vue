@@ -99,7 +99,9 @@ function formatTime(value: string) {
   <div class="app-page">
     <div class="app-page-header">
       <div>
-        <h1 class="app-page-title">AI 데이터 챗봇</h1>
+        <h1 class="app-page-title">
+          AI 데이터 챗봇
+        </h1>
         <p class="app-page-subtitle">업무 데이터를 자연어로 질의하고 조회 결과, 차트, 생성 SQL을 함께 확인합니다.</p>
       </div>
       <button

@@ -230,7 +230,9 @@ async function selectRow(item: any) {
     <!-- 상단 대시보드 타이틀 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="app-page-title">현재고 모니터링</h1>
+        <h1 class="app-page-title">
+          현재고 모니터링
+        </h1>
         <p class="app-page-subtitle">창고 및 세부 로케이션별 실시간 재고량과 안전 재고 도달 상태를 감시합니다.</p>
       </div>
       <div class="flex items-center gap-2">

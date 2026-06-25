@@ -459,8 +459,10 @@ function selectKeywordSuggestion(orderNo: string) {
 
     <header class="wo-header">
       <div>
-        <h1 class="wo-title">공정 실적 관리</h1>
-        <p class="wo-subtitle">진행 중인 작업 지시를 기준으로 공정별 생산 실적을 입력하고 BOM 투입량 변화를 확인합니다.</p>
+        <h1 class="app-page-title">
+          공정 실적 관리
+        </h1>
+        <p class="app-page-subtitle">진행 중인 작업 지시를 기준으로 공정별 생산 실적을 입력하고 BOM 투입량 변화를 확인합니다.</p>
       </div>
       <button class="app-button app-button-muted" :disabled="workOrderStore.isLoading" @click="refreshData">
         <RefreshCw class="wo-button-icon" />

@@ -319,11 +319,10 @@ function showToast(message: string) {
   <div class="factory-master-page">
     <div class="factory-master-header">
       <div>
-        <h1 class="factory-master-title">
-          <span class="factory-master-title-mark"></span>
-          공장 및 생산라인 Master
+        <h1 class="app-page-title">
+          공장 및 생산 라인 마스터
         </h1>
-        <p class="factory-master-subtitle">공장, 생산라인, 공정 순서 기준을 등록하고 작업지시에서 사용할 라우팅 기준정보를 관리합니다.</p>
+        <p class="app-page-subtitle">공장, 생산라인, 공정 순서 기준을 등록하고 작업지시에서 사용할 라우팅 기준정보를 관리합니다.</p>
       </div>
       <div v-if="successToast" class="factory-master-toast">
         <span class="factory-master-toast-dot"></span>

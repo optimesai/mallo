@@ -296,8 +296,10 @@ function showToast(message: string) {
   <div class="space-y-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <h1 class="app-type-3xl font-bold app-text-primary">거래처 마스터 관리</h1>
-        <p class="mt-2 app-text-muted">거래처를 등록하고 상태, 사용 현황, 입고·출하 이력을 관리합니다.</p>
+        <h1 class="app-page-title">
+          거래처 마스터
+        </h1>
+        <p class="app-page-subtitle">거래처를 등록하고 상태, 사용 현황, 입고·출하 이력을 관리합니다.</p>
       </div>
       <div v-if="successToast" class="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 app-type-sm font-semibold text-emerald-700">
         <CheckCircle2 class="h-4 w-4" />

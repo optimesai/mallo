@@ -206,14 +206,11 @@ function showToast(message: string) {
 
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <div class="mb-2 inline-flex items-center gap-2 rounded-full border app-border-strong app-bg-surface px-3 py-1 app-type-xs app-font-strong app-text-muted">
-          <ShieldCheck class="h-3.5 w-3.5 app-text-soft" />
-          SYSTEM ADMINISTRATION
-        </div>
-        <h1 class="app-type-3xl app-font-emphasis tracking-tight app-text-strong">사용자 및 권한</h1>
-        <p class="mt-2 app-type-sm app-text-muted">가입된 사용자를 조회하고 시스템 접근 권한을 관리합니다.</p>
+        <h1 class="app-page-title">
+          사용자 및 권한
+        </h1>
+        <p class="app-page-subtitle">가입된 사용자를 조회하고 시스템 접근 권한을 관리합니다.</p>
       </div>
-
       <button v-if="isAdmin" class="inline-flex items-center justify-center gap-2 rounded-xl app-bg-strong px-4 py-2.5 app-type-sm app-font-strong app-text-inverse shadow-lg  transition app-hover-muted disabled:cursor-not-allowed disabled:opacity-60" type="button" :disabled="userStore.isLoading" @click="fetchUsers">
         <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': userStore.isLoading }" />
         새로고침
